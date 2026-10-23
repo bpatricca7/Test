@@ -19,7 +19,7 @@ import '../../styles/estimate.css';
 
 interface SliderDef { key: keyof TopDownAssumptions; label: string; min: number; max: number; step: number; pct?: boolean; suffix?: string; decimals: number }
 const SLIDERS: SliderDef[] = [
-  { key: 'loadedCostPerFte', label: 'Loaded cost / FTE-yr', min: 35000, max: 140000, step: 500, decimals: 0 },
+  { key: 'loadedCostPerFte', label: 'Loaded $/FTE-yr', min: 35000, max: 140000, step: 500, decimals: 0 },
   { key: 'odcMaterialsPct', label: 'ODC / materials', min: 0, max: 0.35, step: 0.005, pct: true, suffix: '%', decimals: 1 },
   { key: 'subcontractPct', label: 'Subcontract', min: 0, max: 0.6, step: 0.01, pct: true, suffix: '%', decimals: 1 },
   { key: 'gaPct', label: 'G&A', min: 0, max: 0.25, step: 0.005, pct: true, suffix: '%', decimals: 1 },
@@ -200,7 +200,7 @@ function CrossCheck({ est, live }: { est: EstimateResult | null; live: TopDownLi
         <span>Implied <b className="mono implied">{has ? n1(live.impliedBase) : '—'}</b></span>
         <span className="sep" aria-hidden>│</span>
         <span>Δ {has ? <span className={`delta-chip delta-chip--${deltaTone(live.deltaPct!)}`}>{signedPct(live.deltaPct!)}</span> : <b>—</b>}</span>
-        {live.stale && <Tooltip content="Inputs changed since this rationale"><span className="est__stale-dot" tabIndex={0} aria-label="Inputs changed since this rationale"><History size={14} aria-hidden /></span></Tooltip>}
+        {live.stale && <Tooltip content="Numbers are live; the rationale was written for earlier inputs"><span className="est__stale-dot" tabIndex={0} aria-label="The rationale was written for earlier inputs"><History size={14} aria-hidden /></span></Tooltip>}
       </div>
 
       <h3>Previous award</h3>
@@ -256,7 +256,7 @@ function CrossCheck({ est, live }: { est: EstimateResult | null; live: TopDownLi
       {live.stale && stored && (
         <div className="est__stale" role="status">
           <History size={14} aria-hidden />
-          <span>Inputs changed since this rationale</span>
+          <span>Numbers are live; the rationale below was written for earlier inputs</span>
           <Button size="sm" variant="secondary" icon={RefreshCw} disabled={topDownRunning || extracting || !est} onClick={() => void runTopDown('auto')}>{topDownRunning ? 'Re-running…' : 'Re-run'}</Button>
         </div>
       )}

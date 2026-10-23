@@ -10,10 +10,10 @@ import { DEFAULT_ASSUMPTIONS, groundsAcres, resolveMealsPerDay, diningMealsPerDa
 import { FACILITY_CATEGORIES, FACILITY_STATUSES, GROUNDS_KINDS, SERVICE_LEVELS, isInScope, type DiningProfile, type Facility, type GroundsArea, type GroundsUnit, type ScopeItem } from '@shared/types';
 import { n0, n1, n2, signedPct } from '../../fmt';
 import { CONF_COLOR, CONF_GLYPH, CREW_ORDER, confBand, crewColor, categoryColor, deltaTone } from '../lib/theme';
-import { ISSUE_INFO, sfInExcerpt, type IssueCode } from '../lib/review';
+import { ISSUE_INFO, sourceCheck, sourceContext, type IssueCode } from '../lib/review';
 import { cx } from '../lib/cx';
 import { Button, Chip, Field, Fields, IconButton, NumField, Select, TextField, Tooltip } from '../ui';
-import { CrewBars, Excerpt, FloorMixBar, Section, Workload, closestAreaNumber, useFactorUsage } from './parts';
+import { CrewBars, Excerpt, FloorMixBar, Section, Workload, useFactorUsage } from './parts';
 import { nextNeeds, startReview, useReviewPosition } from '../inventory/reviewLoop';
 import '../../styles/inspector.css';
 
@@ -228,26 +228,45 @@ const EMPTY_OV: Record<string, number> = {};
 
 function SourceBlock({ f, rowValues }: { f: Facility; rowValues: number[] }) {
   const update = useStore((st) => st.updateFacility);
+  const entry = useStore((st) => st.project?.review?.[f.id]);
+  const facilities = useStore((st) => st.project?.inventory.facilities);
   const ex = f.source?.excerpt;
-  const check = sfInExcerpt(f);
   const unit = f.originalArea ? UNIT_LABEL[f.originalArea.unit] ?? f.originalArea.unit : 'SF';
+  const chk = useMemo(() => sourceCheck(f, entry, facilities ? sourceContext(facilities) : undefined), [f, entry, facilities]);
+  const why = chk.showsWhy === 'extracted' ? ', extracted' : chk.showsWhy === 'column' ? ', area column' : '';
+  const use = chk.suggest != null && chk.suggest > 0
+    ? <Button size="sm" variant="secondary" onClick={() => update(f.id, { grossSqft: chk.suggest })}>{chk.showsWhy === 'extracted' ? 'Revert to' : 'Use'} {n0(chk.suggest)}</Button>
+    : null;
   let line: ReactNode = null;
-  if (ex && check != null) {
-    if (check) {
-      const grossHit = rowValues[0] > 0 && tokenHas(ex, f.grossSqft);
-      const origHit = f.originalArea?.gross != null && tokenHas(ex, f.originalArea.gross);
-      line = <p className="insp__check is-ok"><CircleCheck size={14} aria-hidden />{grossHit ? `Gross SF ${n0(f.grossSqft)} appears in the excerpt` : origHit ? `Gross ${n0(f.originalArea!.gross!)} ${unit} (as printed) appears in the excerpt` : `Cleanable SF ${n0(f.cleanableSqft ?? 0)} appears in the excerpt; gross is not printed`}</p>;
-    } else {
-      const shows = closestAreaNumber(ex, f.originalArea?.gross ?? f.grossSqft, f.buildingNumber);
-      const useVal = shows != null && f.originalArea ? null : shows; // a converted row needs the unit, not the raw number
+  switch (chk.status) {
+    case 'ok':
+      line = <p className="insp__check is-ok"><CircleCheck size={14} aria-hidden />{
+        chk.match === 'gross' ? `Gross SF ${n0(f.grossSqft)} appears in the excerpt`
+          : chk.match === 'original' ? `Gross ${n0(f.originalArea!.gross!)} ${unit} (as printed) appears in the excerpt`
+            : chk.match === 'sum' ? `Gross SF ${n0(f.grossSqft)} = ${chk.sumText} in the excerpt`
+              : `Cleanable SF ${n0(f.cleanableSqft ?? f.originalArea?.cleanable ?? 0)} appears in the excerpt; gross is not printed`}</p>;
+      break;
+    case 'revised':
+      line = <p className="insp__check is-ok"><CircleCheck size={14} aria-hidden />Gross SF {n0(f.grossSqft)} is the revised value in the notes; the excerpt shows the superseded {n0(chk.revisedFrom ?? 0)}</p>;
+      break;
+    case 'differs':
       line = (
-        <div className="insp__check is-bad">
+        <div className="insp__check is-warn">
           <TriangleAlert size={14} aria-hidden />
-          <span>Gross SF {n0(f.grossSqft)} not in excerpt{shows != null ? ` (excerpt shows ${n0(shows)})` : ''}</span>
-          {useVal != null && useVal > 0 && <Button size="sm" variant="secondary" onClick={() => update(f.id, { grossSqft: Math.round(useVal) })}>Use {n0(useVal)}</Button>}
+          <span>Gross {n0(f.grossSqft)} differs from the excerpt ({n0(chk.shows ?? 0)}{why}); cleanable {n0(f.cleanableSqft ?? 0)} matches</span>
+          {use}
         </div>
       );
-    }
+      break;
+    case 'miss':
+      line = (
+        <div className="insp__check is-bad">
+          <CircleAlert size={14} aria-hidden />
+          <span>Gross SF {n0(f.grossSqft)} {chk.showsWhy === 'extracted' || chk.showsWhy === 'column' ? `differs from the excerpt (${n0(chk.shows ?? 0)}${why})` : `not in excerpt${chk.shows != null ? ` (excerpt shows ${n0(chk.shows)})` : ''}`}</span>
+          {use}
+        </div>
+      );
+      break;
   }
   return (
     <>
@@ -262,7 +281,6 @@ function SourceBlock({ f, rowValues }: { f: Facility; rowValues: number[] }) {
     </>
   );
 }
-function tokenHas(excerpt: string, v: number): boolean { return sfInExcerpt({ grossSqft: v, source: { excerpt } }) === true; }
 
 function DiningSection({ f, setDining }: { f: Facility; setDining: (p: Partial<DiningProfile>) => void }) {
   const d = f.dining;

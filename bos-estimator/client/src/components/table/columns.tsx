@@ -11,7 +11,7 @@ import type { SortKey } from '../../store';
 import type { RowMeta } from '../../derived';
 import { n0, n1, n2 } from '../../fmt';
 import { CONF_COLOR, CONF_GLYPH, categoryColor } from '../lib/theme';
-import { AREA_UNIT_LABEL, excerptCheck, ISSUE_INFO, issueDetail, type ReviewEntry } from '../lib/review';
+import { AREA_UNIT_LABEL, ISSUE_INFO, issueDetail, sourceCheck, type ReviewEntry } from '../lib/review';
 import { checkNumber, parseArea, parseNumber } from '../lib/parse';
 
 export type TableTab = 'facilities' | 'grounds';
@@ -131,10 +131,10 @@ function confCol<R extends Row>(): ColDef<R> {
 function srcCol<R extends Row>(): ColDef<R> {
   return {
     key: 'src', label: 'Src', w: 44, min: 44, align: 'center', hideRank: 5,
-    render: (r) => {
+    render: (r, c) => {
       if (!r.source?.file && !r.source?.excerpt) return <span className="tv-src tv-src--none" aria-label="No source">—</span>;
-      const chk = 'grossSqft' in r ? excerptCheck(r) : { status: 'none' as const };
-      return <span className={`tv-src tv-src--${chk.status}`}><FileText size={13} strokeWidth={1.75} aria-hidden />{chk.status === 'ok' ? <b aria-label="SF found in the excerpt">✓</b> : chk.status === 'miss' ? <b aria-label="SF not in the excerpt">✗</b> : null}</span>;
+      const chk = 'grossSqft' in r ? sourceCheck(r, c.entry) : { status: 'none' as const };
+      return <span className={`tv-src tv-src--${chk.status}`}><FileText size={13} strokeWidth={1.75} aria-hidden />{chk.status === 'ok' || chk.status === 'revised' ? <b aria-label="SF found in the excerpt">✓</b> : chk.status === 'differs' ? <b aria-label="Gross differs from the excerpt">!</b> : chk.status === 'miss' ? <b aria-label="SF not in the excerpt">✗</b> : null}</span>;
     },
     text: (r) => [r.source?.file, r.source?.page ? `p.${r.source.page}` : ''].filter(Boolean).join(' '),
     title: (r) => (r.source?.file ? `${r.source.file}${r.source.page ? ` · p.${r.source.page}` : ''}\nEnter or click for the excerpt` : 'No source document cited'),

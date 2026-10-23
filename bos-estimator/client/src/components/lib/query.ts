@@ -423,6 +423,22 @@ export function computeFilterIds(): ReadonlySet<string> | null {
   return out;
 }
 
+/**
+ * The first row the list (both sections) or one table tab would show for the query as typed right now. Enter in the
+ * search box uses this, never the deferred render, so it cannot pick the previous query's first row.
+ */
+export function firstMatchNow(fte: (id: string) => number, opts: { extra?: ExtraSort; tab?: 'facilities' | 'grounds' } = {}): string | undefined {
+  const s = useStore.getState(); const p = s.project; const q = s.query;
+  if (!p || q.chip === 'incoming') return undefined;
+  const ids = computeFilterIds();
+  const keep = <T extends { id: string }>(rows: readonly T[]) => (ids ? rows.filter((r) => ids.has(r.id)) : rows);
+  if (opts.tab !== 'grounds') {
+    const f = sortRows(keep(p.inventory.facilities), q.sort, q.desc, fte, opts.extra)[0];
+    if (f || opts.tab === 'facilities') return f?.id;
+  }
+  return sortRows(keep(p.inventory.grounds), q.sort, q.desc, fte, opts.extra)[0]?.id;
+}
+
 const sameSet = (a: ReadonlySet<string> | null, b: ReadonlySet<string> | null) => {
   if (a === b) return true; if (!a || !b || a.size !== b.size) return false;
   for (const x of a) if (!b.has(x)) return false;

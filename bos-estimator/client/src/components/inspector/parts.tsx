@@ -8,7 +8,7 @@ import type { EstimateResult, TaskLine } from '@shared/estimate';
 import type { FloorMix } from '@shared/types';
 import { n0, n2, unitLabel } from '../../fmt';
 import { CREW_ORDER, crewColor, FINISH_COLORS } from '../lib/theme';
-import { excerptNumbers, normBldg } from '../lib/review';
+import { normBldg } from '../lib/review';
 import { cx } from '../lib/cx';
 import { Button, NumField, Tooltip } from '../ui';
 import { CREW_ICON } from '../bottom/crewIcons';
@@ -74,21 +74,6 @@ export function tokenizeExcerpt(text: string, rowValues: number[], bldgNo?: stri
   }
   if (last < text.length) out.push({ text: text.slice(last) });
   return out;
-}
-
-/** The area-like number in the excerpt closest to `target` (for "excerpt shows 64,500"). */
-export function closestAreaNumber(excerpt: string, target: number, bldgNo?: string): number | null {
-  const bn = normBldg(bldgNo);
-  let best: number | null = null; let bd = Infinity;
-  for (const t of tokenizeExcerpt(excerpt, [], bldgNo)) {
-    if (t.value == null || normBldg(t.text.trim()) === bn) continue;
-    const d = Math.abs(Math.log(Math.max(1, t.value) / Math.max(1, target)));
-    if (d < bd) { bd = d; best = t.value; }
-  }
-  if (best == null) { // fall back to any number ≥ 100
-    for (const v of excerptNumbers(excerpt)) { if (v < 100) continue; const d = Math.abs(Math.log(v / Math.max(1, target))); if (d < bd) { bd = d; best = v; } }
-  }
-  return best;
 }
 
 export function Excerpt({ text, rowValues, bldgNo }: { text: string; rowValues: number[]; bldgNo?: string }) {

@@ -81,6 +81,8 @@
 .tv-src b{font-size:11.5px;font-weight:700}
 .tv-src--ok b{color:var(--ok-text)}
 .tv-src--miss b{color:var(--bad-text)}
+.tv-src--revised b{color:var(--ok-text)}
+.tv-src--differs b{color:var(--warn-text)}
 .tv-src--none{color:var(--text-off);cursor:default}
 .tv-menu{max-height:min(420px,calc(100vh - 16px))}
 
@@ -92,6 +94,7 @@
 .tv-srcpop__none{margin:0}
 .tv-srcpop__ok{margin:0;color:var(--ok-text)}
 .tv-srcpop__miss{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--bad-text)}
+.tv-srcpop__miss.is-warn{color:var(--warn-text)}
 
 /* ---------- footer ---------- */
 .tv__foot{display:flex;align-items:center;gap:16px;padding:0 12px;border-top:1px solid var(--border-1);font-size:var(--fs-xs);color:var(--text-2);white-space:nowrap;overflow:hidden;min-width:0}

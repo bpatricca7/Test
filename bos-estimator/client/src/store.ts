@@ -812,7 +812,9 @@ export const useStore = create<State>((set, get) => {
           let server: ClientProject;
           if (done && sent) {
             set({ saving: true });
-            try { server = await api.patchProject(projectId, { id: projectId, inventory: sent.inventory, review: sent.review ?? {} }) as ClientProject; }
+            // one retry: the stream's connection closing can reset a request sent in the same instant
+            const put = () => api.patchProject(projectId, { id: projectId, inventory: sent.inventory, review: sent.review ?? {} });
+            try { server = await put().catch(async () => { await new Promise((r) => setTimeout(r, 300)); return put(); }) as ClientProject; }
             finally { set({ saving: false }); }
           } else server = await api.getProject(projectId) as ClientProject;
           const local = get().project;

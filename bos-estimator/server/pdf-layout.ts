@@ -361,8 +361,21 @@ type Col = [number, number];
 interface Region { prose: boolean; lines: Line[]; x0: number; x1: number; cols?: Col[]; bounds?: number[]; used?: boolean }
 const proseRegion = (L: Line): Region => ({ prose: true, lines: [L], x0: L.x0, x1: L.x1 });
 
+/** The line lies inside the ruled frame of the table read so far: one vertical border at or left of both the line and the
+ *  table, and one at or right of both, each running unbroken from the table's last line down through this line. A
+ *  banner row of a ruled table ("NORTH DAKOTA (3 SITES)", "MN012 · WILLMAR USARC …", "ZONE 2 – SUPPORT AREA") is a cell
+ *  spanning the whole row, so no inner border crosses it, but the frame does. */
+function insideFrame(L: Line, R: Region, rules: Rule[]): boolean {
+  const prev = R.lines[R.lines.length - 1];
+  const yTop = prev.y - 0.6 * prev.fs, yBot = L.y;
+  const fs = Math.max(L.fs, prev.fs);
+  const crossing = rules.filter(isV).filter((v) => v.y0 <= yTop + 0.5 && v.y1 >= yBot - 0.5);
+  const left = Math.min(L.x0, R.x0), right = Math.max(L.x1, R.x1);
+  return crossing.some((v) => v.x <= left + 1 && v.x >= left - 4 * fs) && crossing.some((v) => v.x >= right - 1);
+}
+
 /** Group lines into table regions. */
-function regions(lines: Line[], pageW: number): Region[] {
+function regions(lines: Line[], pageW: number, rules: Rule[] = []): Region[] {
   const out: Region[] = []; let cur: Region | null = null;
   // an isolated single-segment line (big gap above AND below) is a title / caption: it closes the current table
   // (wrapped cell fragments always sit within ~1.3 em of another line of their row)
@@ -375,6 +388,13 @@ function regions(lines: Line[], pageW: number): Region[] {
     const gapOk = cur != null && L.y - cur.lines[cur.lines.length - 1].y <= 3.2 * L.fs;
     if (L.pageHeader) { out.push(proseRegion(L)); continue; }
     if (multi && (!cur || !gapOk)) { if (cur) out.push(cur); cur = { prose: false, lines: [L], x0: L.x0, x1: L.x1 }; continue; }
+    // a banner row inside the ruled frame of the table is a row of that table, however it is spaced or indented
+    if (cur && gapOk && !multi && rules.length && !L.segs[0].rot && Math.abs(L.fs - median(cur.lines.map((l) => l.fs))) <= 0.15 * L.fs && insideFrame(L, cur, rules)) {
+      L.title = false;
+      cur.lines.push(L);
+      cur.x0 = Math.min(cur.x0, L.x0); cur.x1 = Math.max(cur.x1, L.x1);
+      continue;
+    }
     const bodyFs = cur ? median(cur.lines.map((l) => l.fs)) : 0;
     // once the table has a data row, a wrapped fragment of a right-hand body cell (Remarks) may run past the right edge
     // of the rows read so far: a short line that starts in the right half of the table, where the last column of its
@@ -427,14 +447,42 @@ function sweep(basis: Line[], tol: number): Col[] {
 
 /** Ruled tables: a column whose text never sits on a numeric line (a Campus label merged over a group of rows and
  *  centred on a wrapped-name line) is missing from the sweep, but the vertical rules around it still delimit it. */
-function ruledColumns(region: Region, cols: Col[], rules: Rule[]): Col[] {
+function ruledColumns(region: Region, cols: Col[], rules: Rule[], basis: Line[] = []): Col[] {
   const fs = median(region.lines.map((l) => l.fs));
   const top = region.lines[0].y - fs, bottom = region.lines[region.lines.length - 1].y;
   const h = Math.max(bottom - top, fs);
-  const vx = rules.filter(isV).filter((r) => Math.min(r.y1, bottom) - Math.max(r.y0, top) >= 0.5 * h && r.x >= region.x0 - 3 * fs && r.x <= region.x1 + 3 * fs).map((r) => r.x).sort((a, b) => a - b);
+  // a column border is drawn row by row and is broken wherever a cell spans it (a subtotal label over several columns,
+  // a "CLOSED" note across the measure columns): its pieces at one x together cover most of the table's height
+  const pieces = rules.filter(isV).filter((r) => r.x >= region.x0 - 3 * fs && r.x <= region.x1 + 3 * fs && Math.min(r.y1, bottom) > Math.max(r.y0, top)).sort((a, b) => a.x - b.x);
+  const vx: number[] = [];
+  for (let i = 0; i < pieces.length;) {
+    let j = i, cover = 0;
+    while (j < pieces.length && pieces[j].x - pieces[i].x <= 1.5) { cover += Math.min(pieces[j].y1, bottom) - Math.max(pieces[j].y0, top); j++; }
+    if (cover >= 0.5 * h) vx.push(pieces.slice(i, j).reduce((s, r) => s + r.x, 0) / (j - i));
+    i = j;
+  }
   const xs: number[] = []; for (const x of vx) if (!xs.length || x - xs[xs.length - 1] > 1.5) xs.push(x);
   if (xs.length < 3) return cols;
-  const out = [...cols];
+  let out = [...cols];
+  // a border inside a swept column splits it when the body rows have text on both sides of it and the only text across
+  // it sits where the border is broken: the column was merged by cells that span the border (subtotal labels)
+  if (basis.length >= 3) {
+    const need = Math.max(2, Math.ceil(0.25 * basis.length));
+    for (const x of xs) {
+      const k = out.findIndex(([a, b]) => a < x - 1 && b > x + 1);
+      if (k < 0) continue;
+      const [a, b] = out[k];
+      const inCol = (s: Seg) => s.x1 > a - 0.5 && s.x0 < b + 0.5;
+      const onLeft = basis.filter((l) => l.segs.some((s) => inCol(s) && s.x1 <= x + 0.5));
+      const onRight = basis.filter((l) => l.segs.some((s) => inCol(s) && s.x0 >= x - 0.5));
+      if (onLeft.length < need || onRight.length < need) continue;
+      const borderAt = (L: Line) => pieces.some((r) => Math.abs(r.x - x) <= 1.5 && r.y0 <= L.y - 0.5 * L.fs && r.y1 >= L.y);
+      if (basis.some((L) => L.segs.some((s) => s.x0 < x - 0.5 && s.x1 > x + 0.5) && borderAt(L))) continue;
+      const left = onLeft.flatMap((l) => l.segs.filter((s) => inCol(s) && s.x1 <= x + 0.5)), right = onRight.flatMap((l) => l.segs.filter((s) => inCol(s) && s.x0 >= x - 0.5));
+      out.splice(k, 1, [a, Math.max(...left.map((s) => s.x1))], [Math.min(...right.map((s) => s.x0)), b]);
+    }
+    out = out.sort((p, q) => p[0] - q[0]);
+  }
   for (let i = 0; i + 1 < xs.length; i++) {
     const a = xs[i], b = xs[i + 1];
     if (out.some(([c0, c1]) => Math.min(c1, b) - Math.max(c0, a) > 0)) continue;
@@ -446,7 +494,8 @@ function ruledColumns(region: Region, cols: Col[], rules: Rule[]): Col[] {
 
 function columnsFor(region: Region, prevCols: Col[] | undefined, rules: Rule[] = []): Col[] {
   const multi = region.lines.filter((l) => l.segs.length >= 2);
-  const body = multi.filter((l) => l.segs.some((s) => /\d/.test(s.text)));
+  // (a footnote marker on a column title, "Gross SF[^2]", does not make the title row a body row)
+  const body = multi.filter((l) => l.segs.some((s) => /\d/.test(s.text.replace(/\[\^[^\]]*\]/g, ''))));
   const basis = body.length >= 3 ? body : multi;
   // coverage sweep: x ranges covered by at most `tol` lines are rivers (a few spanning cells - subtotal labels,
   // colspan notes - must not erase a column boundary that every other row respects)
@@ -472,7 +521,7 @@ function columnsFor(region: Region, prevCols: Col[] | undefined, rules: Rule[] =
     const fits = basis.every((l) => l.segs.every((s) => prevCols.some(([a, b]) => s.x0 >= a - 3 && s.x1 <= b + 3)));
     if (fits) return prevCols;
   }
-  return ruledColumns(region, cols, rules);
+  return ruledColumns(region, cols, rules, basis);
 }
 
 const colOf = (cols: Col[], s: { x0: number; x1: number }): number => { let best = 0, bestOv = -Infinity; cols.forEach(([a, b], i) => { const ov = Math.min(b, s.x1) - Math.max(a, s.x0); if (ov > bestOv) { bestOv = ov; best = i; } }); return best; };
@@ -650,7 +699,11 @@ function emitTable(region: Region, cols: Col[], rows: Line[][], rules: Rule[], r
       if (sp.length > 1 && !body) spans.push({ cols: sp, text: s.text, x0: s.x0 });
       else { const c = sp.length ? sp[0] : colOf(cols, s); cells[c].push(s.text); minX0(x0s, c, s.x0); }
     }
-    if (!headerDone && !numeric) { headerRows.push({ cells, spans, lines: rowLines }); continue; }
+    // a row of one cell spanning the whole ruled table below the column titles is a banner (a state, site or zone label
+    // over the rows that follow): the header ends above it and the banner is the first row of the body
+    const banner = !headerDone && !numeric && rules.length > 0 && rowLines.length === 1 && rowLines[0].segs.length === 1 && headerRows.some((hr) => hr.lines.some((L) => L.segs.length >= 2)) && headerSpan(cols, rowLines[0].segs[0], rowLines[0].y, rules).length === cols.length;
+    if (!headerDone && !numeric && !banner) { headerRows.push({ cells, spans, lines: rowLines }); continue; }
+    if (banner) { for (const sp of spans) { cells[sp.cols[0]].push(sp.text); minX0(x0s, sp.cols[0], sp.x0); } }
     if (!headerDone) {
       headerDone = true;
       if (headerRows.length > MAX_HEADER_ROWS) {
@@ -672,7 +725,8 @@ function emitTable(region: Region, cols: Col[], rows: Line[][], rules: Rule[], r
           for (const c of span) { h[c].push(s.text); minX0(hx, c, s.x0); }
         }
         if (titles.length) out.titles = titles;
-        if (h.some((t) => t.length)) { out.header = h.map((t) => t.join(' ')); out.headerX0s = hx; }
+        // (a title wrapped after a hyphen, "Semi-" over "Improved", is one word again)
+        if (h.some((t) => t.length)) { out.header = h.map(joinCell); out.headerX0s = hx; }
       }
     }
     bodyRow[gi] = out.rows.length;
@@ -741,7 +795,7 @@ async function renderPage(page: PdfPage, prevCols: Col[] | undefined, prevAlign:
   const lines = buildLines(items);
   markStrike(lines, rules);
   const pageW = rotated % 180 ? vp.height : vp.width;
-  const regs = regions(lines, pageW);
+  const regs = regions(lines, pageW, rules);
   let cols = prevCols;
   // compute table columns first, so a glued header line just above a table can be recognised and pulled in
   regs.forEach((r, i) => {

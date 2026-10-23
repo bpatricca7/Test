@@ -49,7 +49,9 @@
 .insp__check svg{flex-shrink:0}
 .insp__check.is-ok{color:var(--ok-text)}
 .insp__check.is-bad{color:var(--bad-text)}
-.insp__check.is-bad .btn{margin-left:auto}
+.insp__check.is-warn{color:var(--warn-text)}
+.insp__check.is-bad .btn,.insp__check.is-warn .btn{margin-left:auto}
+.insp__check > span{min-width:0;flex:1 1 180px}
 .insp__src{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;margin:10px 0 0;font-size:var(--fs-sm);line-height:var(--lh-sm)}
 .insp__src dt{color:var(--text-3);font-size:var(--fs-xs);white-space:nowrap}
 .insp__src dd{margin:0;color:var(--text-2);min-width:0;overflow-wrap:anywhere}

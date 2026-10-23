@@ -1,0 +1,855 @@
+=== TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx :: sheet "Notes" (87 rows) ===
+TAMARACK STATE UNIVERSITY
+Purchasing Services / 1200 University Drive, Pine Falls, Minnesota
+RFP No. TSU-27-014 - Custodial Services, Academic & Administrative Buildings
+ATTACHMENT C - SPACE INVENTORY (Building Summary, Room Data, Floor Coverings)
+Issued 09/18/2026 / Revised 10/02/2026 (Addendum No. 1)
+Tab Content
+Notes These notes and the code legends
+C-1 Bldg Summary Building Summary of Cleanable Space - one row per building; revised per Addendum No. 1
+C-2 Room Data Room Inventory by Building (Cleanable Space Profile) - Space Management System report SPC-210, run 09/14/2026; NOT re-run after Addendum No. 1
+C-3 Floor Covering Cleanable Sq Ft by floor covering, buildings included in the contract (revised per Addendum No. 1)
+GENERAL NOTES
+1. Room data are exported from the University Space Management System (SMS) as of the Fall 2026 census date (09/08/2026). Room use codes follow the Postsecondary Education Facilities Inventory and Classification Manual (FICM, 2006 edition). Gross Sq Ft is taken from the University Facilities Inventory.
+2. Room Net Area is measured to the inside face of walls and rounded to the whole square foot. Gross Sq Ft is measured to the outside face of exterior walls and includes walls, shafts and structure that are not roomed; it is therefore larger than the sum of the room areas.
+3. Floor plans (PDF) for each building are available for review at Purchasing Services and will be shown at the mandatory pre-proposal walk-through on 10/08/2026. Proposers are responsible for verifying room areas and floor coverings during the walk-through.
+4. Proposers shall price Attachment D (Price Schedule) on Cleanable Sq Ft (Attachment C-1, column K) for each included building at the service frequency in column M. Gross Sq Ft is provided for reference only.
+5. Buildings not in the contract are listed on C-1 Part B for information only and have no room data in C-2: Nordahl and Sorensen Residence Halls and Lakeside Commons (Auxiliary Services - Housing and Dining), Wolf Arena (Athletics, separate contract), Hagen Hall (vacant), and the STEM Innovation Annex (under construction; Option 1).
+6. Within included buildings the following spaces are Cust Svc = N and are not part of Cleanable Sq Ft: mechanical, electrical and telecom rooms (Y codes); janitor rooms and custodial supply closets (X01, X02); loading docks; 050/060 inactive and alteration areas; shops, central storage, vehicle storage, central service/receiving and server rooms (710-750); spaces cleaned by auxiliary operators or tenants (Campus Union bookstore and food court; Allied Health & Nursing 3rd floor).
+7. Addendum No. 1 (10/02/2026) changes, reflected in C-1 and C-3 (marked "A1" in C-1 column O): (a) Bldg 045 Environmental Field Station is DELETED from the contract; (b) Bldg 019 Thorsen Hall Gross Sq Ft is corrected from 14,549 to 15,269 (Facilities Inventory error; room data unchanged); (c) Bldg 012 Elmore Library service frequency is changed from 6/wk (M-Sa) to 7/wk (Sun-Sat). Report SPC-210 (C-2) was not re-run; where C-2 differs from C-1, C-1 governs.
+8. APPA Level (C-1 column N) is the target appearance level from APPA Custodial Staffing Guidelines: 2 = Ordinary Tidiness, 3 = Casual Inattention.
+9. Service Frequency is the number of nights per week routine cleaning is performed, with the nights in parentheses (M-F = Monday through Friday; M-Sa = Monday through Saturday; Sun-Sat = every night). No service on the 11 University holidays listed in RFP Section 4.6. Frequencies apply year-round, including summer session and semester breaks.
+C-2 SPACE CATEGORY (column "Cat")
+A Assignable (FICM 100-900 series)
+N Non-assignable: W = circulation, X = building service, Y = mechanical
+U Unclassified (FICM 000 series: 050 Inactive, 060 Alteration or Conversion); counted in Net Assignable Sq Ft on C-1
+FLOOR COVERING CODES (C-2 "Floor Cvrg", C-3 columns)
+CPT Carpet, broadloom
+CPT-T Carpet tile
+VCT Vinyl composition tile
+LVT Luxury vinyl tile
+SV Sheet vinyl (welded seams)
+CT Ceramic / porcelain tile
+QT Quarry tile
+TZ Terrazzo
+WD Wood (sports floor / stage)
+RB Rubber (stair treads, fitness flooring)
+SC Sealed concrete
+EP Epoxy / resinous
+ROOM USE CODES APPEARING IN C-2 | Description | Cat | Default Cust Svc
+050 | Inactive Area | U | N
+060 | Alteration or Conversion Area | U | N
+110 | Classroom | A | Y
+115 | Classroom Service | A | Y
+210 | Class Laboratory | A | Y
+215 | Class Laboratory Service | A | Y
+220 | Open Laboratory | A | Y
+250 | Research/Nonclass Laboratory | A | Y
+310 | Office | A | Y
+315 | Office Service | A | Y
+350 | Conference Room | A | Y
+410 | Study Room | A | Y
+420 | Stack | A | Y
+430 | Open-Stack Study Room | A | Y
+440 | Processing Room | A | Y
+455 | Study Service | A | Y
+520 | Athletic or Physical Education | A | Y
+525 | Athletic or Physical Education Service | A | Y
+540 | Clinic | A | Y
+545 | Clinic Service | A | Y
+610 | Assembly | A | Y
+615 | Assembly Service | A | Y
+620 | Exhibition | A | Y
+630 | Food Facility | A | N
+635 | Food Facility Service | A | N
+640 | Day Care | A | Y
+645 | Day Care Service | A | Y
+650 | Lounge | A | Y
+660 | Merchandising | A | N
+665 | Merchandising Service | A | N
+670 | Recreation | A | Y
+680 | Meeting Room | A | Y
+710 | Central Computer or Telecommunications | A | N
+720 | Shop | A | N
+725 | Shop Service | A | Y
+730 | Central Storage | A | N
+740 | Vehicle Storage | A | N
+750 | Central Service | A | N
+W01 | Circulation - Corridor | N | Y
+W02 | Circulation - Lobby/Vestibule | N | Y
+W03 | Circulation - Stairway | N | Y
+W04 | Circulation - Elevator | N | Y
+W05 | Circulation - Loading Dock | N | N
+X02 | Bldg Service - Janitor Room | N | N
+X03 | Bldg Service - Public Rest Room | N | Y
+X04 | Bldg Service - Trash Room | N | Y
+Y01 | Mechanical - Mechanical Room | N | N
+Y02 | Mechanical - Electrical Room | N | N
+Y03 | Mechanical - Telecom Closet (IDF) | N | N
+
+=== TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx :: sheet "C-1 Bldg Summary" (42 rows) ===
+TAMARACK STATE UNIVERSITY - PURCHASING SERVICES
+RFP No. TSU-27-014 Custodial Services - Academic & Administrative Buildings
+ATTACHMENT C-1 - BUILDING SUMMARY OF CLEANABLE SPACE (Revised 10/02/2026 per Addendum No. 1)
+Gross Sq Ft from the University Facilities Inventory; room areas from Space Management System report SPC-210 (Attachment C-2). See footnotes below and the Notes tab.
+BUILDING Bldg. No. | BUILDING Abbr. | BUILDING Building Name | BUILDING Type of Building | BUILDING No. of Floors (1) | BUILDING Year Built | AREA (SQ FT) Gross Sq Ft (2) | AREA (SQ FT) Net Assignable Sq Ft (3) | AREA (SQ FT) Non-Assignable Sq Ft (3) | AREA (SQ FT) Room Total Net Sq Ft (4) | AREA (SQ FT) Cleanable Sq Ft (5) | CONTRACT Include / Excluded | CONTRACT Service Frequency (6) | CONTRACT APPA Level | CONTRACT Rev. | CONTRACT Site | Remarks
+A. BUILDINGS IN RFP SCOPE
+010 | ADM | Founders Hall | Administration | 2 | 1962 | 10315 | 5560 | 3255 | 8815 | 8202 | INCLUDE | 5/wk (M-F) | 2 |  | Main
+012 | LIB | Elmore Library | Library | 4 | 1971 | 49745 | 32042 | 10686 | 42728 | 41051 | INCLUDE | 7/wk (Sun-Sat) | 2 | A1 | Main | Service Frequency revised by Addendum No. 1 (was 6/wk (M-Sa)).
+014 | SCI | Lindqvist Science Hall | Instruction - Science Labs | 3 | 1968 | 32739 | 20978 | 7739 | 28717 | 27936 | INCLUDE | 5/wk (M-F) | 2 |  | Main | Lab benches and fume hoods cleaned by Dept.; contractor cleans floors, sinks (exterior) and trash per RFP 4.8.
+016 | BRG | Bergstrom Hall | Instruction | 3 | 1966 | 20659 | 12729 | 5795 | 18524 | 17136 | INCLUDE | 5/wk (M-F) | 2 |  | Main | Rooms on 2nd floor coded 060 are offline for renovation until 01/2027 (Cust Svc = N); to be added by contract modification when returned to service.
+018 | KIT | Kittredge Hall | Instruction | 1 | 1989 | 14304 | 8980 | 3867 | 12847 | 11763 | INCLUDE | 5/wk (M-F) | 2 |  | Main
+019 | THO | Thorsen Hall | Instruction | 2 | 1958 | 15269 | 8751 | 4115 | 12866 | 11639 | INCLUDE | 5/wk (M-F) | 3 | A1 | Main | Gross Sq Ft corrected by Addendum No. 1 (was 14,549); room data unchanged.
+021 | CDC | Child Development Center | Child Care (Lab School) | 1 | 2004 | 10910 | 6733 | 2838 | 9571 | 8939 | INCLUDE | 5/wk (M-F) | 2 |  | Main | Lab school. Background checks required for contractor staff (RFP 5.3).
+022 | FAC | Fine Arts Center | Instruction - Fine & Performing Arts | 3 | 1977 | 38768 | 25217 | 8999 | 34216 | 29611 | INCLUDE | 6/wk (M-Sa) | 2 |  | Main | Mezzanine (M1) booths not counted as a floor. Scene shop maintained by Theatre Dept. (Cust Svc = N).
+024 | AHN | Allied Health & Nursing Building | Instruction | 3 | 2011 | 24651 | 15113 | 6687 | 21800 | 17760 | INCLUDE | 5/wk (M-F) | 2 |  | Main | 3rd floor leased to Pine Falls Regional Medical Center (PFRMC) residency program; tenant cleans (3rd floor rooms Cust Svc = N).
+026 | TEC | Technology & Engineering Center | Instruction - Labs & Shops | 1 | 1999 | 20894 | 13381 | 5221 | 18602 | 14642 | INCLUDE | 5/wk (M-F) | 3 |  | Main | Instructional labs/shops (code 210) are cleaned; Dept. shop (720), storage and server room are not.
+028 | UNI | Campus Union | Student Center | 3 | 1974 | 41910 | 27281 | 9480 | 36761 | 22238 | INCLUDE | 7/wk (Sun-Sat) | 2 |  | Main | Bookstore and Food Court are auxiliary-operated and cleaned by the operators (Cust Svc = N). Ballroom set-ups not included.
+030 | OST | Ostrander Hall | Physical Education & Recreation | 2 | 1969 | 35094 | 23273 | 7629 | 30902 | 29664 | INCLUDE | 6/wk (M-Sa) | 2 |  | Main | Gym wood floor: dust mop nightly, no wet mopping; refinishing by others.
+032 | SSC | Student Services Center | Administration - Student Services | 1 | 1994 | 7733 | 4423 | 2160 | 6583 | 5997 | INCLUDE | 5/wk (M-F) | 2 |  | Main
+035 | WEL | Wellness Center | Student Health Clinic & Counseling | 1 | 2008 | 3467 | 2055 | 1004 | 3059 | 2635 | INCLUDE | 5/wk (M-F) | 2 |  | Main | Clinic exam rooms: bloodborne pathogen protocol per RFP 4.9.
+040 | PPL | Physical Plant | Physical Plant / Shops | 1 | 1965 | 22558 | 14174 | 5363 | 19537 | 5320 | INCLUDE | 3/wk (M/W/F) | 3 |  | Main | Shops, storage and receiving are not cleaned (Cust Svc = N); offices, break room, locker room and rest rooms only.
+041 | GFG | Grounds & Fleet Garage | Vehicle Maintenance Garage | 1 | 1983 | 10586 | 6221 | 2887 | 9108 | 2787 | INCLUDE | 1/wk (Wed) | 3 |  | Main | Vehicle bays and shop not cleaned; office, rest room and locker room only.
+045 | EFS | Environmental Field Station | Instruction - Field Station | 1 | 1997 | 5313 | 3084 | 1600 | 4684 | 3871 | DELETED (Add. 1) | 2/wk (T/Th) | 3 | A1 | Lake Annex | DELETED by Addendum No. 1 - Biology Dept. will clean. Rooms remain in C-2 (report not re-run).
+050 | CEW | Continuing Education & Workforce Center | Instruction (Leased) | 1 | 2001 | 12472 | 7988 | 2940 | 10928 | 10110 | INCLUDE | 6/wk (M-Sa) | 2 |  | Downtown (leased) | Leased building, 418 Front Street, Pine Falls. Gross Sq Ft per lease exhibit. Saturday classes.
+Total - Buildings Included (17; excludes 045) |  |  |  |  |  | 372074 | 234899 | 90665 | 325564 | 267430
+B. BUILDINGS NOT IN CONTRACT (listed for information only - no room data in C-2)
+025 | HAG | Hagen Hall | Vacant (closed 05/2026) | 3 | 1958 | 27880 | 17412 | 6106 | 23518 | n/a | EXCLUDED | - |  |  | Main | Vacant; scheduled for demolition summer 2027. Not cleaned.
+027 | STM | STEM Innovation Annex | Instruction - Labs (under construction) | 2 | 2027 (est.) | 38500 | TBD | TBD | TBD | n/a | OPTION 1 | - |  |  | Main | Under construction; substantial completion est. 12/2027. May be added by Option 1 at the proposed Cleanable Sq Ft unit price. Gross Sq Ft is design area; rooms not yet in SMS.
+060 | NRH | Nordahl Residence Hall | Residence Hall | 5 | 1964 | 88640 | 56210 | 19870 | 76080 | n/a | EXCLUDED | - |  |  | Main | Auxiliary - Housing. Cleaned by Residence Life custodial staff.
+061 | SRH | Sorensen Residence Hall | Residence Hall | 4 | 2015 | 102300 | 64980 | 22740 | 87720 | n/a | EXCLUDED | - |  |  | Main | Auxiliary - Housing. Cleaned by Residence Life custodial staff.
+062 | LSC | Lakeside Commons | Dining Hall | 2 | 1965 | 31760 | 21430 | 6290 | 27720 | n/a | EXCLUDED | - |  |  | Main | Auxiliary - Dining. Cleaned by the food service contractor.
+070 | WAR | Wolf Arena | Athletics - Arena/Fieldhouse | 2 | 1986 | 96450 | 70120 | 15880 | 86000 | n/a | EXCLUDED | - |  |  | Main | Athletics. Daily and event cleaning under separate contract (RFP TSU-26-031).
+Total - Buildings Not in Contract (6) |  |  |  |  |  | 385530 | 230152 | 70886 | 301038
+TOTAL - ALL BUILDINGS LISTED (24) |  |  |  |  |  | 762917 | 468135 | 163151 | 631286
+(1) No. of Floors = floor levels including basement (B). Mezzanines (M1) and roof penthouses are not counted.
+(2) Gross Sq Ft from the University Facilities Inventory, measured to the outside face of exterior walls. Not the sum of room areas. 027 = design area.
+(3) Net Assignable = rooms with FICM use codes 100-900 plus 050/060 unclassified (C-2 Cat A and U); Non-Assignable = circulation (W), building service (X) and mechanical (Y) rooms (C-2 Cat N).
+(4) Room Total Net Sq Ft = Net Assignable + Non-Assignable = sum of Net Area of all rooms of the building in Attachment C-2.
+(5) Cleanable Sq Ft = sum of Net Area of rooms with Cust Svc = "Y" in Attachment C-2. Price Attachment D on this figure.
+(6) Nights per week of routine cleaning, nights in parentheses. Year-round; no service on University holidays (RFP 4.6).
+Totals: Part B and the all-buildings total include figures for buildings that are not in the contract; 027 (TBD) is not included in the net area totals.
+
+=== TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx :: sheet "C-2 Room Data" (698 rows) ===
+TAMARACK STATE UNIVERSITY
+Facilities Planning & Space Management - Space Management System Report SPC-210: Room Inventory by Building
+RFP No. TSU-27-014 Custodial Services - ATTACHMENT C-2, ROOM DATA (CLEANABLE SPACE PROFILE)
+Run date 09/14/2026 07:42 Data as of Fall 2026 census (09/08/2026) Sort: Bldg, Flr, Room Selection: Bldg list for RFP TSU-27-014 (draft scope 09/11/2026)
+NOTE (Purchasing Services, 10/02/2026): This report was run before Addendum No. 1 and has not been re-run. Addendum No. 1 deleted Bldg 045 and corrected the Gross Area of Bldg 019. Where this tab differs from Attachment C-1, C-1 governs.
+Page 1 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 010 FOUNDERS HALL (ADM) - Gross Area 10,315 SF - 2 floors - Main Campus
+010 | FOUNDERS HALL | 01 | 101 |  | 310 | Office | A | HR |  | 152 | CPT-T | Y
+010 | FOUNDERS HALL | 01 | 102 |  | 310 | Office | A | FIN |  | 120 | CPT-T | Y
+010 | FOUNDERS HALL | 01 | 103 |  | 310 | Office | A | BURS |  | 183 | CPT-T | Y
+010 | FOUNDERS HALL | 01 | 104 |  | 310 | Office | A | BURS |  | 175 | CPT-T | Y
+010 | FOUNDERS HALL | 01 | 105 |  | 310 | Office | A | FIN |  | 176 | CPT-T | Y
+010 | FOUNDERS HALL | 01 | 106 | CASHIER / OPEN OFFICE | 310 | Office | A | BURS |  | 1134 | CPT-T | Y
+010 | FOUNDERS HALL | 01 | 107 | RECORDS | 315 | Office Service | A | REG |  | 473 | CPT-T | Y
+010 | FOUNDERS HALL | 01 | 108 | RECORDS | 315 | Office Service | A | REG |  | 242 | CPT-T | Y
+010 | FOUNDERS HALL | 01 | 109 | WORKROOM | 315 | Office Service | A | FIN |  | 110 | VCT | Y
+010 | FOUNDERS HALL | 01 | 110 |  | 350 | Conference Room | A | PRES |  | 401 | CPT-T | Y
+010 | FOUNDERS HALL | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 460 | TZ | Y
+010 | FOUNDERS HALL | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 210 | TZ | Y
+010 | FOUNDERS HALL | 01 | 1S01 |  | W03 | Circulation - Stairway | N |  |  | 185 | RB | Y
+010 | FOUNDERS HALL | 01 | 1S02 |  | W03 | Circulation - Stairway | N |  |  | 240 | RB | Y
+010 | FOUNDERS HALL | 01 | 1E01 | ELEVATOR | W04 | Circulation - Elevator | N |  |  | 67 | VCT | Y
+010 | FOUNDERS HALL | 01 | 111 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 273 | CT | Y
+010 | FOUNDERS HALL | 01 | 112 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 324 | CT | Y
+010 | FOUNDERS HALL | 01 | 113 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 71 | SC | N
+010 | FOUNDERS HALL | 01 | 114 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 265 | SC | N
+010 | FOUNDERS HALL | 01 | 115 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 133 | SC | N
+010 | FOUNDERS HALL | 01 | 116 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 77 | SC | N
+010 | FOUNDERS HALL | 02 | 201 |  | 310 | Office | A | UADV |  | 139 | CPT-T | Y
+010 | FOUNDERS HALL | 02 | 202 |  | 310 | Office | A | HR |  | 127 | CPT-T | Y
+010 | FOUNDERS HALL | 02 | 203 |  | 310 | Office | A | UADV |  | 150 | CPT-T | Y
+010 | FOUNDERS HALL | 02 | 204 |  | 310 | Office | A | UADV |  | 145 | CPT-T | Y
+010 | FOUNDERS HALL | 02 | 205 |  | 310 | Office | A | PRES |  | 180 | CPT-T | Y
+010 | FOUNDERS HALL | 02 | 206 | BOARD ROOM | 680 | Meeting Room | A | PRES |  | 1540 | CPT | Y
+010 | FOUNDERS HALL | 02 | 207 |  | 315 | Office Service | A | PROV |  | 113 | VCT | Y
+010 | FOUNDERS HALL | 02 | 2C01 |  | W01 | Circulation - Corridor | N |  |  | 385 | VCT | Y
+010 | FOUNDERS HALL | 02 | 2S01 |  | W03 | Circulation - Stairway | N |  |  | 215 | RB | Y
+010 | FOUNDERS HALL | 02 | 2S02 |  | W03 | Circulation - Stairway | N |  |  | 200 | RB | Y
+010 | FOUNDERS HALL | 02 | 208 | ALL-GENDER | X03 | Bldg Service - Public Rest Room | N |  |  | 83 | CT | Y
+010 | FOUNDERS HALL | 02 | 209 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 67 | SC | N
+Total Bldg 010 (all rooms) |  |  | 33 rooms |  |  |  |  |  |  | 8815
+Total Bldg 010 (Cust Svc = Y) |  |  | 28 rooms |  |  |  |  |  |  | 8202
+BLDG 012 ELMORE LIBRARY (LIB) - Gross Area 49,745 SF - 4 floors - Main Campus
+012 | ELMORE LIBRARY | B | B01 | COMPACT SHELVING | 420 | Stack | A | LIB |  | 4688 | CPT | Y
+012 | ELMORE LIBRARY | B | B02 | TECHNICAL SERVICES | 440 | Processing Room | A | LIB |  | 1116 | VCT | Y
+012 | ELMORE LIBRARY | B | B03 |  | 455 | Study Service | A | LIB |  | 256 | VCT | Y
+012 | ELMORE LIBRARY | B | B04 | LIBRARY STORAGE | 730 | Central Storage | A | LIB |  | 659 | SC | N
+012 | ELMORE LIBRARY | B | BC01 |  | W01 | Circulation - Corridor | N |  |  | 1040 | VCT | Y
+012 | ELMORE LIBRARY | B | BS01 |  | W03 | Circulation - Stairway | N |  |  | 180 | RB | Y
+012 | ELMORE LIBRARY | B | BS02 |  | W03 | Circulation - Stairway | N |  |  | 245 | RB | Y
+012 | ELMORE LIBRARY | B | B05 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 339 | CT | Y
+012 | ELMORE LIBRARY | B | B06 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 332 | CT | Y
+012 | ELMORE LIBRARY | B | B07 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 40 | SC | N
+012 | ELMORE LIBRARY | B | B08 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 585 | SC | N
+012 | ELMORE LIBRARY | B | B09 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 161 | SC | N
+012 | ELMORE LIBRARY | B | B10 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 90 | SC | Y
+012 | ELMORE LIBRARY | B | B11 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 49 | SC | N
+012 | ELMORE LIBRARY | 01 | 101 | MAIN READING ROOM | 430 | Open-Stack Study Room | A | LIB |  | 6862 | CPT | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 2 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 012 ELMORE LIBRARY (LIB) (continued)
+012 | ELMORE LIBRARY | 01 | 102 | CIRCULATION DESK | 455 | Study Service | A | LIB |  | 656 | VCT | Y
+012 | ELMORE LIBRARY | 01 | 103 | INFORMATION COMMONS | 220 | Open Laboratory | A | IT | 35 | 1569 | VCT | Y
+012 | ELMORE LIBRARY | 01 | 104 |  | 310 | Office | A | LIB |  | 128 | CPT-T | Y
+012 | ELMORE LIBRARY | 01 | 105 |  | 310 | Office | A | LIB |  | 157 | CPT-T | Y
+012 | ELMORE LIBRARY | 01 | 106 |  | 310 | Office | A | LIB |  | 157 | CPT-T | Y
+012 | ELMORE LIBRARY | 01 | 107 | CAFE SEATING | 650 | Lounge | A | LIB |  | 387 | CPT-T | Y
+012 | ELMORE LIBRARY | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 805 | VCT | Y
+012 | ELMORE LIBRARY | 01 | 1C02 |  | W01 | Circulation - Corridor | N |  |  | 725 | VCT | Y
+012 | ELMORE LIBRARY | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 540 | TZ | Y
+012 | ELMORE LIBRARY | 01 | 1S01 |  | W03 | Circulation - Stairway | N |  |  | 235 | RB | Y
+012 | ELMORE LIBRARY | 01 | 1S02 |  | W03 | Circulation - Stairway | N |  |  | 210 | RB | Y
+012 | ELMORE LIBRARY | 01 | 1E01 | ELEVATOR | W04 | Circulation - Elevator | N |  |  | 79 | VCT | Y
+012 | ELMORE LIBRARY | 01 | 108 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 236 | CT | Y
+012 | ELMORE LIBRARY | 01 | 109 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 295 | CT | Y
+012 | ELMORE LIBRARY | 01 | 110 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 67 | SC | N
+012 | ELMORE LIBRARY | 02 | 201 | STACKS / STUDY | 430 | Open-Stack Study Room | A | LIB |  | 5695 | CPT | Y
+012 | ELMORE LIBRARY | 02 | 202 | GROUP STUDY | 410 | Study Room | A | LIB | 7 | 176 | CPT-T | Y
+012 | ELMORE LIBRARY | 02 | 203 | GROUP STUDY | 410 | Study Room | A | LIB | 7 | 168 | CPT-T | Y
+012 | ELMORE LIBRARY | 02 | 204 | GROUP STUDY | 410 | Study Room | A | LIB | 7 | 177 | CPT-T | Y
+012 | ELMORE LIBRARY | 02 | 205 | INSTRUCTION ROOM | 110 | Classroom | A | LIB | 41 | 825 | CPT-T | Y
+012 | ELMORE LIBRARY | 02 | 206 |  | 310 | Office | A | LIB |  | 153 | CPT-T | Y
+012 | ELMORE LIBRARY | 02 | 207 |  | 310 | Office | A | LIB |  | 160 | CPT-T | Y
+012 | ELMORE LIBRARY | 02 | 2C01 |  | W01 | Circulation - Corridor | N |  |  | 1200 | VCT | Y
+012 | ELMORE LIBRARY | 02 | 2S01 |  | W03 | Circulation - Stairway | N |  |  | 235 | RB | Y
+012 | ELMORE LIBRARY | 02 | 2S02 |  | W03 | Circulation - Stairway | N |  |  | 230 | RB | Y
+012 | ELMORE LIBRARY | 02 | 208 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 178 | CT | Y
+012 | ELMORE LIBRARY | 02 | 209 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 217 | CT | Y
+012 | ELMORE LIBRARY | 02 | 210 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 55 | SC | N
+012 | ELMORE LIBRARY | 03 | 301 | QUIET STUDY / STACKS | 430 | Open-Stack Study Room | A | LIB |  | 5791 | CPT | Y
+012 | ELMORE LIBRARY | 03 | 302 | GROUP STUDY | 410 | Study Room | A | LIB | 4 | 110 | CPT-T | Y
+012 | ELMORE LIBRARY | 03 | 303 | GROUP STUDY | 410 | Study Room | A | LIB | 5 | 118 | CPT-T | Y
+012 | ELMORE LIBRARY | 03 | 304 | ARCHIVES READING | 620 | Exhibition | A | LIB |  | 660 | TZ | Y
+012 | ELMORE LIBRARY | 03 | 305 | ARCHIVES STACK | 420 | Stack | A | LIB |  | 1374 | CPT | Y
+012 | ELMORE LIBRARY | 03 | 3C01 |  | W01 | Circulation - Corridor | N |  |  | 1335 | VCT | Y
+012 | ELMORE LIBRARY | 03 | 3S01 |  | W03 | Circulation - Stairway | N |  |  | 170 | RB | Y
+012 | ELMORE LIBRARY | 03 | 3S02 |  | W03 | Circulation - Stairway | N |  |  | 240 | RB | Y
+012 | ELMORE LIBRARY | 03 | 306 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 308 | CT | Y
+012 | ELMORE LIBRARY | 03 | 307 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 204 | CT | Y
+012 | ELMORE LIBRARY | 03 | 308 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 61 | SC | N
+Total Bldg 012 (all rooms) |  |  | 54 rooms |  |  |  |  |  |  | 42728
+Total Bldg 012 (Cust Svc = Y) |  |  | 46 rooms |  |  |  |  |  |  | 41051
+BLDG 014 LINDQVIST SCIENCE HALL (SCI) - Gross Area 32,739 SF - 3 floors - Main Campus
+014 | LINDQVIST SCIENCE HALL | 01 | 101 | CHEM LAB | 210 | Class Laboratory | A | CHEM | 27 | 1308 | EP | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 102 | CHEM LAB | 210 | Class Laboratory | A | CHEM | 23 | 1085 | EP | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 103 | CHEM LAB | 210 | Class Laboratory | A | CHEM | 23 | 1100 | SV | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 104 | CHEM LAB | 210 | Class Laboratory | A | CHEM | 23 | 1120 | EP | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 105 | STOCKROOM / PREP | 215 | Class Laboratory Service | A | CHEM |  | 261 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 105A | STOCKROOM / PREP | 215 | Class Laboratory Service | A | CHEM |  | 319 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 106 | LECTURE HALL | 110 | Classroom | A | REG | 79 | 1260 | CPT | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 107 | LECTURE HALL | 110 | Classroom | A | REG | 88 | 1410 | CPT | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 108 |  | 310 | Office | A | CHEM |  | 137 | CPT-T | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 109 |  | 310 | Office | A | CHEM |  | 143 | CPT-T | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1160 | TZ | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 345 | TZ | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 3 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 014 LINDQVIST SCIENCE HALL (SCI) (continued)
+014 | LINDQVIST SCIENCE HALL | 01 | 1S01 |  | W03 | Circulation - Stairway | N |  |  | 170 | RB | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 1S02 |  | W03 | Circulation - Stairway | N |  |  | 210 | RB | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 1E01 | ELEVATOR | W04 | Circulation - Elevator | N |  |  | 78 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 110 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 276 | CT | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 111 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 321 | CT | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 112 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 49 | SC | N
+014 | LINDQVIST SCIENCE HALL | 01 | 113 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 435 | SC | N
+014 | LINDQVIST SCIENCE HALL | 01 | 114 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 101 | SC | N
+014 | LINDQVIST SCIENCE HALL | 01 | 115 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 87 | SC | Y
+014 | LINDQVIST SCIENCE HALL | 01 | 116 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 78 | SC | N
+014 | LINDQVIST SCIENCE HALL | 02 | 201 | BIOLOGY LAB | 210 | Class Laboratory | A | BIOL | 23 | 1117 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 202 | BIOLOGY LAB | 210 | Class Laboratory | A | BIOL | 25 | 1214 | SV | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 203 | BIOLOGY LAB | 210 | Class Laboratory | A | BIOL | 25 | 1191 | SV | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 204 | BIOLOGY LAB | 210 | Class Laboratory | A | BIOL | 23 | 1083 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 205 | PREP ROOM | 215 | Class Laboratory Service | A | BIOL |  | 237 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 205A | PREP ROOM | 215 | Class Laboratory Service | A | BIOL |  | 165 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 206 | RESEARCH LAB | 250 | Research/Nonclass Laboratory | A | BIOL |  | 693 | SV | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 207 | RESEARCH LAB | 250 | Research/Nonclass Laboratory | A | BIOL |  | 590 | EP | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 208 |  | 310 | Office | A | BIOL |  | 127 | CPT-T | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 209 |  | 310 | Office | A | BIOL |  | 136 | CPT-T | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 2C01 |  | W01 | Circulation - Corridor | N |  |  | 1175 | TZ | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 2S01 |  | W03 | Circulation - Stairway | N |  |  | 230 | RB | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 2S02 |  | W03 | Circulation - Stairway | N |  |  | 245 | RB | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 210 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 308 | CT | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 211 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 311 | CT | Y
+014 | LINDQVIST SCIENCE HALL | 02 | 212 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 71 | SC | N
+014 | LINDQVIST SCIENCE HALL | 03 | 301 | PHYSICS LAB | 210 | Class Laboratory | A | PHYS | 25 | 1222 | SV | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 302 | PHYSICS LAB | 210 | Class Laboratory | A | PHYS | 24 | 1161 | EP | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 303 | PHYSICS LAB | 210 | Class Laboratory | A | PHYS | 25 | 1185 | SV | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 303A |  | 215 | Class Laboratory Service | A | PHYS |  | 260 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 304 |  | 215 | Class Laboratory Service | A | PHYS |  | 235 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 305 | RESEARCH LAB | 250 | Research/Nonclass Laboratory | A | GEOL |  | 539 | SV | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 306 | RESEARCH LAB | 250 | Research/Nonclass Laboratory | A | GEOL |  | 532 | EP | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 307 |  | 110 | Classroom | A | REG | 44 | 887 | CPT-T | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 308 |  | 310 | Office | A | PHYS |  | 117 | CPT-T | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 309 |  | 310 | Office | A | GEOL |  | 144 | CPT-T | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 3C01 |  | W01 | Circulation - Corridor | N |  |  | 1030 | VCT | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 3S01 |  | W03 | Circulation - Stairway | N |  |  | 235 | RB | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 3S02 |  | W03 | Circulation - Stairway | N |  |  | 210 | RB | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 310 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 235 | CT | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 311 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 332 | CT | Y
+014 | LINDQVIST SCIENCE HALL | 03 | 312 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 47 | SC | N
+Total Bldg 014 (all rooms) |  |  | 54 rooms |  |  |  |  |  |  | 28717
+Total Bldg 014 (Cust Svc = Y) |  |  | 48 rooms |  |  |  |  |  |  | 27936
+BLDG 016 BERGSTROM HALL (BRG) - Gross Area 20,659 SF - 3 floors - Main Campus
+016 | BERGSTROM HALL | 01 | 101 |  | 110 | Classroom | A | REG | 49 | 972 | VCT | Y
+016 | BERGSTROM HALL | 01 | 102 |  | 110 | Classroom | A | REG | 39 | 784 | CPT-T | Y
+016 | BERGSTROM HALL | 01 | 103 |  | 110 | Classroom | A | REG | 42 | 844 | CPT-T | Y
+016 | BERGSTROM HALL | 01 | 104 |  | 110 | Classroom | A | REG | 36 | 721 | CPT-T | Y
+016 | BERGSTROM HALL | 01 | 105 |  | 110 | Classroom | A | REG | 39 | 773 | CPT-T | Y
+016 | BERGSTROM HALL | 01 | 106 |  | 115 | Classroom Service | A | REG |  | 82 | VCT | Y
+016 | BERGSTROM HALL | 01 | 107 | STUDENT LOUNGE | 650 | Lounge | A | STUA |  | 387 | CPT-T | Y
+016 | BERGSTROM HALL | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 660 | VCT | Y
+016 | BERGSTROM HALL | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 290 | TZ | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 4 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 016 BERGSTROM HALL (BRG) (continued)
+016 | BERGSTROM HALL | 01 | 1S01 |  | W03 | Circulation - Stairway | N |  |  | 245 | RB | Y
+016 | BERGSTROM HALL | 01 | 1S02 |  | W03 | Circulation - Stairway | N |  |  | 210 | RB | Y
+016 | BERGSTROM HALL | 01 | 1E01 | ELEVATOR | W04 | Circulation - Elevator | N |  |  | 84 | VCT | Y
+016 | BERGSTROM HALL | 01 | 108 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 215 | CT | Y
+016 | BERGSTROM HALL | 01 | 109 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 255 | CT | Y
+016 | BERGSTROM HALL | 01 | 110 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 42 | SC | N
+016 | BERGSTROM HALL | 01 | 111 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 295 | SC | N
+016 | BERGSTROM HALL | 01 | 112 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 111 | SC | N
+016 | BERGSTROM HALL | 01 | 113 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 52 | SC | N
+016 | BERGSTROM HALL | 02 | 201 |  | 110 | Classroom | A | REG | 46 | 924 | VCT | Y
+016 | BERGSTROM HALL | 02 | 202 |  | 110 | Classroom | A | REG | 35 | 705 | CPT-T | Y
+016 | BERGSTROM HALL | 02 | 203 |  | 110 | Classroom | A | REG | 41 | 811 | VCT | Y
+016 | BERGSTROM HALL | 02 | 204 |  | 310 | Office | A | PHIL |  | 132 | CPT-T | Y
+016 | BERGSTROM HALL | 02 | 205 |  | 310 | Office | A | PHIL |  | 137 | CPT-T | Y
+016 | BERGSTROM HALL | 02 | 206 |  | 310 | Office | A | ENGL |  | 118 | CPT-T | Y
+016 | BERGSTROM HALL | 02 | 207 |  | 310 | Office | A | HIST |  | 138 | CPT-T | Y
+016 | BERGSTROM HALL | 02 | 208 |  | 060 | Alteration or Conversion Area | U | FAC |  | 183 | SC | N | Renovation - offline to 01/2027
+016 | BERGSTROM HALL | 02 | 209 |  | 060 | Alteration or Conversion Area | U | FAC |  | 349 | SC | N | Renovation - offline to 01/2027
+016 | BERGSTROM HALL | 02 | 210 |  | 060 | Alteration or Conversion Area | U | FAC |  | 252 | SC | N | Renovation - offline to 01/2027
+016 | BERGSTROM HALL | 02 | 211 |  | 350 | Conference Room | A | ENGL |  | 317 | CPT-T | Y
+016 | BERGSTROM HALL | 02 | 2C01 |  | W01 | Circulation - Corridor | N |  |  | 725 | VCT | Y
+016 | BERGSTROM HALL | 02 | 2S01 |  | W03 | Circulation - Stairway | N |  |  | 225 | RB | Y
+016 | BERGSTROM HALL | 02 | 2S02 |  | W03 | Circulation - Stairway | N |  |  | 210 | RB | Y
+016 | BERGSTROM HALL | 02 | 212 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 322 | CT | Y
+016 | BERGSTROM HALL | 02 | 213 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 229 | CT | Y
+016 | BERGSTROM HALL | 02 | 214 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 56 | SC | N
+016 | BERGSTROM HALL | 03 | 301 |  | 110 | Classroom | A | REG | 37 | 735 | CPT-T | Y
+016 | BERGSTROM HALL | 03 | 302 |  | 110 | Classroom | A | REG | 43 | 852 | VCT | Y
+016 | BERGSTROM HALL | 03 | 303 |  | 110 | Classroom | A | REG | 43 | 855 | CPT-T | Y
+016 | BERGSTROM HALL | 03 | 304 | WRITING CENTER | 220 | Open Laboratory | A | ENGL | 26 | 1043 | CPT-T | Y
+016 | BERGSTROM HALL | 03 | 305 |  | 310 | Office | A | ENGL |  | 134 | CPT-T | Y
+016 | BERGSTROM HALL | 03 | 306 |  | 310 | Office | A | ENGL |  | 123 | CPT-T | Y
+016 | BERGSTROM HALL | 03 | 307 |  | 310 | Office | A | LANG |  | 120 | CPT-T | Y
+016 | BERGSTROM HALL | 03 | 308 |  | 310 | Office | A | LANG |  | 117 | CPT-T | Y
+016 | BERGSTROM HALL | 03 | 309 |  | 310 | Office | A | ENGL |  | 121 | CPT-T | Y
+016 | BERGSTROM HALL | 03 | 3C01 |  | W01 | Circulation - Corridor | N |  |  | 670 | TZ | Y
+016 | BERGSTROM HALL | 03 | 3S01 |  | W03 | Circulation - Stairway | N |  |  | 185 | RB | Y
+016 | BERGSTROM HALL | 03 | 3S02 |  | W03 | Circulation - Stairway | N |  |  | 195 | RB | Y
+016 | BERGSTROM HALL | 03 | 310 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 298 | CT | Y
+016 | BERGSTROM HALL | 03 | 311 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 173 | CT | Y
+016 | BERGSTROM HALL | 03 | 312 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 48 | SC | N
+Total Bldg 016 (all rooms) |  |  | 50 rooms |  |  |  |  |  |  | 18524
+Total Bldg 016 (Cust Svc = Y) |  |  | 41 rooms |  |  |  |  |  |  | 17136
+BLDG 018 KITTREDGE HALL (KIT) - Gross Area 14,304 SF - 1 floor - Main Campus
+018 | KITTREDGE HALL | 01 | 101 |  | 110 | Classroom | A | REG | 50 | 999 | VCT | Y
+018 | KITTREDGE HALL | 01 | 102 |  | 110 | Classroom | A | REG | 47 | 943 | VCT | Y
+018 | KITTREDGE HALL | 01 | 103 |  | 110 | Classroom | A | REG | 61 | 1228 | VCT | Y
+018 | KITTREDGE HALL | 01 | 104 |  | 110 | Classroom | A | REG | 44 | 882 | VCT | Y
+018 | KITTREDGE HALL | 01 | 105 |  | 110 | Classroom | A | REG | 48 | 965 | CPT-T | Y
+018 | KITTREDGE HALL | 01 | 106 |  | 110 | Classroom | A | REG | 52 | 1031 | CPT-T | Y
+018 | KITTREDGE HALL | 01 | 107 | COMPUTER LAB | 220 | Open Laboratory | A | BUSN | 33 | 1327 | VCT | Y
+018 | KITTREDGE HALL | 01 | 108 | ATRIUM LOUNGE | 650 | Lounge | A | BUSN |  | 423 | TZ | Y
+018 | KITTREDGE HALL | 01 | 109 |  | 310 | Office | A | ACCT |  | 142 | CPT-T | Y
+018 | KITTREDGE HALL | 01 | 110 |  | 310 | Office | A | BUSN |  | 157 | CPT-T | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 5 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 018 KITTREDGE HALL (KIT) (continued)
+018 | KITTREDGE HALL | 01 | 111 |  | 310 | Office | A | ACCT |  | 142 | CPT-T | Y
+018 | KITTREDGE HALL | 01 | 112 |  | 310 | Office | A | ACCT |  | 142 | CPT-T | Y
+018 | KITTREDGE HALL | 01 | 113 |  | 310 | Office | A | ECON |  | 130 | CPT-T | Y
+018 | KITTREDGE HALL | 01 | 114 |  | 310 | Office | A | ACCT |  | 147 | CPT-T | Y
+018 | KITTREDGE HALL | 01 | 115 |  | 350 | Conference Room | A | BUSN |  | 322 | CPT-T | Y
+018 | KITTREDGE HALL | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1390 | VCT | Y
+018 | KITTREDGE HALL | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 700 | TZ | Y
+018 | KITTREDGE HALL | 01 | 116 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 333 | CT | Y
+018 | KITTREDGE HALL | 01 | 117 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 276 | CT | Y
+018 | KITTREDGE HALL | 01 | 118 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 68 | SC | N
+018 | KITTREDGE HALL | 01 | 119 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 795 | SC | N
+018 | KITTREDGE HALL | 01 | 120 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 134 | SC | N
+018 | KITTREDGE HALL | 01 | 121 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 84 | SC | Y
+018 | KITTREDGE HALL | 01 | 122 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 87 | SC | N
+Total Bldg 018 (all rooms) |  |  | 24 rooms |  |  |  |  |  |  | 12847
+Total Bldg 018 (Cust Svc = Y) |  |  | 20 rooms |  |  |  |  |  |  | 11763
+BLDG 019 THORSEN HALL (THO) - Gross Area 14,549 SF - 2 floors - Main Campus
+019 | THORSEN HALL | 01 | 101 |  | 110 | Classroom | A | REG | 34 | 683 | CPT-T | Y
+019 | THORSEN HALL | 01 | 102 |  | 110 | Classroom | A | REG | 36 | 710 | CPT-T | Y
+019 | THORSEN HALL | 01 | 103 |  | 110 | Classroom | A | REG | 38 | 759 | CPT-T | Y
+019 | THORSEN HALL | 01 | 104 |  | 110 | Classroom | A | REG | 39 | 787 | CPT-T | Y
+019 | THORSEN HALL | 01 | 105 |  | 110 | Classroom | A | REG | 40 | 798 | CPT-T | Y
+019 | THORSEN HALL | 01 | 106 |  | 310 | Office | A | MATH |  | 137 | CPT-T | Y
+019 | THORSEN HALL | 01 | 107 |  | 310 | Office | A | MATH |  | 136 | CPT-T | Y
+019 | THORSEN HALL | 01 | 108 |  | 050 | Inactive Area | U | FAC |  | 589 | VCT | N | Inactive - former darkroom, locked
+019 | THORSEN HALL | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 660 | TZ | Y
+019 | THORSEN HALL | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 215 | CT | Y
+019 | THORSEN HALL | 01 | 1S01 |  | W03 | Circulation - Stairway | N |  |  | 185 | RB | Y
+019 | THORSEN HALL | 01 | 1S02 |  | W03 | Circulation - Stairway | N |  |  | 170 | RB | Y
+019 | THORSEN HALL | 01 | 109 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 300 | CT | Y
+019 | THORSEN HALL | 01 | 110 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 247 | CT | Y
+019 | THORSEN HALL | 01 | 111 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 49 | SC | N
+019 | THORSEN HALL | 01 | 112 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 290 | SC | N
+019 | THORSEN HALL | 01 | 113 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 161 | SC | N
+019 | THORSEN HALL | 01 | 114 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 75 | SC | N
+019 | THORSEN HALL | 02 | 201 |  | 110 | Classroom | A | REG | 41 | 815 | CPT-T | Y
+019 | THORSEN HALL | 02 | 202 |  | 110 | Classroom | A | REG | 39 | 785 | CPT-T | Y
+019 | THORSEN HALL | 02 | 203 |  | 110 | Classroom | A | REG | 41 | 818 | CPT-T | Y
+019 | THORSEN HALL | 02 | 204 |  | 110 | Classroom | A | REG | 34 | 682 | CPT-T | Y
+019 | THORSEN HALL | 02 | 205 |  | 310 | Office | A | PSYC |  | 144 | CPT-T | Y
+019 | THORSEN HALL | 02 | 206 |  | 310 | Office | A | PSYC |  | 145 | CPT-T | Y
+019 | THORSEN HALL | 02 | 207 | MATH TUTORING | 220 | Open Laboratory | A | MATH | 22 | 763 | CPT-T | Y
+019 | THORSEN HALL | 02 | 2C01 |  | W01 | Circulation - Corridor | N |  |  | 700 | VCT | Y
+019 | THORSEN HALL | 02 | 2S01 |  | W03 | Circulation - Stairway | N |  |  | 235 | RB | Y
+019 | THORSEN HALL | 02 | 2S02 |  | W03 | Circulation - Stairway | N |  |  | 230 | RB | Y
+019 | THORSEN HALL | 02 | 208 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 289 | CT | Y
+019 | THORSEN HALL | 02 | 209 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 246 | CT | Y
+019 | THORSEN HALL | 02 | 210 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 63 | SC | N
+Total Bldg 019 (all rooms) |  |  | 31 rooms |  |  |  |  |  |  | 12866
+Total Bldg 019 (Cust Svc = Y) |  |  | 25 rooms |  |  |  |  |  |  | 11639
+BLDG 021 CHILD DEVELOPMENT CTR (CDC) - Gross Area 10,910 SF - 1 floor - Main Campus
+021 | CHILD DEVELOPMENT CTR | 01 | 101 | CLASSROOM | 640 | Day Care | A | CDC | 25 | 865 | LVT | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 102 | CLASSROOM | 640 | Day Care | A | CDC | 28 | 981 | LVT | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 6 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 021 CHILD DEVELOPMENT CTR (CDC) (continued)
+021 | CHILD DEVELOPMENT CTR | 01 | 103 | CLASSROOM | 640 | Day Care | A | CDC | 28 | 975 | LVT | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 104 | CLASSROOM | 640 | Day Care | A | CDC | 24 | 836 | LVT | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 105 | CLASSROOM | 640 | Day Care | A | CDC | 30 | 1042 | LVT | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 106 | CLASSROOM | 640 | Day Care | A | CDC | 26 | 926 | LVT | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 107 | KITCHENETTE / STORAGE | 645 | Day Care Service | A | CDC |  | 219 | LVT | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 108 | KITCHENETTE / STORAGE | 645 | Day Care Service | A | CDC |  | 153 | LVT | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 109 |  | 310 | Office | A | CDC |  | 132 | CPT-T | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 110 |  | 310 | Office | A | CDC |  | 115 | CPT-T | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 111 | OBSERVATION ROOM | 210 | Class Laboratory | A | EDUC | 16 | 489 | CPT-T | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1000 | TZ | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 395 | TZ | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 112 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 340 | CT | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 113 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 339 | CT | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 114 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 38 | SC | N
+021 | CHILD DEVELOPMENT CTR | 01 | 115 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 430 | SC | N
+021 | CHILD DEVELOPMENT CTR | 01 | 116 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 107 | SC | N
+021 | CHILD DEVELOPMENT CTR | 01 | 117 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 132 | SC | Y
+021 | CHILD DEVELOPMENT CTR | 01 | 118 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 57 | SC | N
+Total Bldg 021 (all rooms) |  |  | 20 rooms |  |  |  |  |  |  | 9571
+Total Bldg 021 (Cust Svc = Y) |  |  | 16 rooms |  |  |  |  |  |  | 8939
+BLDG 022 FINE ARTS CENTER (FAC) - Gross Area 38,768 SF - 3 floors + mezz. - Main Campus
+022 | FINE ARTS CENTER | B | B01 | SCENE SHOP | 720 | Shop | A | THTR |  | 2408 | SC | N
+022 | FINE ARTS CENTER | B | B02 | DRESSING / GREEN ROOM | 615 | Assembly Service | A | THTR |  | 393 | WD | Y
+022 | FINE ARTS CENTER | B | B03 | DRESSING / GREEN ROOM | 615 | Assembly Service | A | THTR |  | 285 | WD | Y
+022 | FINE ARTS CENTER | B | B04 | COSTUME STORAGE | 730 | Central Storage | A | THTR |  | 793 | SC | N
+022 | FINE ARTS CENTER | B | B05 | PRACTICE ROOM | 220 | Open Laboratory | A | MUSC | 1 | 92 | CPT-T | Y
+022 | FINE ARTS CENTER | B | B06 | PRACTICE ROOM | 220 | Open Laboratory | A | MUSC | 1 | 93 | VCT | Y
+022 | FINE ARTS CENTER | B | B07 | PRACTICE ROOM | 220 | Open Laboratory | A | MUSC | 1 | 93 | CPT-T | Y
+022 | FINE ARTS CENTER | B | BC01 |  | W01 | Circulation - Corridor | N |  |  | 675 | VCT | Y
+022 | FINE ARTS CENTER | B | BS01 |  | W03 | Circulation - Stairway | N |  |  | 235 | RB | Y
+022 | FINE ARTS CENTER | B | BS02 |  | W03 | Circulation - Stairway | N |  |  | 180 | RB | Y
+022 | FINE ARTS CENTER | B | B08 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 277 | CT | Y
+022 | FINE ARTS CENTER | B | B09 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 294 | CT | Y
+022 | FINE ARTS CENTER | B | B10 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 52 | SC | N
+022 | FINE ARTS CENTER | B | B11 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 255 | SC | N
+022 | FINE ARTS CENTER | B | B12 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 123 | SC | N
+022 | FINE ARTS CENTER | B | B13 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 92 | SC | N
+022 | FINE ARTS CENTER | 01 | 101 | THEATRE (412 SEATS) | 610 | Assembly | A | THTR |  | 6423 | CPT | Y
+022 | FINE ARTS CENTER | 01 | 102 | STAGE | 615 | Assembly Service | A | THTR |  | 1852 | WD | Y
+022 | FINE ARTS CENTER | 01 | 103 | GALLERY | 620 | Exhibition | A | ART |  | 1135 | TZ | Y
+022 | FINE ARTS CENTER | 01 | 104 | REHEARSAL HALL | 210 | Class Laboratory | A | MUSC | 63 | 1895 | WD | Y
+022 | FINE ARTS CENTER | 01 | 105 | REHEARSAL HALL | 210 | Class Laboratory | A | MUSC | 58 | 1751 | WD | Y
+022 | FINE ARTS CENTER | 01 | 106 |  | 310 | Office | A | MUSC |  | 123 | CPT-T | Y
+022 | FINE ARTS CENTER | 01 | 107 |  | 310 | Office | A | MUSC |  | 131 | CPT-T | Y
+022 | FINE ARTS CENTER | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1075 | VCT | Y
+022 | FINE ARTS CENTER | 01 | 1C02 |  | W01 | Circulation - Corridor | N |  |  | 980 | VCT | Y
+022 | FINE ARTS CENTER | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 795 | TZ | Y
+022 | FINE ARTS CENTER | 01 | 1S01 |  | W03 | Circulation - Stairway | N |  |  | 200 | RB | Y
+022 | FINE ARTS CENTER | 01 | 1S02 |  | W03 | Circulation - Stairway | N |  |  | 230 | RB | Y
+022 | FINE ARTS CENTER | 01 | 1E01 | ELEVATOR | W04 | Circulation - Elevator | N |  |  | 76 | VCT | Y
+022 | FINE ARTS CENTER | 01 | 108 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 281 | CT | Y
+022 | FINE ARTS CENTER | 01 | 109 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 298 | CT | Y
+022 | FINE ARTS CENTER | 01 | 110 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 65 | SC | N
+022 | FINE ARTS CENTER | 02 | 201 | STUDIO | 210 | Class Laboratory | A | ART | 20 | 1203 | SC | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 7 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 022 FINE ARTS CENTER (FAC) (continued)
+022 | FINE ARTS CENTER | 02 | 202 | STUDIO | 210 | Class Laboratory | A | ART | 23 | 1350 | SC | Y
+022 | FINE ARTS CENTER | 02 | 203 | STUDIO | 210 | Class Laboratory | A | ART | 23 | 1375 | SC | Y
+022 | FINE ARTS CENTER | 02 | 204 | STUDIO | 210 | Class Laboratory | A | ART | 20 | 1219 | SC | Y
+022 | FINE ARTS CENTER | 02 | 205 | STUDIO | 210 | Class Laboratory | A | ART | 23 | 1397 | SC | Y
+022 | FINE ARTS CENTER | 02 | 205A | KILN / STORAGE | 215 | Class Laboratory Service | A | ART |  | 212 | VCT | Y
+022 | FINE ARTS CENTER | 02 | 206 | KILN / STORAGE | 215 | Class Laboratory Service | A | ART |  | 201 | VCT | Y
+022 | FINE ARTS CENTER | 02 | 207 |  | 310 | Office | A | THTR |  | 110 | CPT-T | Y
+022 | FINE ARTS CENTER | 02 | 208 |  | 310 | Office | A | MUSC |  | 138 | CPT-T | Y
+022 | FINE ARTS CENTER | 02 | 209 |  | 310 | Office | A | MUSC |  | 131 | CPT-T | Y
+022 | FINE ARTS CENTER | 02 | 210 |  | 310 | Office | A | MUSC |  | 110 | CPT-T | Y
+022 | FINE ARTS CENTER | 02 | 2C01 |  | W01 | Circulation - Corridor | N |  |  | 1045 | TZ | Y
+022 | FINE ARTS CENTER | 02 | 2S01 |  | W03 | Circulation - Stairway | N |  |  | 210 | RB | Y
+022 | FINE ARTS CENTER | 02 | 2S02 |  | W03 | Circulation - Stairway | N |  |  | 230 | RB | Y
+022 | FINE ARTS CENTER | 02 | 211 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 258 | CT | Y
+022 | FINE ARTS CENTER | 02 | 212 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 256 | CT | Y
+022 | FINE ARTS CENTER | 02 | 213 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 72 | SC | N
+022 | FINE ARTS CENTER | M1 | M101 | LIGHT / SOUND BOOTH | 615 | Assembly Service | A | THTR |  | 141 | CPT | Y
+022 | FINE ARTS CENTER | M1 | M102 | LIGHT / SOUND BOOTH | 615 | Assembly Service | A | THTR |  | 163 | CPT | Y
+022 | FINE ARTS CENTER | M1 | M103 | FAN ROOM | Y01 | Mechanical - Mechanical Room | N |  |  | 745 | SC | N
+Total Bldg 022 (all rooms) |  |  | 52 rooms |  |  |  |  |  |  | 34216
+Total Bldg 022 (Cust Svc = Y) |  |  | 43 rooms |  |  |  |  |  |  | 29611
+BLDG 024 ALLIED HEALTH & NURSING BLDG (AHN) - Gross Area 24,651 SF - 3 floors - Main Campus
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 101 |  | 110 | Classroom | A | REG | 54 | 1084 | VCT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 102 |  | 110 | Classroom | A | REG | 48 | 965 | CPT-T | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 103 |  | 110 | Classroom | A | REG | 45 | 901 | CPT-T | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 104 |  | 110 | Classroom | A | REG | 55 | 1108 | VCT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 105 | SIMULATION LAB | 210 | Class Laboratory | A | NURS | 24 | 1313 | SV | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 106 | SIMULATION LAB | 210 | Class Laboratory | A | NURS | 25 | 1389 | SV | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 107 |  | 215 | Class Laboratory Service | A | NURS |  | 239 | VCT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 107A |  | 215 | Class Laboratory Service | A | NURS |  | 155 | VCT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 108 |  | 650 | Lounge | A | NURS |  | 461 | CPT-T | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1335 | VCT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 610 | TZ | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 1S01 |  | W03 | Circulation - Stairway | N |  |  | 235 | RB | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 1S02 |  | W03 | Circulation - Stairway | N |  |  | 245 | RB | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 1E01 | ELEVATOR | W04 | Circulation - Elevator | N |  |  | 65 | VCT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 109 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 291 | CT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 110 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 286 | CT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 111 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 72 | SC | N
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 112 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 525 | SC | N
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 113 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 154 | SC | N
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 114 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 126 | SC | Y
+024 | ALLIED HEALTH & NURSING BLDG | 01 | 115 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 83 | SC | N
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 201 | SKILLS LAB | 210 | Class Laboratory | A | NURS | 24 | 1338 | SV | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 202 | SKILLS LAB | 210 | Class Laboratory | A | NURS | 23 | 1257 | SV | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 203 | SKILLS LAB | 210 | Class Laboratory | A | NURS | 25 | 1351 | SV | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 204 |  | 215 | Class Laboratory Service | A | NURS |  | 286 | VCT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 205 |  | 310 | Office | A | HSCI |  | 136 | CPT-T | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 206 |  | 310 | Office | A | NURS |  | 120 | CPT-T | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 207 |  | 310 | Office | A | NURS |  | 150 | CPT-T | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 208 |  | 310 | Office | A | HSCI |  | 139 | CPT-T | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 209 |  | 310 | Office | A | HSCI |  | 155 | CPT-T | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 210 |  | 350 | Conference Room | A | NURS |  | 318 | CPT-T | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 2C01 |  | W01 | Circulation - Corridor | N |  |  | 750 | VCT | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 8 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 024 ALLIED HEALTH & NURSING BLDG (AHN) (continued)
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 2S01 |  | W03 | Circulation - Stairway | N |  |  | 190 | RB | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 2S02 |  | W03 | Circulation - Stairway | N |  |  | 230 | RB | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 211 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 274 | CT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 212 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 258 | CT | Y
+024 | ALLIED HEALTH & NURSING BLDG | 02 | 213 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 49 | SC | N
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 301 |  | 310 | Office | A | PFRMC |  | 115 | CPT-T | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 302 |  | 310 | Office | A | PFRMC |  | 133 | CPT-T | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 303 |  | 310 | Office | A | PFRMC |  | 153 | CPT-T | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 304 |  | 310 | Office | A | PFRMC |  | 116 | CPT-T | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 305 |  | 310 | Office | A | PFRMC |  | 150 | CPT-T | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 306 |  | 350 | Conference Room | A | PFRMC |  | 321 | CPT-T | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 307 |  | 350 | Conference Room | A | PFRMC |  | 297 | CPT-T | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 308 |  | 210 | Class Laboratory | A | PFRMC | 18 | 963 | SV | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 3C01 |  | W01 | Circulation - Corridor | N |  |  | 360 | VCT | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 3S01 |  | W03 | Circulation - Stairway | N |  |  | 195 | RB | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 3S02 |  | W03 | Circulation - Stairway | N |  |  | 225 | RB | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 309 | ALL-GENDER | X03 | Bldg Service - Public Rest Room | N |  |  | 79 | CT | N | Tenant (PFRMC) cleans
+024 | ALLIED HEALTH & NURSING BLDG | 03 | 310 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 50 | SC | N | Tenant (PFRMC) cleans
+Total Bldg 024 (all rooms) |  |  | 50 rooms |  |  |  |  |  |  | 21800
+Total Bldg 024 (Cust Svc = Y) |  |  | 32 rooms |  |  |  |  |  |  | 17760
+BLDG 026 TECHNOLOGY & ENGINEERING CTR (TEC) - Gross Area 20,894 SF - 1 floor - Main Campus
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 101 | MFG / WELDING LAB | 210 | Class Laboratory | A | ENGR | 26 | 1970 | SC | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 102 | MFG / WELDING LAB | 210 | Class Laboratory | A | TECH | 26 | 1982 | SC | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 103 | MFG / WELDING LAB | 210 | Class Laboratory | A | TECH | 25 | 1854 | SC | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 103A | TOOL CRIB | 215 | Class Laboratory Service | A | TECH |  | 258 | VCT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 104 | TOOL CRIB | 215 | Class Laboratory Service | A | TECH |  | 370 | VCT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 105 | ELECTRONICS / CAD LAB | 210 | Class Laboratory | A | ENGR | 23 | 1166 | VCT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 106 | ELECTRONICS / CAD LAB | 210 | Class Laboratory | A | ENGR | 25 | 1243 | VCT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 107 | DEPT SHOP | 720 | Shop | A | TECH |  | 1020 | SC | N
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 108 |  | 730 | Central Storage | A | TECH |  | 771 | SC | N
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 109 |  | W05 | Circulation - Loading Dock | N |  |  | 321 | SC | N
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 110 |  | 110 | Classroom | A | REG | 43 | 859 | VCT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 111 |  | 110 | Classroom | A | REG | 47 | 945 | CPT-T | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 112 |  | 310 | Office | A | TECH |  | 138 | CPT-T | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 113 |  | 310 | Office | A | ENGR |  | 133 | CPT-T | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 114 |  | 310 | Office | A | TECH |  | 120 | CPT-T | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 115 |  | 310 | Office | A | CSCI |  | 151 | CPT-T | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 116 | SERVER ROOM | 710 | Central Computer or Telecommunications | A | IT |  | 401 | VCT | N
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1040 | VCT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 1C02 |  | W01 | Circulation - Corridor | N |  |  | 1045 | VCT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 730 | CT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 117 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 265 | CT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 118 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 275 | CT | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 119 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 50 | SC | N
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 120 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 1200 | SC | N
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 121 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 127 | SC | N
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 122 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 98 | SC | Y
+026 | TECHNOLOGY & ENGINEERING CTR | 01 | 123 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 70 | SC | N
+Total Bldg 026 (all rooms) |  |  | 27 rooms |  |  |  |  |  |  | 18602
+Total Bldg 026 (Cust Svc = Y) |  |  | 19 rooms |  |  |  |  |  |  | 14642
+BLDG 028 CAMPUS UNION (UNI) - Gross Area 41,910 SF - 3 floors - Main Campus
+028 | CAMPUS UNION | B | B01 | BOOKSTORE | 660 | Merchandising | A | BKST |  | 4208 | VCT | N | Auxiliary - operator cleans
+028 | CAMPUS UNION | B | B02 |  | 665 | Merchandising Service | A | BKST |  | 676 | VCT | N | Auxiliary - operator cleans
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 9 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 028 CAMPUS UNION (UNI) (continued)
+028 | CAMPUS UNION | B | B03 | GAME ROOM | 670 | Recreation | A | UNION |  | 2125 | VCT | Y
+028 | CAMPUS UNION | B | B04 |  | W05 | Circulation - Loading Dock | N |  |  | 388 | SC | N
+028 | CAMPUS UNION | B | BC01 |  | W01 | Circulation - Corridor | N |  |  | 1130 | VCT | Y
+028 | CAMPUS UNION | B | BS01 |  | W03 | Circulation - Stairway | N |  |  | 190 | RB | Y
+028 | CAMPUS UNION | B | BS02 |  | W03 | Circulation - Stairway | N |  |  | 250 | RB | Y
+028 | CAMPUS UNION | B | B05 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 252 | CT | Y
+028 | CAMPUS UNION | B | B06 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 264 | CT | Y
+028 | CAMPUS UNION | B | B07 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 51 | SC | N
+028 | CAMPUS UNION | B | B08 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 480 | SC | N
+028 | CAMPUS UNION | B | B09 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 164 | SC | N
+028 | CAMPUS UNION | B | B10 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 128 | SC | Y
+028 | CAMPUS UNION | B | B11 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 69 | SC | N
+028 | CAMPUS UNION | 01 | 101 | FOOD COURT SEATING | 630 | Food Facility | A | DINE |  | 5739 | QT | N | Dining contractor cleans
+028 | CAMPUS UNION | 01 | 102 | SERVERY / KITCHEN | 635 | Food Facility Service | A | DINE |  | 2647 | QT | N | Dining contractor cleans
+028 | CAMPUS UNION | 01 | 103 | LOUNGE | 650 | Lounge | A | UNION |  | 1210 | CPT-T | Y
+028 | CAMPUS UNION | 01 | 104 | LOUNGE | 650 | Lounge | A | UNION |  | 1397 | CPT-T | Y
+028 | CAMPUS UNION | 01 | 105 |  | 310 | Office | A | UNION |  | 147 | CPT-T | Y
+028 | CAMPUS UNION | 01 | 106 |  | 310 | Office | A | STUA |  | 146 | CPT-T | Y
+028 | CAMPUS UNION | 01 | 107 |  | 310 | Office | A | STUA |  | 161 | CPT-T | Y
+028 | CAMPUS UNION | 01 | 108 |  | 680 | Meeting Room | A | UNION |  | 475 | CPT | Y
+028 | CAMPUS UNION | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 940 | VCT | Y
+028 | CAMPUS UNION | 01 | 1C02 |  | W01 | Circulation - Corridor | N |  |  | 1020 | TZ | Y
+028 | CAMPUS UNION | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 885 | TZ | Y
+028 | CAMPUS UNION | 01 | 1S01 |  | W03 | Circulation - Stairway | N |  |  | 205 | RB | Y
+028 | CAMPUS UNION | 01 | 1S02 |  | W03 | Circulation - Stairway | N |  |  | 215 | RB | Y
+028 | CAMPUS UNION | 01 | 1E01 | ELEVATOR | W04 | Circulation - Elevator | N |  |  | 66 | VCT | Y
+028 | CAMPUS UNION | 01 | 109 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 241 | CT | Y
+028 | CAMPUS UNION | 01 | 110 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 234 | CT | Y
+028 | CAMPUS UNION | 01 | 111 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 59 | SC | N
+028 | CAMPUS UNION | 02 | 201 | NORTHWOODS BALLROOM | 610 | Assembly | A | UNION |  | 5411 | CPT | Y
+028 | CAMPUS UNION | 02 | 202 | CHAIR / TABLE STORAGE | 615 | Assembly Service | A | UNION |  | 424 | WD | Y
+028 | CAMPUS UNION | 02 | 203 | MEETING ROOM | 680 | Meeting Room | A | UNION | 15 | 444 | CPT | Y
+028 | CAMPUS UNION | 02 | 204 | MEETING ROOM | 680 | Meeting Room | A | UNION | 20 | 609 | CPT | Y
+028 | CAMPUS UNION | 02 | 205 | MEETING ROOM | 680 | Meeting Room | A | UNION | 19 | 561 | CPT | Y
+028 | CAMPUS UNION | 02 | 206 | MEETING ROOM | 680 | Meeting Room | A | UNION | 16 | 468 | CPT | Y
+028 | CAMPUS UNION | 02 | 207 |  | 310 | Office | A | STUA |  | 122 | CPT-T | Y
+028 | CAMPUS UNION | 02 | 208 |  | 310 | Office | A | CAREER |  | 168 | CPT-T | Y
+028 | CAMPUS UNION | 02 | 209 |  | 310 | Office | A | CAREER |  | 143 | CPT-T | Y
+028 | CAMPUS UNION | 02 | 2C01 |  | W01 | Circulation - Corridor | N |  |  | 1300 | TZ | Y
+028 | CAMPUS UNION | 02 | 2S01 |  | W03 | Circulation - Stairway | N |  |  | 215 | RB | Y
+028 | CAMPUS UNION | 02 | 2S02 |  | W03 | Circulation - Stairway | N |  |  | 180 | RB | Y
+028 | CAMPUS UNION | 02 | 210 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 264 | CT | Y
+028 | CAMPUS UNION | 02 | 211 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 248 | CT | Y
+028 | CAMPUS UNION | 02 | 212 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 42 | SC | N
+Total Bldg 028 (all rooms) |  |  | 46 rooms |  |  |  |  |  |  | 36761
+Total Bldg 028 (Cust Svc = Y) |  |  | 35 rooms |  |  |  |  |  |  | 22238
+BLDG 030 OSTRANDER HALL (HPE) (OST) - Gross Area 35,094 SF - 2 floors - Main Campus
+030 | OSTRANDER HALL (HPE) | 01 | 101 | MAIN GYMNASIUM | 520 | Athletic or Physical Education | A | KINE |  | 11482 | WD | Y
+030 | OSTRANDER HALL (HPE) | 01 | 102 | LOCKER ROOM | 525 | Athletic or Physical Education Service | A | KINE |  | 1626 | CT | Y
+030 | OSTRANDER HALL (HPE) | 01 | 103 | LOCKER ROOM | 525 | Athletic or Physical Education Service | A | KINE |  | 1770 | CT | Y
+030 | OSTRANDER HALL (HPE) | 01 | 104 | EQUIPMENT ISSUE | 525 | Athletic or Physical Education Service | A | KINE |  | 475 | VCT | Y
+030 | OSTRANDER HALL (HPE) | 01 | 105 |  | 310 | Office | A | KINE |  | 159 | CPT-T | Y
+030 | OSTRANDER HALL (HPE) | 01 | 106 |  | 310 | Office | A | KINE |  | 126 | CPT-T | Y
+030 | OSTRANDER HALL (HPE) | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1375 | VCT | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 10 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 030 OSTRANDER HALL (HPE) (OST) (continued)
+030 | OSTRANDER HALL (HPE) | 01 | 1C02 |  | W01 | Circulation - Corridor | N |  |  | 1155 | TZ | Y
+030 | OSTRANDER HALL (HPE) | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 900 | TZ | Y
+030 | OSTRANDER HALL (HPE) | 01 | 1S01 |  | W03 | Circulation - Stairway | N |  |  | 195 | RB | Y
+030 | OSTRANDER HALL (HPE) | 01 | 1S02 |  | W03 | Circulation - Stairway | N |  |  | 215 | RB | Y
+030 | OSTRANDER HALL (HPE) | 01 | 1E01 | ELEVATOR | W04 | Circulation - Elevator | N |  |  | 74 | VCT | Y
+030 | OSTRANDER HALL (HPE) | 01 | 107 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 181 | CT | Y
+030 | OSTRANDER HALL (HPE) | 01 | 108 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 215 | CT | Y
+030 | OSTRANDER HALL (HPE) | 01 | 109 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 41 | SC | N
+030 | OSTRANDER HALL (HPE) | 01 | 110 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 920 | SC | N
+030 | OSTRANDER HALL (HPE) | 01 | 111 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 155 | SC | N
+030 | OSTRANDER HALL (HPE) | 01 | 112 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 86 | SC | Y
+030 | OSTRANDER HALL (HPE) | 01 | 113 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 73 | SC | N
+030 | OSTRANDER HALL (HPE) | 02 | 201 | FITNESS CENTER | 520 | Athletic or Physical Education | A | REC |  | 3671 | RB | Y
+030 | OSTRANDER HALL (HPE) | 02 | 202 | DANCE / AEROBICS | 520 | Athletic or Physical Education | A | KINE |  | 2048 | WD | Y
+030 | OSTRANDER HALL (HPE) | 02 | 203 |  | 110 | Classroom | A | REG | 38 | 760 | VCT | Y
+030 | OSTRANDER HALL (HPE) | 02 | 204 |  | 110 | Classroom | A | REG | 39 | 781 | VCT | Y
+030 | OSTRANDER HALL (HPE) | 02 | 205 |  | 310 | Office | A | KINE |  | 119 | CPT-T | Y
+030 | OSTRANDER HALL (HPE) | 02 | 206 |  | 310 | Office | A | REC |  | 131 | CPT-T | Y
+030 | OSTRANDER HALL (HPE) | 02 | 207 |  | 310 | Office | A | KINE |  | 125 | CPT-T | Y
+030 | OSTRANDER HALL (HPE) | 02 | 2C01 |  | W01 | Circulation - Corridor | N |  |  | 1220 | VCT | Y
+030 | OSTRANDER HALL (HPE) | 02 | 2S01 |  | W03 | Circulation - Stairway | N |  |  | 215 | RB | Y
+030 | OSTRANDER HALL (HPE) | 02 | 2S02 |  | W03 | Circulation - Stairway | N |  |  | 195 | RB | Y
+030 | OSTRANDER HALL (HPE) | 02 | 208 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 178 | CT | Y
+030 | OSTRANDER HALL (HPE) | 02 | 209 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 187 | CT | Y
+030 | OSTRANDER HALL (HPE) | 02 | 210 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 49 | SC | N
+Total Bldg 030 (all rooms) |  |  | 32 rooms |  |  |  |  |  |  | 30902
+Total Bldg 030 (Cust Svc = Y) |  |  | 27 rooms |  |  |  |  |  |  | 29664
+BLDG 032 STUDENT SERVICES CENTER (SSC) - Gross Area 7,733 SF - 1 floor - Main Campus
+032 | STUDENT SERVICES CENTER | 01 | 101 | ONE-STOP SERVICE AREA | 310 | Office | A | REG |  | 1576 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 102 |  | 310 | Office | A | REG |  | 150 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 103 |  | 310 | Office | A | FAID |  | 133 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 104 |  | 310 | Office | A | REG |  | 160 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 105 |  | 310 | Office | A | ADMS |  | 122 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 106 |  | 310 | Office | A | REG |  | 122 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 107 |  | 310 | Office | A | ADVS |  | 139 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 108 |  | 310 | Office | A | ADMS |  | 119 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 109 |  | 310 | Office | A | ADVS |  | 135 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 110 | WAITING / LOBBY LOUNGE | 650 | Lounge | A | ADMS |  | 622 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 111 |  | 315 | Office Service | A | REG |  | 140 | VCT | Y
+032 | STUDENT SERVICES CENTER | 01 | 112 |  | 350 | Conference Room | A | ADVS |  | 297 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 113 | TESTING CENTER | 220 | Open Laboratory | A | ADVS | 24 | 708 | CPT-T | Y
+032 | STUDENT SERVICES CENTER | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 790 | TZ | Y
+032 | STUDENT SERVICES CENTER | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 310 | CT | Y
+032 | STUDENT SERVICES CENTER | 01 | 114 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 285 | CT | Y
+032 | STUDENT SERVICES CENTER | 01 | 115 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 189 | CT | Y
+032 | STUDENT SERVICES CENTER | 01 | 116 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 42 | SC | N
+032 | STUDENT SERVICES CENTER | 01 | 117 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 340 | SC | N
+032 | STUDENT SERVICES CENTER | 01 | 118 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 129 | SC | N
+032 | STUDENT SERVICES CENTER | 01 | 119 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 75 | SC | N
+Total Bldg 032 (all rooms) |  |  | 21 rooms |  |  |  |  |  |  | 6583
+Total Bldg 032 (Cust Svc = Y) |  |  | 17 rooms |  |  |  |  |  |  | 5997
+BLDG 035 WELLNESS CENTER (WEL) - Gross Area 3,467 SF - 1 floor - Main Campus
+035 | WELLNESS CENTER | 01 | 101 | EXAM ROOM | 540 | Clinic | A | HLTH |  | 132 | SV | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 11 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 035 WELLNESS CENTER (WEL) (continued)
+035 | WELLNESS CENTER | 01 | 102 | EXAM ROOM | 540 | Clinic | A | HLTH |  | 110 | SV | Y
+035 | WELLNESS CENTER | 01 | 103 | EXAM ROOM | 540 | Clinic | A | HLTH |  | 112 | SV | Y
+035 | WELLNESS CENTER | 01 | 104 | EXAM ROOM | 540 | Clinic | A | HLTH |  | 118 | SV | Y
+035 | WELLNESS CENTER | 01 | 105 | EXAM ROOM | 540 | Clinic | A | HLTH |  | 135 | SV | Y
+035 | WELLNESS CENTER | 01 | 106 | LAB / MED STORAGE | 545 | Clinic Service | A | HLTH |  | 188 | SV | Y
+035 | WELLNESS CENTER | 01 | 107 | LAB / MED STORAGE | 545 | Clinic Service | A | HLTH |  | 102 | SV | Y
+035 | WELLNESS CENTER | 01 | 108 |  | 310 | Office | A | CNSL |  | 126 | CPT-T | Y
+035 | WELLNESS CENTER | 01 | 109 |  | 310 | Office | A | HLTH |  | 140 | CPT-T | Y
+035 | WELLNESS CENTER | 01 | 110 |  | 310 | Office | A | HLTH |  | 114 | CPT-T | Y
+035 | WELLNESS CENTER | 01 | 111 |  | 310 | Office | A | CNSL |  | 121 | CPT-T | Y
+035 | WELLNESS CENTER | 01 | 112 | WAITING | 650 | Lounge | A | HLTH |  | 428 | CPT-T | Y
+035 | WELLNESS CENTER | 01 | 113 |  | 350 | Conference Room | A | CNSL |  | 229 | CPT-T | Y
+035 | WELLNESS CENTER | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 360 | VCT | Y
+035 | WELLNESS CENTER | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 160 | CT | Y
+035 | WELLNESS CENTER | 01 | 114 | ALL-GENDER | X03 | Bldg Service - Public Rest Room | N |  |  | 60 | CT | Y
+035 | WELLNESS CENTER | 01 | 115 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 67 | SC | N
+035 | WELLNESS CENTER | 01 | 116 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 180 | SC | N
+035 | WELLNESS CENTER | 01 | 117 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 117 | SC | N
+035 | WELLNESS CENTER | 01 | 118 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 60 | SC | N
+Total Bldg 035 (all rooms) |  |  | 20 rooms |  |  |  |  |  |  | 3059
+Total Bldg 035 (Cust Svc = Y) |  |  | 16 rooms |  |  |  |  |  |  | 2635
+BLDG 040 PHYSICAL PLANT (PPL) - Gross Area 22,558 SF - 1 floor - Main Campus
+040 | PHYSICAL PLANT | 01 | 101 | SHOP | 720 | Shop | A | FAC |  | 2358 | SC | N
+040 | PHYSICAL PLANT | 01 | 102 | SHOP | 720 | Shop | A | FAC |  | 2395 | SC | N
+040 | PHYSICAL PLANT | 01 | 103 | SHOP | 720 | Shop | A | FAC |  | 1613 | SC | N
+040 | PHYSICAL PLANT | 01 | 104 | WAREHOUSE | 730 | Central Storage | A | FAC |  | 2569 | SC | N
+040 | PHYSICAL PLANT | 01 | 105 | WAREHOUSE | 730 | Central Storage | A | FAC |  | 2560 | SC | N
+040 | PHYSICAL PLANT | 01 | 106 | CENTRAL RECEIVING | 750 | Central Service | A | FAC |  | 1270 | SC | N
+040 | PHYSICAL PLANT | 01 | 107 |  | W05 | Circulation - Loading Dock | N |  |  | 462 | SC | N
+040 | PHYSICAL PLANT | 01 | 108 |  | 310 | Office | A | FAC |  | 127 | CPT-T | Y
+040 | PHYSICAL PLANT | 01 | 109 |  | 310 | Office | A | FAC |  | 132 | CPT-T | Y
+040 | PHYSICAL PLANT | 01 | 110 |  | 310 | Office | A | FAC |  | 119 | CPT-T | Y
+040 | PHYSICAL PLANT | 01 | 111 | STAFF LOCKER ROOM | 725 | Shop Service | A | FAC |  | 536 | CT | Y
+040 | PHYSICAL PLANT | 01 | 112 | BREAK ROOM | 650 | Lounge | A | FAC |  | 495 | VCT | Y
+040 | PHYSICAL PLANT | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1290 | TZ | Y
+040 | PHYSICAL PLANT | 01 | 1C02 |  | W01 | Circulation - Corridor | N |  |  | 1190 | TZ | Y
+040 | PHYSICAL PLANT | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 790 | TZ | Y
+040 | PHYSICAL PLANT | 01 | 113 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 236 | CT | Y
+040 | PHYSICAL PLANT | 01 | 114 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 305 | CT | Y
+040 | PHYSICAL PLANT | 01 | 115 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 63 | SC | N
+040 | PHYSICAL PLANT | 01 | 116 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 770 | SC | N
+040 | PHYSICAL PLANT | 01 | 117 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 90 | SC | N
+040 | PHYSICAL PLANT | 01 | 118 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 100 | SC | Y
+040 | PHYSICAL PLANT | 01 | 119 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 67 | SC | N
+Total Bldg 040 (all rooms) |  |  | 22 rooms |  |  |  |  |  |  | 19537
+Total Bldg 040 (Cust Svc = Y) |  |  | 11 rooms |  |  |  |  |  |  | 5320
+BLDG 041 GROUNDS & FLEET GARAGE (GFG) - Gross Area 10,586 SF - 1 floor - Main Campus
+041 | GROUNDS & FLEET GARAGE | 01 | 101 | VEHICLE BAYS | 740 | Vehicle Storage | A | FAC |  | 4361 | SC | N
+041 | GROUNDS & FLEET GARAGE | 01 | 102 | FLEET SHOP | 720 | Shop | A | FAC |  | 1296 | SC | N
+041 | GROUNDS & FLEET GARAGE | 01 | 103 |  | 310 | Office | A | FAC |  | 122 | CPT-T | Y
+041 | GROUNDS & FLEET GARAGE | 01 | 104 |  | 310 | Office | A | FAC |  | 142 | CPT-T | Y
+041 | GROUNDS & FLEET GARAGE | 01 | 105 | LOCKER ROOM | 725 | Shop Service | A | FAC |  | 300 | CT | Y
+041 | GROUNDS & FLEET GARAGE | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1100 | VCT | Y
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 12 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+BLDG 041 GROUNDS & FLEET GARAGE (GFG) (continued)
+041 | GROUNDS & FLEET GARAGE | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 425 | CT | Y
+041 | GROUNDS & FLEET GARAGE | 01 | 106 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 242 | CT | Y
+041 | GROUNDS & FLEET GARAGE | 01 | 107 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 330 | CT | Y
+041 | GROUNDS & FLEET GARAGE | 01 | 108 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 51 | SC | N
+041 | GROUNDS & FLEET GARAGE | 01 | 109 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 395 | SC | N
+041 | GROUNDS & FLEET GARAGE | 01 | 110 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 167 | SC | N
+041 | GROUNDS & FLEET GARAGE | 01 | 111 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 126 | SC | Y
+041 | GROUNDS & FLEET GARAGE | 01 | 112 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 51 | SC | N
+Total Bldg 041 (all rooms) |  |  | 14 rooms |  |  |  |  |  |  | 9108
+Total Bldg 041 (Cust Svc = Y) |  |  | 8 rooms |  |  |  |  |  |  | 2787
+BLDG 045 ENVIRONMENTAL FIELD STATION (EFS) - Gross Area 5,313 SF - 1 floor - Lake Annex
+045 | ENVIRONMENTAL FIELD STATION | 01 | 101 | FIELD LAB | 210 | Class Laboratory | A | ENVS | 21 | 824 | SC | Y
+045 | ENVIRONMENTAL FIELD STATION | 01 | 102 | FIELD LAB | 210 | Class Laboratory | A | ENVS | 24 | 940 | SC | Y
+045 | ENVIRONMENTAL FIELD STATION | 01 | 103 |  | 110 | Classroom | A | ENVS | 36 | 717 | CPT-T | Y
+045 | ENVIRONMENTAL FIELD STATION | 01 | 104 |  | 310 | Office | A | ENVS |  | 111 | CPT-T | Y
+045 | ENVIRONMENTAL FIELD STATION | 01 | 105 |  | 310 | Office | A | ENVS |  | 132 | CPT-T | Y
+045 | ENVIRONMENTAL FIELD STATION | 01 | 106 |  | 730 | Central Storage | A | ENVS |  | 360 | SC | N
+045 | ENVIRONMENTAL FIELD STATION | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 520 | VCT | Y
+045 | ENVIRONMENTAL FIELD STATION | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 185 | CT | Y
+045 | ENVIRONMENTAL FIELD STATION | 01 | 107 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 214 | CT | Y
+045 | ENVIRONMENTAL FIELD STATION | 01 | 108 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 228 | CT | Y
+045 | ENVIRONMENTAL FIELD STATION | 01 | 109 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 71 | SC | N
+045 | ENVIRONMENTAL FIELD STATION | 01 | 110 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 225 | SC | N
+045 | ENVIRONMENTAL FIELD STATION | 01 | 111 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 97 | SC | N
+045 | ENVIRONMENTAL FIELD STATION | 01 | 112 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 60 | SC | N
+Total Bldg 045 (all rooms) |  |  | 14 rooms |  |  |  |  |  |  | 4684
+Total Bldg 045 (Cust Svc = Y) |  |  | 9 rooms |  |  |  |  |  |  | 3871
+BLDG 050 CONT ED & WORKFORCE CTR (CEW) - Gross Area 12,472 SF - 1 floor - Downtown (leased)
+050 | CONT ED & WORKFORCE CTR | 01 | 101 |  | 110 | Classroom | A | CEW | 41 | 826 | VCT | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 102 |  | 110 | Classroom | A | CEW | 42 | 837 | VCT | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 103 |  | 110 | Classroom | A | CEW | 40 | 807 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 104 |  | 110 | Classroom | A | CEW | 36 | 717 | VCT | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 105 |  | 110 | Classroom | A | CEW | 36 | 713 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 106 |  | 110 | Classroom | A | CEW | 43 | 850 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 107 | COMPUTER LAB | 220 | Open Laboratory | A | CEW | 25 | 1011 | VCT | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 108 | COMPUTER LAB | 220 | Open Laboratory | A | CEW | 23 | 923 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 109 |  | 310 | Office | A | CEW |  | 134 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 110 |  | 310 | Office | A | CEW |  | 145 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 111 |  | 310 | Office | A | CEW |  | 136 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 112 |  | 310 | Office | A | CEW |  | 139 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 113 |  | 350 | Conference Room | A | CEW |  | 336 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 114 |  | 650 | Lounge | A | CEW |  | 414 | CPT-T | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 1C01 |  | W01 | Circulation - Corridor | N |  |  | 1180 | VCT | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 1V01 | MAIN ENTRY | W02 | Circulation - Lobby/Vestibule | N |  |  | 350 | TZ | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 115 | WOMEN | X03 | Bldg Service - Public Rest Room | N |  |  | 215 | CT | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 116 | MEN | X03 | Bldg Service - Public Rest Room | N |  |  | 281 | CT | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 117 | JANITOR | X02 | Bldg Service - Janitor Room | N |  |  | 50 | SC | N
+050 | CONT ED & WORKFORCE CTR | 01 | 118 | MECH | Y01 | Mechanical - Mechanical Room | N |  |  | 555 | SC | N
+050 | CONT ED & WORKFORCE CTR | 01 | 119 | ELEC | Y02 | Mechanical - Electrical Room | N |  |  | 140 | SC | N
+050 | CONT ED & WORKFORCE CTR | 01 | 120 | TRASH / RECYCLING | X04 | Bldg Service - Trash Room | N |  |  | 96 | SC | Y
+050 | CONT ED & WORKFORCE CTR | 01 | 121 | IDF | Y03 | Mechanical - Telecom Closet (IDF) | N |  |  | 73 | SC | N
+Total Bldg 050 (all rooms) |  |  | 23 rooms |  |  |  |  |  |  | 10928
+Total Bldg 050 (Cust Svc = Y) |  |  | 19 rooms |  |  |  |  |  |  | 10110
+TAMARACK STATE UNIVERSITY - SPC-210 Room Inventory by Building - RFP TSU-27-014 Attachment C-2 (continued)
+Page 13 of 13
+Bldg | Bldg Name | Flr | Room | Room Name | Use Code | Use Description | Cat | Org | Stations | Net Area (SF) | Floor Cvrg | Cust Svc | Comments
+REPORT TOTAL - 18 buildings (all rooms) |  |  | 587 rooms |  |  |  |  |  |  | 330248
+REPORT TOTAL - 18 buildings (Cust Svc = Y) |  |  | 460 rooms |  |  |  |  |  |  | 271301
+*** End of report SPC-210 ***
+
+=== TSU-27-014 Attachment C - Space Inventory (Rev 1 per Addendum 1).xlsx :: sheet "C-3 Floor Covering" (22 rows) ===
+TAMARACK STATE UNIVERSITY - RFP No. TSU-27-014 Custodial Services
+ATTACHMENT C-3 - CLEANABLE SQ FT BY FLOOR COVERING, BUILDINGS INCLUDED (Revised 10/02/2026 per Addendum No. 1)
+Rooms with Cust Svc = Y in Attachment C-2, summed by floor covering code (see Notes tab for codes). Row total = C-1 Cleanable Sq Ft.
+Bldg. No. | Abbr. | Building Name | CPT | CPT-T | VCT | LVT | SV | CT | TZ | WD | RB | SC | EP | Total Cleanable Sq Ft
+010 | ADM | Founders Hall | 1540 | 3797 | 675 |  |  | 680 | 670 |  | 840 |  |  | 8202
+012 | LIB | Elmore Library | 24410 | 2716 | 8781 |  |  | 2109 | 1200 |  | 1745 | 90 |  | 41051
+014 | SCI | Lindqvist Science Hall | 2670 | 1691 | 4785 |  | 7144 | 1783 | 2680 |  | 1300 | 87 | 5796 | 27936
+016 | BRG | Bergstrom Hall |  | 8304 | 5110 |  |  | 1492 | 960 |  | 1270 |  |  | 17136
+018 | KIT | Kittredge Hall |  | 3178 | 6769 |  |  | 609 | 1123 |  |  | 84 |  | 11763
+019 | THO | Thorsen Hall |  | 8162 | 700 |  |  | 1297 | 660 |  | 820 |  |  | 11639
+021 | CDC | Child Development Center |  | 736 |  | 5997 |  | 679 | 1395 |  |  | 132 |  | 8939
+022 | FAC | Fine Arts Center | 6727 | 928 | 3312 |  |  | 1664 | 2975 | 6176 | 1285 | 6544 |  | 29611
+024 | AHN | Allied Health & Nursing Building |  | 3345 | 5022 |  | 6648 | 1109 | 610 |  | 900 | 126 |  | 17760
+026 | TEC | Technology & Engineering Center |  | 1487 | 5981 |  |  | 1270 |  |  |  | 5904 |  | 14642
+028 | UNI | Campus Union | 7968 | 3494 | 4261 |  |  | 1503 | 3205 | 424 | 1255 | 128 |  | 22238
+030 | OST | Ostrander Hall |  | 660 | 4685 |  |  | 4157 | 2055 | 13530 | 4491 | 86 |  | 29664
+032 | SSC | Student Services Center |  | 4283 | 140 |  |  | 784 | 790 |  |  |  |  | 5997
+035 | WEL | Wellness Center |  | 1158 | 360 |  | 897 | 220 |  |  |  |  |  | 2635
+040 | PPL | Physical Plant |  | 378 | 495 |  |  | 1077 | 3270 |  |  | 100 |  | 5320
+041 | GFG | Grounds & Fleet Garage |  | 264 | 1100 |  |  | 1297 |  |  |  | 126 |  | 2787
+050 | CEW | Continuing Education & Workforce Center |  | 4597 | 4571 |  |  | 496 | 350 |  |  | 96 |  | 10110
+TOTAL |  | 17 buildings | 43315 | 49178 | 56747 | 5997 | 14689 | 22226 | 21943 | 20130 | 13906 | 13503 | 5796 | 267430

@@ -14,7 +14,7 @@ import { useHotkey, useEscape } from '../lib/keys';
 import { cx } from '../lib/cx';
 import { categoryColor } from '../lib/theme';
 import type { ReviewMap } from '../lib/review';
-import { sortPatch, usePublishOrder, useInventoryView, type ExtraSort } from '../lib/query';
+import { firstMatchNow, sortPatch, usePublishOrder, useInventoryView, type ExtraSort } from '../lib/query';
 import { copyText, parseTsv, toTsv, type Cell } from '../lib/csv';
 import { exportInventoryCsv } from '../shell/exports';
 import { redo, undo, useHistory, labelNext } from '../lib/history';
@@ -281,7 +281,6 @@ export const TableView = memo(function TableView() {
   };
   const bulkReview = (st: 'verified' | 'flagged' | null) => { labelNext(`${st ?? 'clear'} of ${checkedIds.length} rows`); useStore.getState().setReview(checkedIds, st); };
   const cat = usePopover<HTMLButtonElement>(); const svc = usePopover<HTMLButtonElement>(); const stat = usePopover<HTMLButtonElement>(); const kind = usePopover<HTMLButtonElement>();
-  const firstId = rows[0]?.id;
 
   return (
     <div className="tv vp-ui" data-occluder="">
@@ -314,7 +313,7 @@ export const TableView = memo(function TableView() {
             <Tabs idBase="table" label="Table" size="sm" value={tab} onChange={(t) => setQuery({ tableTab: t })} className="tv__tabs"
               items={[{ id: 'facilities', label: 'Facilities', count: facilitiesAll.length.toLocaleString() }, { id: 'grounds', label: 'Grounds', count: groundsAll.length.toLocaleString() }]} />
             <QueryChips className="tv__chips" />
-            <QuerySearch className="tv-search" size="md" count={shownCount} onEnter={() => { if (firstId) { selectRow(firstId, { frame: false }); gridRef.current?.focus(); } }} onArrowDown={() => gridRef.current?.focus()} />
+            <QuerySearch className="tv-search" size="md" count={shownCount} onEnter={() => { const id = firstMatchNow((x) => estById.get(x)?.fte ?? gestById.get(x)?.fte ?? 0, { extra, tab }); if (id) { selectRow(id, { frame: false }); gridRef.current?.focus(); } }} onArrowDown={() => gridRef.current?.focus()} />
             <div className="tv__tools">
               <SortMenuButton extraLabel={colSort ? `${all.find((c) => c.key === colSort.key)?.menuLabel ?? all.find((c) => c.key === colSort.key)?.label} ${colSort.desc ? '↓' : '↑'}` : null} onPick={() => setColSort(null)} />
               <IconButton ref={colsPop.anchorRef} icon={Columns3} label="Columns" tooltip="Columns and density" aria-haspopup="menu" aria-expanded={colsPop.open} onClick={colsPop.toggle} />

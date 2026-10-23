@@ -9,7 +9,7 @@ import { useStore, type SortKey } from '../../store';
 import { useDerived } from '../../derived';
 import { n1 } from '../../fmt';
 import { cx } from '../lib/cx';
-import { sortLabel, sortPatch, usePublishOrder, useInventoryView } from '../lib/query';
+import { firstMatchNow, sortLabel, sortPatch, usePublishOrder, useInventoryView } from '../lib/query';
 import { IconButton, Menu, Meter, usePopover } from '../ui';
 import { InventoryList, type InventoryListHandle, type ListItem, itemId } from './InventoryList';
 import { QueryChips, QuerySearch, SortMenuButton } from './QueryControls';
@@ -76,7 +76,7 @@ export const InventoryTab = memo(function InventoryTab() {
   return (
     <div className="inv">
       <div className="inv__toolbar">
-        <QuerySearch className="inv__search" count={count} onEnter={() => { if (order[0]) selectRow(order[0]); }} onArrowDown={() => listRef.current?.focus()} />
+        <QuerySearch className="inv__search" count={count} onEnter={() => { const id = firstMatchNow((x) => estById.get(x)?.fte ?? gestById.get(x)?.fte ?? 0); if (id) selectRow(id); }} onArrowDown={() => listRef.current?.focus()} />
         <SortMenuButton />
         <IconButton ref={add.anchorRef} icon={Plus} label="Add" tooltip="Add a building or grounds area" aria-haspopup="menu" aria-expanded={add.open} onClick={add.toggle} disabled={running} />
         <Menu open={add.open} anchor={add.anchorRef} onClose={add.close} label="Add" items={[

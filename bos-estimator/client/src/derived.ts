@@ -161,13 +161,16 @@ export interface TopDownLive {
 export function computeTopDownLive(est: EstimateResult | null, stored: TopDownEstimate | undefined, overrides: Partial<TopDownAssumptions> | undefined, pa: Parameters<typeof computeTopDown>[0]): TopDownLive {
   if (!est) return { bottomUpFte: 0, heads: 0, impliedBase: 0, impliedLow: 0, impliedHigh: 0, deltaPct: null, annualValue: 0, stale: false, td: null };
   const base: TopDownAssumptions = { ...DEFAULT_TOPDOWN, ...(stored?.assumptions ?? {}), ...(overrides ?? {}) };
+  // §5.8 C (P1): years since award follow the award year live (no server re-run needed), unless the slider is overridden
+  if (overrides?.yearsSinceAward === undefined && pa?.awardYear && Number.isFinite(pa.awardYear)) base.yearsSinceAward = Math.max(0, new Date().getFullYear() - pa.awardYear);
   const td = computeTopDown(pa, base, est, { rationale: stored?.rationale ?? '', risks: stored?.risks ?? [], recommendedFte: stored?.recommendedFte, provider: stored?.provider ?? 'heuristic', model: stored?.model });
   let stale = false;
   if (stored) {
     const moved = Math.abs(est.totalFte - stored.bottomUpFte) / Math.max(1e-9, Math.abs(stored.bottomUpFte)) > 0.01;
     const value = Math.round(annualValueBasis(pa).value) !== Math.round(stored.rawAnnualValue);
     const ov = Object.entries(overrides ?? {}).some(([k, v]) => v !== undefined && stored.assumptions[k as keyof TopDownAssumptions] !== v);
-    stale = moved || value || ov;
+    const years = base.yearsSinceAward !== (stored.assumptions.yearsSinceAward ?? 0);
+    stale = moved || value || ov || years;
   }
   const hasValue = td.impliedFte.base > 0;
   return {

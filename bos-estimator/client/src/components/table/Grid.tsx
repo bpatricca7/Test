@@ -10,7 +10,7 @@ import type { FacilityEstimate, GroundsEstimate } from '@shared/estimate';
 import { useStore } from '../../store';
 import type { RowMeta } from '../../derived';
 import { cx } from '../lib/cx';
-import { excerptCheck, type ReviewEntry, type ReviewMap } from '../lib/review';
+import { sourceCheck, sourceContext, type ReviewEntry, type ReviewMap, type SourceCheck } from '../lib/review';
 import { formatNumber } from '../lib/parse';
 import { Button, Menu, Popover, Portal, placeFloating, zoomFactor, type MenuItem } from '../ui';
 import { extractedValue } from '../inventory/edits';
@@ -431,17 +431,20 @@ function ErrorTip({ anchor, message }: { anchor: React.RefObject<HTMLElement | n
 // ---------------------------------------------------------------- source popover (Src column)
 function SourcePopover({ anchor, row, onClose, onUse, readOnly }: { anchor: HTMLElement; row: Row; onClose: () => void; onUse: (v: number) => void; readOnly: boolean }) {
   const f = 'grossSqft' in row ? row : null;
-  const chk = f ? excerptCheck(f) : { status: 'none' as const, shows: undefined };
+  const entry = useStore((s) => s.project?.review?.[row.id]);
+  const facilities = useStore((s) => s.project?.inventory.facilities);
+  const chk: SourceCheck = f ? sourceCheck(f, entry, facilities ? sourceContext(facilities) : undefined) : { status: 'none' };
   const src = row.source;
   return (
     <Popover open anchor={anchor} onClose={onClose} placement="bottom-end" label="Source" className="tv-srcpop">
       <div className="tv-srcpop__file">{src?.file ?? 'No source document cited'}{src?.page ? <span className="muted"> · p.{src.page}</span> : null}{f?.tableId ? <span className="muted"> · {f.tableId}</span> : null}</div>
       {src?.excerpt ? <blockquote className="tv-srcpop__quote">{src.excerpt}</blockquote> : <p className="muted tv-srcpop__none">No excerpt was captured for this row.</p>}
-      {f && chk.status === 'ok' && <p className="tv-srcpop__ok">✓ Gross SF {f.grossSqft.toLocaleString()} appears in the excerpt</p>}
-      {f && chk.status === 'miss' && (
-        <div className="tv-srcpop__miss">
-          <span>✗ Gross SF {f.grossSqft.toLocaleString()} not in the excerpt{chk.shows != null ? ` (it shows ${chk.shows.toLocaleString()})` : ''}</span>
-          {chk.shows != null && !readOnly && !f.originalArea && <Button size="sm" variant="secondary" icon={RotateCcw} onClick={() => onUse(Math.round(chk.shows!))}>Use {chk.shows.toLocaleString()}</Button>}
+      {f && chk.status === 'ok' && <p className="tv-srcpop__ok">✓ {chk.match === 'sum' ? `Gross SF ${f.grossSqft.toLocaleString()} = ${chk.sumText}` : chk.match === 'cleanable' ? `Cleanable SF ${(f.cleanableSqft ?? f.originalArea?.cleanable ?? 0).toLocaleString()} appears; gross is not printed` : chk.match === 'original' ? 'Gross as printed appears in the excerpt' : `Gross SF ${f.grossSqft.toLocaleString()} appears in the excerpt`}</p>}
+      {f && chk.status === 'revised' && <p className="tv-srcpop__ok">✓ Gross SF {f.grossSqft.toLocaleString()} is the revised value in the notes (the excerpt shows the superseded {(chk.revisedFrom ?? 0).toLocaleString()})</p>}
+      {f && (chk.status === 'miss' || chk.status === 'differs') && (
+        <div className={chk.status === 'miss' ? 'tv-srcpop__miss' : 'tv-srcpop__miss is-warn'}>
+          <span>{chk.status === 'miss' ? '✗' : '⚠'} Gross SF {f.grossSqft.toLocaleString()} {chk.shows != null && chk.showsWhy !== 'near' ? `differs from the excerpt (${chk.shows.toLocaleString()}${chk.showsWhy === 'extracted' ? ', extracted' : ''})` : `not in the excerpt${chk.shows != null ? ` (it shows ${chk.shows.toLocaleString()})` : ''}`}</span>
+          {chk.suggest != null && !readOnly && <Button size="sm" variant="secondary" icon={RotateCcw} onClick={() => onUse(chk.suggest!)}>Use {chk.suggest.toLocaleString()}</Button>}
         </div>
       )}
     </Popover>

@@ -5,5 +5,3639 @@
       "w91xpn-27-r-0007-te.pdf"
     ]
   ],
-  "calls": []
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "U.S. Army Reserve Centers, Northern Plains Cluster",
+        "location": "Minnesota, North Dakota and South Dakota (12 base sites; contracting office Fort Snelling, MN)",
+        "solicitation": "W91XPN-27-R-0007",
+        "contract_name": "Custodial, Grounds Maintenance and Snow and Ice Removal Services - U.S. Army Reserve Centers, Northern Plains Cluster",
+        "climate_zone": "cold",
+        "growing_season_weeks": 24,
+        "contract_years": 5,
+        "notes": "FFP. Base period 1 April 2027 - 31 March 2028 plus four 12-month option periods (Option Period 4 ends 31 March 2032); FAR 52.217-8 extension up to six months is not an option period (evaluated at Option Period 4 rates). Growing season 1 May - 15 October (PWS 5.5); snow season 15 October - 30 April, on call (PWS 5.6). Supports 89th Readiness Division, U.S. Army Reserve Command. 12 base sites in MN, ND, SD plus one optional site (Watertown USARC, SD033, Section B line O-1). Pricing estimates: 16 improved mowing, 8 trimming, 2 edging, 3 semi-improved mowing events per season; 18 plowing and 24 sidewalk clearing/salting events per site per season; BA weekend Sunday service approx. 12 per year at buildings marked BA Wknd Y."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "TE-2",
+            "title": "Technical Exhibit 2 - Facility and Custodial Workload Data",
+            "kind": "facilities",
+            "file": "w91xpn-27-r-0007-te.pdf",
+            "pages": "7-8",
+            "row_count": 37,
+            "printed_total_gross_area": 522290,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "TE-3",
+            "title": "Technical Exhibit 3 - Grounds Maintenance and Snow Removal Workload Data",
+            "kind": "grounds",
+            "file": "w91xpn-27-r-0007-te.pdf",
+            "pages": "9",
+            "row_count": 13,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": [
+              {
+                "value": 57.2,
+                "unit": "acres",
+                "kinds": [
+                  "improved_turf"
+                ]
+              },
+              {
+                "value": 17.15,
+                "unit": "acres",
+                "kinds": [
+                  "semi_improved"
+                ]
+              },
+              {
+                "value": 28010,
+                "unit": "lf",
+                "kinds": [
+                  "sidewalk"
+                ]
+              },
+              {
+                "value": 80653,
+                "unit": "sqyd",
+                "kinds": [
+                  "parking"
+                ]
+              },
+              {
+                "value": 42485,
+                "unit": "sqft",
+                "kinds": [
+                  "sidewalk"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE-2",
+            "campus": "Willmar USARC/OMS",
+            "building_number": "MN012-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 28640,
+            "added_areas": null,
+            "cleanable_area": 24310,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 10,
+              "urinals": 4,
+              "lavatories": 9,
+              "showers": 4
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/W (five times per week, Monday through Friday); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN012-01 | TC | Training Center | 1987 | 2 | 28,640 | 24,310 | 10 | 4 | 9 | 4 | 5/W | Y | Arms vault and mech. rooms excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Arms vault and mech. rooms excluded. BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 1987."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Willmar USARC/OMS",
+            "building_number": "MN012-02",
+            "line_item": null,
+            "name": "Organizational Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 6212,
+            "added_areas": null,
+            "cleanable_area": 1148,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 1
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "1/W (once per week)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN012-02 | OMS | Organizational Maintenance Shop | 1987 | 1 | 6,212 | 1,148 | 2 | 1 | 2 | 1 | 1/W | N | Office, latrines, break rm only; bays excl."
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office, latrines, break rm only; bays excl.. Year built 1987. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Willmar USARC/OMS",
+            "building_number": "MN012-03",
+            "line_item": null,
+            "name": "Unheated Storage",
+            "status": "excluded",
+            "status_reason": "Routine Freq. N/S = no service (TE-2 Note 5); listed for grounds, snow removal and site orientation only (PWS 1.6)",
+            "category": "warehouse",
+            "gross_area": 2400,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "N/S (no service)",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN012-03 | UHS | Unheated Storage | 1994 | 1 | 2,400 | — | — | — | — | — | N/S | N"
+            },
+            "confidence": 0.95,
+            "notes": "Year built 1994."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "building_number": "MN027-01",
+            "line_item": null,
+            "name": "Armed Forces Reserve Center (training bldg)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 61580,
+            "added_areas": null,
+            "cleanable_area": 52214,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 22,
+              "urinals": 10,
+              "lavatories": 20,
+              "showers": 12
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/W (five times per week, Monday through Friday); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN027-01 | AFRC | Armed Forces Reserve Center (training bldg) | 2011 | 2 | 61,580 | 52,214 | 22 | 10 | 20 | 12 | 5/W | Y | ARNG tenant area 7,820 SF cleaned by MNARNG - excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: ARNG tenant area 7,820 SF cleaned by MNARNG - excluded. BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 2011. ARNG tenant area cleaned by the State and excluded from Custodial SF (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "building_number": "MN027-02",
+            "line_item": null,
+            "name": "Area Maintenance Support Activity #81",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 18420,
+            "added_areas": null,
+            "cleanable_area": 3260,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 4,
+              "urinals": 2,
+              "lavatories": 4,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2/W (two times per week (Tuesday and Thursday))",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN027-02 | AMSA | Area Maintenance Support Activity #81 | 2011 | 1 | 18,420 | 3,260 | 4 | 2 | 4 | 2 | 2/W | N | Admin, latrines, locker rm only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Admin, latrines, locker rm only. Year built 2011. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "building_number": "MN027-03",
+            "line_item": null,
+            "name": "Unheated Storage",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 4800,
+            "added_areas": null,
+            "cleanable_area": 4800,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Sweep floor only",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "quarterly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Q (quarterly - once per calendar quarter)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN027-03 | UHS | Unheated Storage | 2011 | 1 | 4,800 | 4,800 | — | — | — | — | Q | N | Sweep floor only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Sweep floor only. Year built 2011. Swept quarterly over its full floor area (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Rochester USARC",
+            "building_number": "MN041-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 17950,
+            "added_areas": null,
+            "cleanable_area": 15620,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 6,
+              "urinals": 3,
+              "lavatories": 6,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3/W (three times per week (Monday, Wednesday, Friday)); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN041-01 | TC | Training Center | 1972 | 1 | 17,950 | 15,620 | 6 | 3 | 6 | 2 | 3/W | Y"
+            },
+            "confidence": 0.95,
+            "notes": "BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 1972."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Rochester USARC",
+            "building_number": "MN041-02",
+            "line_item": null,
+            "name": "Organizational Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 3940,
+            "added_areas": null,
+            "cleanable_area": 720,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 1,
+              "lavatories": 1,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "biweekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "BW (bi-weekly - once every other week (26 times per year))",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN041-02 | OMS | Organizational Maintenance Shop | 1972 | 1 | 3,940 | 720 | 1 | 1 | 1 | 0 | BW | N | Office and latrine only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office and latrine only. Year built 1972. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Duluth USARC",
+            "building_number": "MN050-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 34215,
+            "added_areas": null,
+            "cleanable_area": 29880,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 12,
+              "urinals": 5,
+              "lavatories": 11,
+              "showers": 6
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/W (five times per week, Monday through Friday); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN050-01 | TC | Training Center | 1964 / 2026 | 2 | 34,215 | 29,880 | 12 | 5 | 11 | 6 | 5/W | Y | Classroom addition under constr. - not incl."
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Classroom addition under constr. - not incl.. BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 1964 / 2026. TE-2 Note 7: classroom addition under construction not included in Gross SF or Custodial SF shown."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Duluth USARC",
+            "building_number": "MN050-02",
+            "line_item": null,
+            "name": "Organizational Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 7280,
+            "added_areas": null,
+            "cleanable_area": 1410,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 1
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "1/W (once per week)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN050-02 | OMS | Organizational Maintenance Shop | 1964 | 1 | 7,280 | 1,410 | 2 | 1 | 2 | 1 | 1/W | N | Office, latrines, break rm only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office, latrines, break rm only. Year built 1964. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Duluth USARC",
+            "building_number": "MN050-03",
+            "line_item": null,
+            "name": "Unheated Storage",
+            "status": "excluded",
+            "status_reason": "Routine Freq. N/S = no service (TE-2 Note 5); listed for grounds, snow removal and site orientation only (PWS 1.6)",
+            "category": "warehouse",
+            "gross_area": 3200,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "N/S (no service)",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN050-03 | UHS | Unheated Storage | 1990 | 1 | 3,200 | — | — | — | — | — | N/S | N"
+            },
+            "confidence": 0.95,
+            "notes": "Year built 1990."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Fergus Falls USARC",
+            "building_number": "MN066-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 15440,
+            "added_areas": null,
+            "cleanable_area": 13385,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 5,
+              "urinals": 3,
+              "lavatories": 5,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3/W (three times per week (Monday, Wednesday, Friday)); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN066-01 | TC | Training Center | 1959 | 1 | 15,440 | 13,385 | 5 | 3 | 5 | 2 | 3/W | Y"
+            },
+            "confidence": 0.95,
+            "notes": "BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 1959."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Fergus Falls USARC",
+            "building_number": "MN066-02",
+            "line_item": null,
+            "name": "Vehicle Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 4980,
+            "added_areas": null,
+            "cleanable_area": 910,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 1,
+              "lavatories": 1,
+              "showers": 1
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "1/W (once per week)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN066-02 | VMS | Vehicle Maintenance Shop | 1959 | 1 | 4,980 | 910 | 1 | 1 | 1 | 1 | 1/W | N | Office and latrine only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office and latrine only. Year built 1959. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Eagan USARC",
+            "building_number": "MN073-01",
+            "line_item": null,
+            "name": "Training Center (Bldg 1)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 72310,
+            "added_areas": null,
+            "cleanable_area": 58940,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": {
+              "total": null,
+              "water_closets": 24,
+              "urinals": 12,
+              "lavatories": 22,
+              "showers": 14
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/W (five times per week, Monday through Friday); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN073-01 | TC | Training Center (Bldg 1) | 2003 | 3 | 72,310 | 58,940 | 24 | 12 | 22 | 14 | 5/W | Y | 2nd flr IT server suite and vault excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: 2nd flr IT server suite and vault excluded. BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 2003. TE-1 Note 4: Bldg 1 and Bldg 2 connected by a covered walk not included in either building's area."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Eagan USARC",
+            "building_number": "MN073-02",
+            "line_item": null,
+            "name": "Training Annex (Bldg 2)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 9860,
+            "added_areas": null,
+            "cleanable_area": 8720,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 3,
+              "urinals": 1,
+              "lavatories": 3,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3/W (three times per week (Monday, Wednesday, Friday)); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN073-02 | TC | Training Annex (Bldg 2) | 2009 | 1 | 9,860 | 8,720 | 3 | 1 | 3 | 0 | 3/W | Y"
+            },
+            "confidence": 0.95,
+            "notes": "BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 2009. TE-1 Note 4: Bldg 1 and Bldg 2 connected by a covered walk not included in either building's area."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Eagan USARC",
+            "building_number": "MN073-03",
+            "line_item": null,
+            "name": "Organizational Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 9440,
+            "added_areas": null,
+            "cleanable_area": 1720,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 2,
+              "lavatories": 2,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2/W (two times per week (Tuesday and Thursday))",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN073-03 | OMS | Organizational Maintenance Shop | 2003 | 1 | 9,440 | 1,720 | 2 | 2 | 2 | 2 | 2/W | N | Office, latrines, break rm only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office, latrines, break rm only. Year built 2003. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Eagan USARC",
+            "building_number": "MN073-04",
+            "line_item": null,
+            "name": "Unheated Storage",
+            "status": "excluded",
+            "status_reason": "Routine Freq. N/S = no service (TE-2 Note 5); listed for grounds, snow removal and site orientation only (PWS 1.6)",
+            "category": "warehouse",
+            "gross_area": 5000,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "N/S (no service)",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN073-04 | UHS | Unheated Storage | 2003 | 1 | 5,000 | — | — | — | — | — | N/S | N"
+            },
+            "confidence": 0.95,
+            "notes": "Year built 2003."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Eagan USARC",
+            "building_number": "MN073-05",
+            "line_item": null,
+            "name": "Fire Pump House",
+            "status": "excluded",
+            "status_reason": "Routine Freq. N/S = no service (TE-2 Note 5); listed for grounds, snow removal and site orientation only (PWS 1.6)",
+            "category": "other",
+            "gross_area": 180,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "N/S (no service)",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 7,
+              "excerpt": "MN073-05 | FPH | Fire Pump House | 2003 | 1 | 180 | — | — | — | — | — | N/S | N"
+            },
+            "confidence": 0.95,
+            "notes": "Year built 2003."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE-2",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "building_number": "ND008-01",
+            "line_item": null,
+            "name": "Armed Forces Reserve Center (training bldg)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 48760,
+            "added_areas": null,
+            "cleanable_area": 40115,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 16,
+              "urinals": 8,
+              "lavatories": 15,
+              "showers": 10
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/W (five times per week, Monday through Friday); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "ND008-01 | AFRC | Armed Forces Reserve Center (training bldg) | 2010 | 2 | 48,760 | 40,115 | 16 | 8 | 15 | 10 | 5/W | Y | ARNG tenant area 6,980 SF excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: ARNG tenant area 6,980 SF excluded. BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 2010. ARNG tenant area cleaned by the State and excluded from Custodial SF (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "building_number": "ND008-02",
+            "line_item": null,
+            "name": "Area Maintenance Support Activity #92",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 14960,
+            "added_areas": null,
+            "cleanable_area": 2880,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 3,
+              "urinals": 2,
+              "lavatories": 3,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2/W (two times per week (Tuesday and Thursday))",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "ND008-02 | AMSA | Area Maintenance Support Activity #92 | 2010 | 1 | 14,960 | 2,880 | 3 | 2 | 3 | 2 | 2/W | N | Admin, latrines, locker rm only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Admin, latrines, locker rm only. Year built 2010. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "building_number": "ND008-03",
+            "line_item": null,
+            "name": "Unheated Storage",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 3600,
+            "added_areas": null,
+            "cleanable_area": 3600,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Sweep floor only",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "quarterly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Q (quarterly - once per calendar quarter)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "ND008-03 | UHS | Unheated Storage | 2010 | 1 | 3,600 | 3,600 | — | — | — | — | Q | N | Sweep floor only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Sweep floor only. Year built 2010. Swept quarterly over its full floor area (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "building_number": "ND008-04",
+            "line_item": null,
+            "name": "Hazardous Material Storage",
+            "status": "excluded",
+            "status_reason": "Routine Freq. N/S = no service (TE-2 Note 5); listed for grounds, snow removal and site orientation only (PWS 1.6)",
+            "category": "warehouse",
+            "gross_area": 240,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "N/S (no service)",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "ND008-04 | HMS | Hazardous Material Storage | 2010 | 1 | 240 | — | — | — | — | — | N/S | N"
+            },
+            "confidence": 0.95,
+            "notes": "Year built 2010."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Fargo USARC",
+            "building_number": "ND021-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 22480,
+            "added_areas": null,
+            "cleanable_area": 19045,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 8,
+              "urinals": 4,
+              "lavatories": 8,
+              "showers": 4
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/W (five times per week, Monday through Friday); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "ND021-01 | TC | Training Center | 1978 | 1 | 22,480 | 19,045 | 8 | 4 | 8 | 4 | 5/W | Y"
+            },
+            "confidence": 0.95,
+            "notes": "BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 1978."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Fargo USARC",
+            "building_number": "ND021-02",
+            "line_item": null,
+            "name": "Organizational Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 5120,
+            "added_areas": null,
+            "cleanable_area": 980,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 1
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "1/W (once per week)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "ND021-02 | OMS | Organizational Maintenance Shop | 1978 | 1 | 5,120 | 980 | 2 | 1 | 2 | 1 | 1/W | N | Office, latrines, break rm only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office, latrines, break rm only. Year built 1978. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Minot USARC",
+            "building_number": "ND035-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 14236,
+            "added_areas": null,
+            "cleanable_area": 12410,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 5,
+              "urinals": 2,
+              "lavatories": 5,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3/W (three times per week (Monday, Wednesday, Friday)); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "ND035-01 | TC | Training Center | 1968 | 1 | 14,236 | 12,410 | 5 | 2 | 5 | 2 | 3/W | Y"
+            },
+            "confidence": 0.95,
+            "notes": "BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 1968."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Minot USARC",
+            "building_number": "ND035-02",
+            "line_item": null,
+            "name": "Organizational Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 3180,
+            "added_areas": null,
+            "cleanable_area": 650,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 1,
+              "lavatories": 1,
+              "showers": 1
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "biweekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "BW (bi-weekly - once every other week (26 times per year))",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "ND035-02 | OMS | Organizational Maintenance Shop | 1968 | 1 | 3,180 | 650 | 1 | 1 | 1 | 1 | BW | N | Office and latrine only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office and latrine only. Year built 1968. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Minot USARC",
+            "building_number": "ND035-03",
+            "line_item": null,
+            "name": "Unheated Storage",
+            "status": "excluded",
+            "status_reason": "Routine Freq. N/S = no service (TE-2 Note 5); listed for grounds, snow removal and site orientation only (PWS 1.6)",
+            "category": "warehouse",
+            "gross_area": 1600,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "N/S (no service)",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "ND035-03 | UHS | Unheated Storage | 1996 | 1 | 1,600 | — | — | — | — | — | N/S | N"
+            },
+            "confidence": 0.95,
+            "notes": "Year built 1996."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Sioux Falls USARC/AMSA #94",
+            "building_number": "SD004-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 41325,
+            "added_areas": null,
+            "cleanable_area": 35640,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 14,
+              "urinals": 6,
+              "lavatories": 13,
+              "showers": 8
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/W (five times per week, Monday through Friday); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD004-01 | TC | Training Center | 2008 | 2 | 41,325 | 35,640 | 14 | 6 | 13 | 8 | 5/W | Y"
+            },
+            "confidence": 0.95,
+            "notes": "BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 2008."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Sioux Falls USARC/AMSA #94",
+            "building_number": "SD004-02",
+            "line_item": null,
+            "name": "Area Maintenance Support Activity #94",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 16840,
+            "added_areas": null,
+            "cleanable_area": 3120,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 4,
+              "urinals": 2,
+              "lavatories": 4,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2/W (two times per week (Tuesday and Thursday))",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD004-02 | AMSA | Area Maintenance Support Activity #94 | 2008 | 1 | 16,840 | 3,120 | 4 | 2 | 4 | 2 | 2/W | N | Admin, latrines, locker rm only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Admin, latrines, locker rm only. Year built 2008. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Sioux Falls USARC/AMSA #94",
+            "building_number": "SD004-03",
+            "line_item": null,
+            "name": "Unheated Storage",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 4000,
+            "added_areas": null,
+            "cleanable_area": 4000,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Sweep floor only",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "quarterly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "Q (quarterly - once per calendar quarter)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD004-03 | UHS | Unheated Storage | 2008 | 1 | 4,000 | 4,000 | — | — | — | — | Q | N | Sweep floor only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Sweep floor only. Year built 2008. Swept quarterly over its full floor area (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Rapid City USARC",
+            "building_number": "SD011-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 19870,
+            "added_areas": null,
+            "cleanable_area": 17240,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 6,
+              "urinals": 3,
+              "lavatories": 6,
+              "showers": 3
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3/W (three times per week (Monday, Wednesday, Friday)); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD011-01 | TC | Training Center | 1975 | 1 | 19,870 | 17,240 | 6 | 3 | 6 | 3 | 3/W | Y"
+            },
+            "confidence": 0.95,
+            "notes": "BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 1975."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Rapid City USARC",
+            "building_number": "SD011-02",
+            "line_item": null,
+            "name": "Organizational Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 4460,
+            "added_areas": null,
+            "cleanable_area": 860,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "1/W (once per week)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD011-02 | OMS | Organizational Maintenance Shop | 1975 | 1 | 4,460 | 860 | 2 | 1 | 2 | 0 | 1/W | N | Office, latrines, break rm only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office, latrines, break rm only. Year built 1975. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Aberdeen USARC",
+            "building_number": "SD026-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 11860,
+            "added_areas": null,
+            "cleanable_area": 10215,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 4,
+              "urinals": 2,
+              "lavatories": 4,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2/W (two times per week (Tuesday and Thursday)); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD026-01 | TC | Training Center | 1961 | 1 | 11,860 | 10,215 | 4 | 2 | 4 | 2 | 2/W | Y"
+            },
+            "confidence": 0.95,
+            "notes": "BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 1961."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Aberdeen USARC",
+            "building_number": "SD026-02",
+            "line_item": null,
+            "name": "Organizational Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 2712,
+            "added_areas": null,
+            "cleanable_area": 540,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 1,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "monthly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "M (monthly - once per calendar month)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD026-02 | OMS | Organizational Maintenance Shop | 1961 | 1 | 2,712 | 540 | 1 | 0 | 1 | 0 | M | N | Office and latrine only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office and latrine only. Year built 1961. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Aberdeen USARC",
+            "building_number": "SD026-03",
+            "line_item": null,
+            "name": "Unheated Storage",
+            "status": "excluded",
+            "status_reason": "Routine Freq. N/S = no service (TE-2 Note 5); listed for grounds, snow removal and site orientation only (PWS 1.6)",
+            "category": "warehouse",
+            "gross_area": 1200,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "N/S (no service)",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD026-03 | UHS | Unheated Storage | 1989 | 1 | 1,200 | — | — | — | — | — | N/S | N"
+            },
+            "confidence": 0.95,
+            "notes": "Year built 1989."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Watertown USARC",
+            "building_number": "SD033-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": "option_only",
+            "status_reason": "OPTIONAL SITE – PRICED AS OPTION LINE ITEMS (SECTION B, LINE O-1); NOT INCLUDED IN BASE TOTALS",
+            "category": "admin",
+            "gross_area": 13480,
+            "added_areas": null,
+            "cleanable_area": 11690,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 4,
+              "urinals": 2,
+              "lavatories": 4,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2/W (two times per week (Tuesday and Thursday)); BA Wknd: Y",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD033-01 | TC | Training Center | 1966 | 1 | 13,480 | 11,690 | 4 | 2 | 4 | 2 | 2/W | Y"
+            },
+            "confidence": 0.95,
+            "notes": "BA Wknd Y: additional Sunday service on each Battle Assembly weekend (PWS 5.3), approx. twelve per year, on top of the routine frequency. Year built 1966."
+          },
+          {
+            "table_id": "TE-2",
+            "campus": "Watertown USARC",
+            "building_number": "SD033-02",
+            "line_item": null,
+            "name": "Organizational Maintenance Shop",
+            "status": "option_only",
+            "status_reason": "OPTIONAL SITE – PRICED AS OPTION LINE ITEMS (SECTION B, LINE O-1); NOT INCLUDED IN BASE TOTALS",
+            "category": "maintenance",
+            "gross_area": 3060,
+            "added_areas": null,
+            "cleanable_area": 590,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 1,
+              "lavatories": 1,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "monthly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "M (monthly - once per calendar month)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 8,
+              "excerpt": "SD033-02 | OMS | Organizational Maintenance Shop | 1966 | 1 | 3,060 | 590 | 1 | 1 | 1 | 0 | M | N | Office and latrine only"
+            },
+            "confidence": 0.95,
+            "notes": "Remarks: Office and latrine only. Year built 1966. Custodial SF covers office, latrine, locker and break areas only; maintenance bays excluded (TE-2 Note 3)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": "Fergus Falls USARC",
+            "building_number": "MN066-02",
+            "line_item": null,
+            "name": "Vehicle Maintenance Shop",
+            "status": "deleted_by_amendment",
+            "status_reason": "Amendment 0001 Item 1: Bldg MN066-02, Vehicle Maintenance Shop (4,980 GSF; 910 Custodial SF), is DELETED from the requirement; licensed to the MNARNG effective 1 January 2027 and cleaned by the State.",
+            "category": "maintenance",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 11,
+              "excerpt": "Item 1 – Building deleted. TE-2, Fergus Falls USARC, Bldg ID MN066-02, Vehicle Maintenance Shop (4,980 GSF; 910 Custodial SF), is DELETED from the requirement."
+            },
+            "confidence": 0.97,
+            "notes": "Grounds and snow removal quantities for MN066 in TE-3 are unchanged (Amendment 0001 Item 1). TE-1 line 5 Bldgs in TE-2 revised from 2 to 1 (Q&A A7)."
+          },
+          {
+            "table_id": null,
+            "campus": "Duluth USARC",
+            "building_number": "MN050-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 38955,
+            "added_areas": null,
+            "cleanable_area": 34250,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 11,
+              "excerpt": "Item 2 – Area revised. MN050-01, Training Center: classroom addition (4,740 GSF) accepted... Gross SF is revised from 34,215 to 38,955; Custodial SF is revised from 29,880 to 34,250."
+            },
+            "confidence": 0.97,
+            "notes": "Amendment 0001 Item 2: classroom addition (4,740 GSF) accepted 30 October 2026 and added to the requirement. Floors (2), fixtures and frequency (5/W) unchanged. TE-2 Note 7 deleted."
+          },
+          {
+            "table_id": null,
+            "campus": "Minot USARC",
+            "building_number": "ND035-01",
+            "line_item": null,
+            "name": "Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5/W (Monday through Friday); BA Wknd: Y (unchanged)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 11,
+              "excerpt": "Item 3 – Frequency revised. TE-2, Minot USARC, Bldg ID ND035-01, Training Center: routine frequency is revised from 3/W to 5/W (Monday through Friday)"
+            },
+            "confidence": 0.97,
+            "notes": "Amendment 0001 Item 3: additional full-time staff assigned from 1 April 2027. BA weekend service is unchanged."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "Willmar USARC/OMS – Improved Mow & Trim",
+            "campus": "Willmar USARC/OMS",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 4.2,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN012 | Willmar USARC/OMS | 9.6 | 4.20 | — | 2,140 | 3,912 | 4,420 | 1,206 | 5,118 | 2,860"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Willmar USARC/OMS – Edging",
+            "campus": "Willmar USARC/OMS",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2140,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN012 | Willmar USARC/OMS | 9.6 | 4.20 | — | 2,140 | 3,912 | 4,420 | 1,206 | 5,118 | 2,860"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Willmar USARC/OMS – POV Parking",
+            "campus": "Willmar USARC/OMS",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3912,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN012 | Willmar USARC/OMS | 9.6 | 4.20 | — | 2,140 | 3,912 | 4,420 | 1,206 | 5,118 | 2,860"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Willmar USARC/OMS – MEP",
+            "campus": "Willmar USARC/OMS",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 4420,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN012 | Willmar USARC/OMS | 9.6 | 4.20 | — | 2,140 | 3,912 | 4,420 | 1,206 | 5,118 | 2,860"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Willmar USARC/OMS – Roads & Drives",
+            "campus": "Willmar USARC/OMS",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1206,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN012 | Willmar USARC/OMS | 9.6 | 4.20 | — | 2,140 | 3,912 | 4,420 | 1,206 | 5,118 | 2,860"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Willmar USARC/OMS – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Willmar USARC/OMS",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2860,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN012 | Willmar USARC/OMS | 9.6 | 4.20 | — | 2,140 | 3,912 | 4,420 | 1,206 | 5,118 | 2,860"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "St. Cloud AFRC/AMSA #81 – Improved Mow & Trim",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 7.85,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN027 | St. Cloud AFRC/AMSA #81 | 17.4 | 7.85 | 3.40 | 4,380 | 9,615 | 11,240 | 2,870 | 12,485 | 6,425"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "St. Cloud AFRC/AMSA #81 – Semi-Improved",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "semi_improved",
+            "document_label": "Semi-Improved (Ac.)",
+            "mowing_frequency_text": "Mow three (3) times per season to 4–6 in. (PWS 5.5(d); Section B; Q&A A8)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3.4,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN027 | St. Cloud AFRC/AMSA #81 | 17.4 | 7.85 | 3.40 | 4,380 | 9,615 | 11,240 | 2,870 | 12,485 | 6,425"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "St. Cloud AFRC/AMSA #81 – Edging",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 4380,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN027 | St. Cloud AFRC/AMSA #81 | 17.4 | 7.85 | 3.40 | 4,380 | 9,615 | 11,240 | 2,870 | 12,485 | 6,425"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "St. Cloud AFRC/AMSA #81 – POV Parking",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 9615,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN027 | St. Cloud AFRC/AMSA #81 | 17.4 | 7.85 | 3.40 | 4,380 | 9,615 | 11,240 | 2,870 | 12,485 | 6,425"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "St. Cloud AFRC/AMSA #81 – MEP",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 11240,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN027 | St. Cloud AFRC/AMSA #81 | 17.4 | 7.85 | 3.40 | 4,380 | 9,615 | 11,240 | 2,870 | 12,485 | 6,425"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "St. Cloud AFRC/AMSA #81 – Roads & Drives",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2870,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN027 | St. Cloud AFRC/AMSA #81 | 17.4 | 7.85 | 3.40 | 4,380 | 9,615 | 11,240 | 2,870 | 12,485 | 6,425"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "St. Cloud AFRC/AMSA #81 – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "St. Cloud AFRC/AMSA #81",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6425,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN027 | St. Cloud AFRC/AMSA #81 | 17.4 | 7.85 | 3.40 | 4,380 | 9,615 | 11,240 | 2,870 | 12,485 | 6,425"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Rochester USARC – Improved Mow & Trim",
+            "campus": "Rochester USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3.1,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN041 | Rochester USARC | 6.8 | 3.10 | — | 1,560 | 2,840 | 2,150 | 860 | 3,700 | 1,945"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Rochester USARC – Edging",
+            "campus": "Rochester USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1560,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN041 | Rochester USARC | 6.8 | 3.10 | — | 1,560 | 2,840 | 2,150 | 860 | 3,700 | 1,945"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Rochester USARC – POV Parking",
+            "campus": "Rochester USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2840,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN041 | Rochester USARC | 6.8 | 3.10 | — | 1,560 | 2,840 | 2,150 | 860 | 3,700 | 1,945"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Rochester USARC – MEP",
+            "campus": "Rochester USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 2150,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN041 | Rochester USARC | 6.8 | 3.10 | — | 1,560 | 2,840 | 2,150 | 860 | 3,700 | 1,945"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Rochester USARC – Roads & Drives",
+            "campus": "Rochester USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 860,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN041 | Rochester USARC | 6.8 | 3.10 | — | 1,560 | 2,840 | 2,150 | 860 | 3,700 | 1,945"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Rochester USARC – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Rochester USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1945,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN041 | Rochester USARC | 6.8 | 3.10 | — | 1,560 | 2,840 | 2,150 | 860 | 3,700 | 1,945"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Duluth USARC – Improved Mow & Trim",
+            "campus": "Duluth USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.65,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN050 | Duluth USARC | 8.2 | 2.65 | 1.80 | 1,320 | 4,105 | 3,380 | 1,415 | 5,520 | 3,120"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Duluth USARC – Semi-Improved",
+            "campus": "Duluth USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "semi_improved",
+            "document_label": "Semi-Improved (Ac.)",
+            "mowing_frequency_text": "Mow three (3) times per season to 4–6 in. (PWS 5.5(d); Section B; Q&A A8)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1.8,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN050 | Duluth USARC | 8.2 | 2.65 | 1.80 | 1,320 | 4,105 | 3,380 | 1,415 | 5,520 | 3,120"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Duluth USARC – Edging",
+            "campus": "Duluth USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1320,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN050 | Duluth USARC | 8.2 | 2.65 | 1.80 | 1,320 | 4,105 | 3,380 | 1,415 | 5,520 | 3,120"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Duluth USARC – POV Parking",
+            "campus": "Duluth USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 4105,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN050 | Duluth USARC | 8.2 | 2.65 | 1.80 | 1,320 | 4,105 | 3,380 | 1,415 | 5,520 | 3,120"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Duluth USARC – MEP",
+            "campus": "Duluth USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 3380,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN050 | Duluth USARC | 8.2 | 2.65 | 1.80 | 1,320 | 4,105 | 3,380 | 1,415 | 5,520 | 3,120"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Duluth USARC – Roads & Drives",
+            "campus": "Duluth USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1415,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN050 | Duluth USARC | 8.2 | 2.65 | 1.80 | 1,320 | 4,105 | 3,380 | 1,415 | 5,520 | 3,120"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Duluth USARC – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Duluth USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3120,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN050 | Duluth USARC | 8.2 | 2.65 | 1.80 | 1,320 | 4,105 | 3,380 | 1,415 | 5,520 | 3,120"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Fergus Falls USARC – Improved Mow & Trim",
+            "campus": "Fergus Falls USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3.75,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN066 | Fergus Falls USARC | 7.1 | 3.75 | — | 1,190 | 2,215 | 2,960 | 640 | 2,855 | 1,480"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Fergus Falls USARC – Edging",
+            "campus": "Fergus Falls USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1190,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN066 | Fergus Falls USARC | 7.1 | 3.75 | — | 1,190 | 2,215 | 2,960 | 640 | 2,855 | 1,480"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Fergus Falls USARC – POV Parking",
+            "campus": "Fergus Falls USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2215,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN066 | Fergus Falls USARC | 7.1 | 3.75 | — | 1,190 | 2,215 | 2,960 | 640 | 2,855 | 1,480"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Fergus Falls USARC – MEP",
+            "campus": "Fergus Falls USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 2960,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN066 | Fergus Falls USARC | 7.1 | 3.75 | — | 1,190 | 2,215 | 2,960 | 640 | 2,855 | 1,480"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Fergus Falls USARC – Roads & Drives",
+            "campus": "Fergus Falls USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 640,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN066 | Fergus Falls USARC | 7.1 | 3.75 | — | 1,190 | 2,215 | 2,960 | 640 | 2,855 | 1,480"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Fergus Falls USARC – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Fergus Falls USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1480,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN066 | Fergus Falls USARC | 7.1 | 3.75 | — | 1,190 | 2,215 | 2,960 | 640 | 2,855 | 1,480"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Eagan USARC – Improved Mow & Trim",
+            "campus": "Eagan USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6.3,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN073 | Eagan USARC | 14.9 | 6.30 | — | 3,860 | 10,480 | 6,720 | 3,240 | 13,720 | 7,890"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Eagan USARC – Edging",
+            "campus": "Eagan USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3860,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN073 | Eagan USARC | 14.9 | 6.30 | — | 3,860 | 10,480 | 6,720 | 3,240 | 13,720 | 7,890"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Eagan USARC – POV Parking",
+            "campus": "Eagan USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 10480,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN073 | Eagan USARC | 14.9 | 6.30 | — | 3,860 | 10,480 | 6,720 | 3,240 | 13,720 | 7,890"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Eagan USARC – MEP",
+            "campus": "Eagan USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 6720,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN073 | Eagan USARC | 14.9 | 6.30 | — | 3,860 | 10,480 | 6,720 | 3,240 | 13,720 | 7,890"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Eagan USARC – Roads & Drives",
+            "campus": "Eagan USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3240,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN073 | Eagan USARC | 14.9 | 6.30 | — | 3,860 | 10,480 | 6,720 | 3,240 | 13,720 | 7,890"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Eagan USARC – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Eagan USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 7890,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN073 | Eagan USARC | 14.9 | 6.30 | — | 3,860 | 10,480 | 6,720 | 3,240 | 13,720 | 7,890"
+            },
+            "confidence": 0.95,
+            "notes": "Includes the covered walk between Eagan Bldgs 1 and 2 (Q&A A9). Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "Bismarck AFRC/AMSA #92 – Improved Mow & Trim",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 8.4,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND008 | Bismarck AFRC/AMSA #92 | 21.3 | 8.40 | 5.25 | 3,950 | 8,730 | 12,560 | 2,610 | 11,340 | 5,740"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Bismarck AFRC/AMSA #92 – Semi-Improved",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "semi_improved",
+            "document_label": "Semi-Improved (Ac.)",
+            "mowing_frequency_text": "Mow three (3) times per season to 4–6 in. (PWS 5.5(d); Section B; Q&A A8)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 5.25,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND008 | Bismarck AFRC/AMSA #92 | 21.3 | 8.40 | 5.25 | 3,950 | 8,730 | 12,560 | 2,610 | 11,340 | 5,740"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Bismarck AFRC/AMSA #92 – Edging",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3950,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND008 | Bismarck AFRC/AMSA #92 | 21.3 | 8.40 | 5.25 | 3,950 | 8,730 | 12,560 | 2,610 | 11,340 | 5,740"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Bismarck AFRC/AMSA #92 – POV Parking",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 8730,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND008 | Bismarck AFRC/AMSA #92 | 21.3 | 8.40 | 5.25 | 3,950 | 8,730 | 12,560 | 2,610 | 11,340 | 5,740"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Bismarck AFRC/AMSA #92 – MEP",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 12560,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND008 | Bismarck AFRC/AMSA #92 | 21.3 | 8.40 | 5.25 | 3,950 | 8,730 | 12,560 | 2,610 | 11,340 | 5,740"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Bismarck AFRC/AMSA #92 – Roads & Drives",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2610,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND008 | Bismarck AFRC/AMSA #92 | 21.3 | 8.40 | 5.25 | 3,950 | 8,730 | 12,560 | 2,610 | 11,340 | 5,740"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Bismarck AFRC/AMSA #92 – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Bismarck AFRC/AMSA #92",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 5740,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND008 | Bismarck AFRC/AMSA #92 | 21.3 | 8.40 | 5.25 | 3,950 | 8,730 | 12,560 | 2,610 | 11,340 | 5,740"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Fargo USARC – Improved Mow & Trim",
+            "campus": "Fargo USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 4.55,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND021 | Fargo USARC | 8.9 | 4.55 | — | 2,020 | 4,380 | 3,940 | 1,120 | 5,500 | 2,615"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Fargo USARC – Edging",
+            "campus": "Fargo USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2020,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND021 | Fargo USARC | 8.9 | 4.55 | — | 2,020 | 4,380 | 3,940 | 1,120 | 5,500 | 2,615"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Fargo USARC – POV Parking",
+            "campus": "Fargo USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 4380,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND021 | Fargo USARC | 8.9 | 4.55 | — | 2,020 | 4,380 | 3,940 | 1,120 | 5,500 | 2,615"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Fargo USARC – MEP",
+            "campus": "Fargo USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 3940,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND021 | Fargo USARC | 8.9 | 4.55 | — | 2,020 | 4,380 | 3,940 | 1,120 | 5,500 | 2,615"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Fargo USARC – Roads & Drives",
+            "campus": "Fargo USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1120,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND021 | Fargo USARC | 8.9 | 4.55 | — | 2,020 | 4,380 | 3,940 | 1,120 | 5,500 | 2,615"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Fargo USARC – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Fargo USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2615,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND021 | Fargo USARC | 8.9 | 4.55 | — | 2,020 | 4,380 | 3,940 | 1,120 | 5,500 | 2,615"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Minot USARC – Improved Mow & Trim",
+            "campus": "Minot USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3.2,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND035 | Minot USARC | 9.4 | 3.20 | 2.10 | 1,480 | 2,560 | 2,880 | 790 | 3,350 | 1,730"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Minot USARC – Semi-Improved",
+            "campus": "Minot USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "semi_improved",
+            "document_label": "Semi-Improved (Ac.)",
+            "mowing_frequency_text": "Mow three (3) times per season to 4–6 in. (PWS 5.5(d); Section B; Q&A A8)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.1,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND035 | Minot USARC | 9.4 | 3.20 | 2.10 | 1,480 | 2,560 | 2,880 | 790 | 3,350 | 1,730"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Minot USARC – Edging",
+            "campus": "Minot USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1480,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND035 | Minot USARC | 9.4 | 3.20 | 2.10 | 1,480 | 2,560 | 2,880 | 790 | 3,350 | 1,730"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Minot USARC – POV Parking",
+            "campus": "Minot USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2560,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND035 | Minot USARC | 9.4 | 3.20 | 2.10 | 1,480 | 2,560 | 2,880 | 790 | 3,350 | 1,730"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Minot USARC – MEP",
+            "campus": "Minot USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 2880,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND035 | Minot USARC | 9.4 | 3.20 | 2.10 | 1,480 | 2,560 | 2,880 | 790 | 3,350 | 1,730"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Minot USARC – Roads & Drives",
+            "campus": "Minot USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 790,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND035 | Minot USARC | 9.4 | 3.20 | 2.10 | 1,480 | 2,560 | 2,880 | 790 | 3,350 | 1,730"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Minot USARC – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Minot USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1730,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "ND035 | Minot USARC | 9.4 | 3.20 | 2.10 | 1,480 | 2,560 | 2,880 | 790 | 3,350 | 1,730"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Sioux Falls USARC/AMSA #94 – Improved Mow & Trim",
+            "campus": "Sioux Falls USARC/AMSA #94",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 6.9,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD004 | Sioux Falls USARC/AMSA #94 | 16.2 | 6.90 | — | 3,310 | 8,240 | 9,870 | 2,305 | 10,545 | 5,360"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Sioux Falls USARC/AMSA #94 – Edging",
+            "campus": "Sioux Falls USARC/AMSA #94",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3310,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD004 | Sioux Falls USARC/AMSA #94 | 16.2 | 6.90 | — | 3,310 | 8,240 | 9,870 | 2,305 | 10,545 | 5,360"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Sioux Falls USARC/AMSA #94 – POV Parking",
+            "campus": "Sioux Falls USARC/AMSA #94",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 8240,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD004 | Sioux Falls USARC/AMSA #94 | 16.2 | 6.90 | — | 3,310 | 8,240 | 9,870 | 2,305 | 10,545 | 5,360"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Sioux Falls USARC/AMSA #94 – MEP",
+            "campus": "Sioux Falls USARC/AMSA #94",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 9870,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD004 | Sioux Falls USARC/AMSA #94 | 16.2 | 6.90 | — | 3,310 | 8,240 | 9,870 | 2,305 | 10,545 | 5,360"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Sioux Falls USARC/AMSA #94 – Roads & Drives",
+            "campus": "Sioux Falls USARC/AMSA #94",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2305,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD004 | Sioux Falls USARC/AMSA #94 | 16.2 | 6.90 | — | 3,310 | 8,240 | 9,870 | 2,305 | 10,545 | 5,360"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Sioux Falls USARC/AMSA #94 – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Sioux Falls USARC/AMSA #94",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 5360,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD004 | Sioux Falls USARC/AMSA #94 | 16.2 | 6.90 | — | 3,310 | 8,240 | 9,870 | 2,305 | 10,545 | 5,360"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Rapid City USARC – Improved Mow & Trim",
+            "campus": "Rapid City USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3.85,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD011 | Rapid City USARC | 12.6 | 3.85 | 4.60 | 1,740 | 3,150 | 3,420 | 980 | 4,130 | 2,080"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Rapid City USARC – Semi-Improved",
+            "campus": "Rapid City USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "semi_improved",
+            "document_label": "Semi-Improved (Ac.)",
+            "mowing_frequency_text": "Mow three (3) times per season to 4–6 in. (PWS 5.5(d); Section B; Q&A A8)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 4.6,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD011 | Rapid City USARC | 12.6 | 3.85 | 4.60 | 1,740 | 3,150 | 3,420 | 980 | 4,130 | 2,080"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Rapid City USARC – Edging",
+            "campus": "Rapid City USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1740,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD011 | Rapid City USARC | 12.6 | 3.85 | 4.60 | 1,740 | 3,150 | 3,420 | 980 | 4,130 | 2,080"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Rapid City USARC – POV Parking",
+            "campus": "Rapid City USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3150,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD011 | Rapid City USARC | 12.6 | 3.85 | 4.60 | 1,740 | 3,150 | 3,420 | 980 | 4,130 | 2,080"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Rapid City USARC – MEP",
+            "campus": "Rapid City USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 3420,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD011 | Rapid City USARC | 12.6 | 3.85 | 4.60 | 1,740 | 3,150 | 3,420 | 980 | 4,130 | 2,080"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Rapid City USARC – Roads & Drives",
+            "campus": "Rapid City USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 980,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD011 | Rapid City USARC | 12.6 | 3.85 | 4.60 | 1,740 | 3,150 | 3,420 | 980 | 4,130 | 2,080"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Rapid City USARC – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Rapid City USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2080,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD011 | Rapid City USARC | 12.6 | 3.85 | 4.60 | 1,740 | 3,150 | 3,420 | 980 | 4,130 | 2,080"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Aberdeen USARC – Improved Mow & Trim",
+            "campus": "Aberdeen USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.45,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD026 | Aberdeen USARC | 5.9 | 2.45 | — | 1,060 | 1,870 | 1,640 | 520 | 2,390 | 1,240"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Aberdeen USARC – Edging",
+            "campus": "Aberdeen USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1060,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD026 | Aberdeen USARC | 5.9 | 2.45 | — | 1,060 | 1,870 | 1,640 | 520 | 2,390 | 1,240"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Aberdeen USARC – POV Parking",
+            "campus": "Aberdeen USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1870,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD026 | Aberdeen USARC | 5.9 | 2.45 | — | 1,060 | 1,870 | 1,640 | 520 | 2,390 | 1,240"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Aberdeen USARC – MEP",
+            "campus": "Aberdeen USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 1640,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD026 | Aberdeen USARC | 5.9 | 2.45 | — | 1,060 | 1,870 | 1,640 | 520 | 2,390 | 1,240"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Aberdeen USARC – Roads & Drives",
+            "campus": "Aberdeen USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 520,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD026 | Aberdeen USARC | 5.9 | 2.45 | — | 1,060 | 1,870 | 1,640 | 520 | 2,390 | 1,240"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Aberdeen USARC – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Aberdeen USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1240,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD026 | Aberdeen USARC | 5.9 | 2.45 | — | 1,060 | 1,870 | 1,640 | 520 | 2,390 | 1,240"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          },
+          {
+            "name": "Watertown USARC – Improved Mow & Trim",
+            "campus": "Watertown USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "option_only",
+            "status_reason": "OPTIONAL SITE – NOT INCLUDED IN BASE TOTALS (TE-3); priced as option line item O-1 (Section B)",
+            "quantity": 2.9,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD033 | Watertown USARC | 6.4 | 2.90 | — | 1,280 | 2,060 | 1,980 | 610 | 2,670 | 1,390"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Watertown USARC – Edging",
+            "campus": "Watertown USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Edging (LF)",
+            "mowing_frequency_text": "Edge sidewalks, curbs and paved areas twice per season (spring and mid-summer) (PWS 5.5(c))",
+            "status": "option_only",
+            "status_reason": "OPTIONAL SITE – NOT INCLUDED IN BASE TOTALS (TE-3); priced as option line item O-1 (Section B)",
+            "quantity": 1280,
+            "unit": "lf",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD033 | Watertown USARC | 6.4 | 2.90 | — | 1,280 | 2,060 | 1,980 | 610 | 2,670 | 1,390"
+            },
+            "confidence": 0.95,
+            "notes": "Linear footage of sidewalk/curb/paved-area edging."
+          },
+          {
+            "name": "Watertown USARC – POV Parking",
+            "campus": "Watertown USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "POV Parking (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "option_only",
+            "status_reason": "OPTIONAL SITE – NOT INCLUDED IN BASE TOTALS (TE-3); priced as option line item O-1 (Section B)",
+            "quantity": 2060,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD033 | Watertown USARC | 6.4 | 2.90 | — | 1,280 | 2,060 | 1,980 | 610 | 2,670 | 1,390"
+            },
+            "confidence": 0.95,
+            "notes": "Paved area; part of Plow Area (TE-3 Note 6). Clean-up of clippings after mowing (PWS 5.5(e))."
+          },
+          {
+            "name": "Watertown USARC – MEP",
+            "campus": "Watertown USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "MEP (SY)",
+            "mowing_frequency_text": null,
+            "status": "excluded",
+            "status_reason": "TE-3 Note 4: MEP (Military Equipment Parking) is shown for information only. MEP is not swept, plowed or otherwise maintained under this contract.",
+            "quantity": 1980,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD033 | Watertown USARC | 6.4 | 2.90 | — | 1,280 | 2,060 | 1,980 | 610 | 2,670 | 1,390"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Watertown USARC – Roads & Drives",
+            "campus": "Watertown USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "parking",
+            "document_label": "Roads & Drives (SY)",
+            "mowing_frequency_text": "Snow plowing on call; est. 18 plowing events per site per season (PWS 5.6)",
+            "status": "option_only",
+            "status_reason": "OPTIONAL SITE – NOT INCLUDED IN BASE TOTALS (TE-3); priced as option line item O-1 (Section B)",
+            "quantity": 610,
+            "unit": "sqyd",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD033 | Watertown USARC | 6.4 | 2.90 | — | 1,280 | 2,060 | 1,980 | 610 | 2,670 | 1,390"
+            },
+            "confidence": 0.95,
+            "notes": "Paved roads and drives; part of Plow Area (TE-3 Note 6). Registered as paved area (no roads kind)."
+          },
+          {
+            "name": "Watertown USARC – Shovel / Blow Walks, Ramps, Slabs",
+            "campus": "Watertown USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "sidewalk",
+            "document_label": "Shovel / Blow Walks, Ramps, Slabs (SF)",
+            "mowing_frequency_text": "Snow and ice removal on call; est. 24 sidewalk clearing / salting events per site per season (PWS 5.6)",
+            "status": "option_only",
+            "status_reason": "OPTIONAL SITE – NOT INCLUDED IN BASE TOTALS (TE-3); priced as option line item O-1 (Section B)",
+            "quantity": 1390,
+            "unit": "sqft",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "SD033 | Watertown USARC | 6.4 | 2.90 | — | 1,280 | 2,060 | 1,980 | 610 | 2,670 | 1,390"
+            },
+            "confidence": 0.95,
+            "notes": "Plow Area (SY) column not registered separately: it is POV Parking + Roads and Drives (TE-3 Note 6)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "Eagan USARC – Improved Mow & Trim",
+            "campus": "Eagan USARC",
+            "facility_building_number": null,
+            "table_id": null,
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.) – revised by Amendment 0001",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "in_scope",
+            "status_reason": "Amendment 0001 Item 4: Improved Mow & Trim revised from 6.30 acres to 5.85 acres",
+            "quantity": 5.85,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 11,
+              "excerpt": "Item 4 – Grounds area revised. TE-3, Eagan USARC (MN073): Improved Mow & Trim is revised from 6.30 acres to 5.85 acres."
+            },
+            "confidence": 0.95,
+            "notes": "Revision of the TE-3 MN073 Improved Mow & Trim row (6.30 ac). The stormwater pond area (0.45 acre) is converted to a no-mow native planting and removed from the requirement."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "Eagan USARC – Improved Mow & Trim",
+            "campus": "Eagan USARC",
+            "facility_building_number": null,
+            "table_id": "TE-3",
+            "kind": "improved_turf",
+            "document_label": "Improved Mow & Trim (Ac.)",
+            "mowing_frequency_text": "Mow when grass reaches 4 in., cut to 2½–3 in.; 16 mowing and 8 trimming events per season (PWS 5.5(a),(b); Section B)",
+            "status": "deleted_by_amendment",
+            "status_reason": "Superseded by Amendment 0001 Item 4: Improved Mow & Trim is revised from 6.30 acres to 5.85 acres (stormwater pond area 0.45 acre removed from the requirement)",
+            "quantity": 6.3,
+            "unit": "acres",
+            "source": {
+              "file": "w91xpn-27-r-0007-te.pdf",
+              "page": 9,
+              "excerpt": "MN073 | Eagan USARC | 14.9 | 6.30 | — | 3,860 | 10,480 | 6,720 | 3,240 | 13,720 | 7,890"
+            },
+            "confidence": 0.95,
+            "notes": "As-issued TE-3 figure; replaced by the 5.85-acre revision registered from Amendment 0001."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Red River Prairie Facility Services, LLC",
+        "contract_number": "W91XPN-22-C-0009",
+        "contract_type": null,
+        "total_value": 5912400,
+        "period_months": 60,
+        "annual_value": 1214880,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": 2022,
+        "source": {
+          "file": "w91xpn-27-r-0007-te.pdf",
+          "page": 2,
+          "excerpt": "1.4 CURRENT CONTRACT ... Red River Prairie Facility Services, LLC under Contract No. W91XPN-22-C-0009, awarded on 18 March 2022 ... total value ... $5,912,400 for sixty (60) months. Option Period 4 ... exercised at $1,214,880."
+        },
+        "confidence": 0.95,
+        "notes": "Awarded 18 March 2022: 12-month base (1 April 2022 - 31 March 2023) + four 12-month options ending 31 March 2027. Annual value is the current Option Period 4 (1 April 2026 - 31 March 2027) price, confirmed in Amendment 0001 Q&A A5. Current contract covers the same twelve base sites; Watertown USARC (SD033) is not under contract. Contract type of the incumbent contract not stated."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "W91XPN-27-R-0007, Army Reserve Centers Northern Plains Cluster (12 base sites in MN/ND/SD + optional Watertown SD033). TE-2: 37 building rows registered (35 base + 2 option-only); 7 N/S buildings excluded; Amendment 0001 applied: MN066-02 deleted, MN050-01 revised to 38,955 GSF / 34,250 custodial SF, ND035-01 frequency 3/W -> 5/W. In-scope: 27 buildings. TE-3: 13 site rows registered as improved/semi-improved acres, edging LF, POV parking and roads & drives SY, shovel/blow walks SF; MEP excluded (information only); SD033 option-only; Eagan improved revised to 5.85 ac by Amendment 0001. Incumbent: Red River Prairie Facility Services, LLC, W91XPN-22-C-0009, $5,912,400 / 60 months, OP4 $1,214,880.",
+        "unresolved": [
+          "TE-3 MN073 (Eagan USARC) Improved Mow & Trim: the as-issued 6.30 ac row (TE-3) and the Amendment 0001 Item 4 revision of 5.85 ac (table_id null) are both registered as in-scope improved_turf; a re-send of the 6.30 row as superseded was skipped as a duplicate. Only 5.85 ac applies (0.45 ac stormwater pond area removed); do not add the two.",
+          "TE-3 Plow Area (SY) column not registered separately: TE-3 Note 6 defines it as POV Parking + Roads and Drives, both registered as parking (printed Plow Area total 80,653 SY declared as the parking total). Site Acres (information only) not registered.",
+          "BA weekend service (TE-2 column 'BA Wknd' = Y, approx. twelve additional Sundays per year per PWS 5.3/TE-2 Note 6) is recorded in service_frequency_text and notes only, not as events_per_year, since it is in addition to the routine frequency.",
+          "Snow and ice removal (on call; est. 18 plowing and 24 walk clearing/salting events per site per season) has no dedicated field; recorded in grounds mowing_frequency_text."
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "W91XPN-27-R-0007, Army Reserve Centers Northern Plains Cluster (12 base sites in MN/ND/SD + optional Watertown SD033). TE-2: 37 building rows registered (35 base + 2 option-only); 7 N/S buildings excluded; Amendment 0001 applied: MN066-02 deleted, MN050-01 revised to 38,955 GSF / 34,250 custodial SF, ND035-01 frequency 3/W -> 5/W. In-scope: 27 buildings. TE-3: 13 site rows registered as improved/semi-improved acres, edging LF, POV parking and roads & drives SY, shovel/blow walks SF; MEP excluded (information only); SD033 option-only; Eagan improved revised to 5.85 ac by Amendment 0001. Incumbent: Red River Prairie Facility Services, LLC, W91XPN-22-C-0009, $5,912,400 / 60 months, OP4 $1,214,880.",
+        "unresolved": [
+          "TE-2: printed total 522,290 SF is \"TOTAL – BASE SITES (12 sites, 35 buildings, 28 serviced)\" and includes the 7 N/S buildings (13,820 SF, TE-2 Note 2) but not the optional Watertown USARC site (SD033-01 13,480 + SD033-02 3,060 = 16,540 SF), which TE-2 prints in the same table under \"OPTIONAL SITE ... NOT INCLUDED IN BASE TOTALS\" and which is registered as option_only. All 35 base rows sum to 522,290 SF as printed; registered 508,470 in scope + 13,820 N/S excluded = 522,290, plus 16,540 option-only = 538,830.",
+          "TE-3: printed totals are \"TOTAL – BASE SITES (12)\" and exclude the optional SD033 Watertown USARC row (\"OPTIONAL SITE – NOT INCLUDED IN BASE TOTALS\"), registered as option_only: improved 2.90 ac (60.10 - 2.90 = 57.20), edging 1,280 LF (29,290 - 1,280 = 28,010), POV parking 2,060 + roads & drives 610 = 2,670 SY (83,323 - 2,670 = 80,653), shovel/blow walks 1,390 SF (43,875 - 1,390 = 42,485). The 12 base rows match every printed total. MEP (65,180 SY base + 1,980 SY SD033) is registered as excluded (information only, TE-3 Note 4).",
+          "TE-3 MN073 (Eagan USARC) Improved Mow & Trim: the as-issued 6.30 ac row (TE-3) and the Amendment 0001 Item 4 revision of 5.85 ac (table_id null) are both registered as in-scope improved_turf; a re-send of the 6.30 row as superseded was skipped as a duplicate. Only 5.85 ac applies (0.45 ac stormwater pond area removed); do not add the two.",
+          "TE-3 Plow Area (SY) column not registered separately: TE-3 Note 6 defines it as POV Parking + Roads and Drives, both registered as parking (printed Plow Area total 80,653 SY declared as the parking total). Site Acres (information only) not registered.",
+          "BA weekend service (TE-2 column 'BA Wknd' = Y, approx. twelve additional Sundays per year per PWS 5.3/TE-2 Note 6) is recorded in service_frequency_text and notes only, not as events_per_year, since it is in addition to the routine frequency.",
+          "Snow and ice removal (on call; est. 18 plowing and 24 walk clearing/salting events per site per season) has no dedicated field; recorded in grounds mowing_frequency_text."
+        ]
+      },
+      "pass": 0
+    }
+  ]
 }

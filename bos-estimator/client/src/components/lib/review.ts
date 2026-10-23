@@ -47,8 +47,10 @@ export const normCampus = (c: string | undefined | null) => (c ?? '').trim().toL
 export const normName = (n: string | undefined | null) => (n ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
 const NUM_RE = /(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?\s*([kK])?/g;
+/** European formatting ("4.312,8 m²", "1.846,5"): dot thousands, comma decimals. Read as an extra candidate. */
+const EU_RE = /(?<![\d.,])(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+,\d{1,2})(?![\d,]|\.\d)/g;
 
-/** Every number printed in an excerpt ("46,500", "46500", "46.5K" → 46500). Cached per excerpt string. */
+/** Every number printed in an excerpt ("46,500", "46500", "46.5K" → 46500; "4.312,8" → also 4312.8). Cached per excerpt string. */
 const excerptCache = new Map<string, number[]>();
 export function excerptNumbers(excerpt: string): number[] {
   const hit = excerptCache.get(excerpt); if (hit) return hit;
@@ -59,38 +61,185 @@ export function excerptNumbers(excerpt: string): number[] {
     if (m[3]) v *= 1000;
     if (Number.isFinite(v)) out.push(v);
   }
+  EU_RE.lastIndex = 0;
+  for (let m = EU_RE.exec(excerpt); m; m = EU_RE.exec(excerpt)) {
+    const v = Number(m[1].replace(/\./g, '').replace(',', '.'));
+    if (Number.isFinite(v)) out.push(v);
+  }
   if (excerptCache.size > 5000) excerptCache.clear();
   excerptCache.set(excerpt, out);
   return out;
 }
 const near = (a: number, b: number) => Math.abs(a - b) <= Math.abs(b) * 0.005;
+const fmtN = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 1 });
 
-/** Whether any SF value of the row is printed in its excerpt (±0.5%). null when there is no excerpt. */
-export function sfInExcerpt(f: Pick<Facility, 'grossSqft' | 'cleanableSqft' | 'originalArea' | 'source'>): boolean | null {
+/** "4 @ 960" / "1 @ 1,792" terms (portables, annexes) printed next to a main area. */
+const AT_RE = /(\d{1,3})\s*@\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?/g;
+function atTerms(excerpt: string): { k: number; m: number; text: string }[] {
+  const out: { k: number; m: number; text: string }[] = [];
+  AT_RE.lastIndex = 0;
+  for (let x = AT_RE.exec(excerpt); x; x = AT_RE.exec(excerpt)) {
+    const k = Number(x[1]); const m = Number(x[2].replace(/,/g, '') + (x[3] ? `.${x[3]}` : ''));
+    if (k > 0 && m > 0) out.push({ k, m, text: x[0].replace(/\s+/g, ' ') });
+  }
+  return out;
+}
+
+/** "N + k @ m" sums: the gross equals a printed area plus the "k @ m" terms (all of them, or one). */
+function sumMatch(excerpt: string, target: number): { base: number; text: string } | null {
+  const terms = atTerms(excerpt); if (!terms.length || !(target > 0)) return null;
+  const parts = new Set(terms.map((t) => t.m));
+  const total = terms.reduce((s, t) => s + t.k * t.m, 0);
+  for (const n of excerptNumbers(excerpt)) {
+    if (n < 100 || parts.has(n)) continue;
+    if (near(n + total, target)) return { base: n, text: `${fmtN(n)} + ${terms.map((t) => t.text).join(' + ')}` };
+    for (const t of terms) if (terms.length > 1 && near(n + t.k * t.m, target)) return { base: n, text: `${fmtN(n)} + ${t.text}` };
+  }
+  return null;
+}
+
+const REV_RES = [
+  /\bfrom\s+(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?\s*(?:G?SF|SM|m²|sq\.?\s*ft\.?)?\s+to\s+(\d{1,3}(?:,\d{3})+|\d+)/gi,
+  /\bsuperseded\s+(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?\s*(?:G?SF)?[^.;]{0,120}?\bwith\s+(\d{1,3}(?:,\d{3})+|\d+)/gi,
+];
+/** An amendment / Q&A revision recorded in the notes that explains the gross ("revised from 18,240 to 19,860 SF"). */
+function revisedFrom(f: Pick<Facility, 'grossSqft' | 'notes'>, nums: number[], excerpt?: string): number | null {
+  const notes = f.notes; if (!notes || !(f.grossSqft > 0)) return null;
+  for (const re of REV_RES) {
+    re.lastIndex = 0;
+    for (let m = re.exec(notes); m; m = re.exec(notes)) {
+      const was = Number(m[1].replace(/,/g, '')); const now = Number(m[2].replace(/,/g, ''));
+      if (near(now, f.grossSqft) && (nums.some((n) => near(n, was)) || (excerpt && sumMatch(excerpt, was)))) return was;
+    }
+  }
+  return null;
+}
+
+type SfRow = Pick<Facility, 'grossSqft' | 'cleanableSqft' | 'originalArea' | 'source'> & Partial<Pick<Facility, 'notes'>>;
+
+/**
+ * Whether the row's SF is backed by its excerpt (±0.5%): gross, the gross as printed, cleanable, a "N + k @ m" sum, or
+ * a revision the notes record (the excerpt then shows the superseded number). null when there is no excerpt.
+ */
+export function sfInExcerpt(f: SfRow): boolean | null {
   const ex = f.source?.excerpt; if (!ex) return null;
   const nums = excerptNumbers(ex);
   const cands = [f.grossSqft, f.originalArea?.gross, f.cleanableSqft, f.originalArea?.cleanable].filter((v): v is number => typeof v === 'number' && v > 0);
-  return cands.some((c) => nums.some((n) => near(n, c)));
+  if (cands.some((c) => nums.some((n) => near(n, c)))) return true;
+  const target = f.originalArea?.gross ?? f.grossSqft;
+  if (sumMatch(ex, target)) return true;
+  return revisedFrom({ grossSqft: f.grossSqft, notes: f.notes }, nums, ex) != null;
 }
 
-/**
- * The excerpt check the table Src column and the Inspector show: 'ok' when an SF value is printed in the excerpt,
- * 'miss' with the closest area-like number the excerpt does show, 'none' without an excerpt.
- */
-export function excerptCheck(f: Pick<Facility, 'grossSqft' | 'cleanableSqft' | 'originalArea' | 'source' | 'buildingNumber'>): { status: 'ok' | 'miss' | 'none'; shows?: number } {
-  const ok = sfInExcerpt(f);
-  if (ok === null) return { status: 'none' };
-  if (ok) return { status: 'ok' };
-  const nums = excerptNumbers(f.source!.excerpt!);
-  const bldg = Number(normBldg(f.buildingNumber));
-  const target = f.originalArea?.gross ?? f.grossSqft;
-  let best: number | undefined; let bestD = Infinity;
-  for (const n of nums) {
-    if (n < 100 || n === bldg || (Number.isInteger(n) && n >= 1900 && n <= 2100)) continue; // ids and years are not areas
-    const d = target > 0 ? Math.abs(Math.log(n / target)) : n;
-    if (d < bestD) { bestD = d; best = n; }
+// ---- source check with a safe suggestion (Inspector source line, table Src column and popover) ----
+export interface SourceContext {
+  /** normalized building numbers of every facility (a printed building number is not an area) */
+  bldgNos: ReadonlySet<string>;
+  /** tableId → excerpt cell index where that table prints the gross */
+  areaCol: ReadonlyMap<string, number>;
+}
+const cellsOf = (ex: string) => (ex.includes('|') ? ex.split('|').map((c) => c.trim()) : null);
+const srcCtxCache = new WeakMap<readonly Facility[], SourceContext>();
+/** Built once per facilities array. */
+export function sourceContext(facilities: readonly Facility[]): SourceContext {
+  const hit = srcCtxCache.get(facilities); if (hit) return hit;
+  const bldgNos = new Set<string>();
+  const votes = new Map<string, Map<number, number>>();
+  for (const f of facilities) {
+    const b = normBldg(f.buildingNumber); if (b) bldgNos.add(b);
+    const ex = f.source?.excerpt; if (!ex || !f.tableId) continue;
+    const cells = cellsOf(ex); if (!cells) continue;
+    const target = f.originalArea?.gross ?? f.grossSqft; if (!(target > 0)) continue;
+    const i = cells.findIndex((c) => excerptNumbers(c).some((n) => near(n, target)));
+    if (i < 0) continue;
+    const v = votes.get(f.tableId) ?? new Map<number, number>(); v.set(i, (v.get(i) ?? 0) + 1); votes.set(f.tableId, v);
   }
-  return { status: 'miss', shows: best };
+  const areaCol = new Map<string, number>();
+  for (const [t, v] of votes) { let best = -1, bn = 0; for (const [i, n] of v) if (n > bn) { bn = n; best = i; } if (bn >= 2) areaCol.set(t, best); }
+  const ctx = { bldgNos, areaCol };
+  srcCtxCache.set(facilities, ctx);
+  return ctx;
+}
+
+export interface SourceCheck {
+  /** ok: an SF value is printed · revised: the notes record a revision from the printed number · differs: cleanable is
+   *  printed but the excerpt prints a different gross · miss: no SF value is printed · none: no excerpt */
+  status: 'ok' | 'revised' | 'differs' | 'miss' | 'none';
+  match?: 'gross' | 'original' | 'sum' | 'cleanable';
+  /** "51,340 + 4 @ 960" */
+  sumText?: string;
+  /** the superseded number the excerpt prints (status 'revised') */
+  revisedFrom?: number;
+  /** a gross figure the excerpt prints that differs from the row, and why it is believed to be the gross */
+  shows?: number;
+  showsWhy?: 'extracted' | 'column' | 'near';
+  /** a value for gross that is safe to offer as a one-click fix (in the table's area column or within ±25 %) */
+  suggest?: number;
+}
+
+/** Numbers in the excerpt that can be a gross area: not ids, years, building numbers, headcounts or "k @ m" parts. */
+function areaCandidates(f: Facility, ex: string, sctx?: SourceContext): { value: number; cell: number }[] {
+  const own = normBldg(f.buildingNumber);
+  const skip: number[] = [f.occupancy, f.restroomFixtures, f.dining?.seats, f.dining?.mealsPerDay, f.dining?.kitchenSqft, ...(f.dining?.mealPeriodsDetail ?? []).flatMap((p) => [p.weekdayHeadcount, p.weekendHeadcount])].filter((v): v is number => typeof v === 'number' && v > 0);
+  const parts = new Set(atTerms(ex).flatMap((t) => [t.k, t.m]));
+  const out: { value: number; cell: number }[] = [];
+  const cells = cellsOf(ex) ?? [ex];
+  cells.forEach((cell, ci) => {
+    const re = /(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?/g;
+    for (let m = re.exec(cell); m; m = re.exec(cell)) {
+      const raw = m[1]; const v = Number(raw.replace(/,/g, '') + (m[2] ? `.${m[2]}` : ''));
+      if (!Number.isFinite(v) || v < 100) continue;
+      const before = cell.slice(Math.max(0, m.index - 12), m.index);
+      const prevCh = cell[m.index - 1] ?? ' ';
+      if (/[A-Za-z_\-/]/.test(prevCh)) continue;                                  // part of an id (TE-5, W912…)
+      if (/(?:\bbldg\.?|\bbuilding|\bfacility|\bno\.?|#)\s*$/i.test(before)) continue; // "Bldg 2240"
+      if (!raw.includes(',') && raw.length === 4 && v >= 1900 && v <= 2100) continue; // years
+      if (!raw.includes(',') && (normBldg(raw) === own || sctx?.bldgNos.has(normBldg(raw)))) continue; // building numbers
+      if (parts.has(v) || skip.some((x) => near(v, x))) continue;                 // portables, headcounts, seats
+      out.push({ value: v, cell: ci });
+    }
+  });
+  return out;
+}
+
+/** The source check the Inspector, the table Src column and its popover show. `entry` names the extracted gross of a hand-edited row. */
+export function sourceCheck(f: Facility, entry?: ReviewEntry, sctx?: SourceContext): SourceCheck {
+  const ex = f.source?.excerpt; if (!ex) return { status: 'none' };
+  const nums = excerptNumbers(ex);
+  const has = (v: number | undefined) => typeof v === 'number' && v > 0 && nums.some((n) => near(n, v));
+  if (has(f.grossSqft)) return { status: 'ok', match: 'gross' };
+  if (has(f.originalArea?.gross)) return { status: 'ok', match: 'original' };
+  const target = f.originalArea?.gross ?? f.grossSqft;
+  const sum = sumMatch(ex, target);
+  if (sum) return { status: 'ok', match: 'sum', sumText: sum.text };
+  const was = revisedFrom(f, nums, ex);
+  if (was != null) return { status: 'revised', revisedFrom: was };
+  // the gross is not printed: which printed number is the gross, if any?
+  const cands = areaCandidates(f, ex, sctx);
+  const extracted = entry?.edited && typeof entry.edited.grossSqft === 'number' ? entry.edited.grossSqft : undefined;
+  const col = f.tableId ? sctx?.areaCol.get(f.tableId) : undefined;
+  let shows: number | undefined; let why: SourceCheck['showsWhy'];
+  if (extracted != null && !f.originalArea && cands.some((c) => near(c.value, extracted))) { shows = extracted; why = 'extracted'; }
+  else {
+    const inCol = col != null ? cands.find((c) => c.cell === col) : undefined;
+    if (inCol) { shows = inCol.value; why = 'column'; }
+    else if (target > 0) {
+      let best: number | undefined; let bd = Infinity;
+      for (const c of cands) { const d = Math.abs(Math.log(c.value / target)); if (d < bd) { bd = d; best = c.value; } }
+      if (best != null && bd <= Math.log(1.25)) { shows = best; why = 'near'; }
+    }
+  }
+  const clean = has(f.cleanableSqft) || has(f.originalArea?.cleanable);
+  // a converted row needs the unit, not the raw number, so it never gets a one-click value
+  const suggest = shows != null && !f.originalArea && !near(shows, f.grossSqft) ? Math.round(shows) : undefined;
+  if (clean) return shows != null ? { status: 'differs', match: 'cleanable', shows, showsWhy: why, suggest } : { status: 'ok', match: 'cleanable' };
+  return { status: 'miss', shows, showsWhy: why, suggest };
+}
+
+/** Compat: the Src column's ✓ / ✗ (revised counts as backed; differs as backed with a warning). */
+export function excerptCheck(f: Facility, entry?: ReviewEntry, sctx?: SourceContext): { status: 'ok' | 'miss' | 'none'; shows?: number } {
+  const c = sourceCheck(f, entry, sctx);
+  return { status: c.status === 'none' ? 'none' : c.status === 'miss' ? 'miss' : 'ok', shows: c.shows };
 }
 
 /** Inventory-wide context the per-row rules need. Build once per inventory. */

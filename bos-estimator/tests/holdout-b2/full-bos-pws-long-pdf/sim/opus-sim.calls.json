@@ -1,0 +1,3157 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "U.S. Army Garrison Fort Brannock",
+        "location": "Fort Brannock, WI (Langlade County, approx. 9 miles northwest of Antigo)",
+        "solicitation": "W9131B-27-R-0006",
+        "contract_name": "Base Operations Support (BOS) Services",
+        "climate_zone": "cold",
+        "growing_season_weeks": 24,
+        "contract_years": 5,
+        "notes": "PWS 1.4: 30-day phase-in 1 Jun-30 Jun 2027; 12-month base 1 Jul 2027-30 Jun 2028; four 12-month options through 30 Jun 2032 (5 years excluding phase-in). PWS 1.7: humid continental, long cold winters; mowing season 1 May-15 Oct (24 weeks); snow season 15 Oct-30 Apr; 64 in. normal snowfall; 14 snow events in fixed price (CLIN 0005), extra events CLIN 0008. Snow removal: 50.8 lane-miles of roads (TE 8 Table 8-1). CLS 402, 403, 404, 408, 420 (4,700 DMOs/yr est.), 510. Places of performance: main cantonment, Brannock AAF, Range Complex (Range Control, Ranges 12 and 18), ASP."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "TE 5 Part A",
+            "title": "TE 5 Custodial Facility List - Part A, Facilities Serviced (Base Requirement, CLIN 0002 / x002)",
+            "kind": "facilities",
+            "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+            "pages": "20-21",
+            "row_count": 48,
+            "printed_total_gross_area": 1060920,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "TE 5 Part B",
+            "title": "TE 5 Custodial Facility List - Part B, Optional Facilities (Optional CLIN 0010 / x010)",
+            "kind": "facilities",
+            "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+            "pages": "21",
+            "row_count": 2,
+            "printed_total_gross_area": 103000,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "TE 6-1",
+            "title": "TE 6 Table 6-1 Grounds Areas by Type",
+            "kind": "grounds",
+            "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+            "pages": "22",
+            "row_count": 13,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": [
+              {
+                "value": 83.1,
+                "unit": "acres",
+                "kinds": [
+                  "improved_turf"
+                ]
+              },
+              {
+                "value": 173.9,
+                "unit": "acres",
+                "kinds": [
+                  "semi_improved"
+                ]
+              },
+              {
+                "value": 302.5,
+                "unit": "acres",
+                "kinds": [
+                  "unimproved"
+                ]
+              },
+              {
+                "value": 559.5,
+                "unit": "acres",
+                "kinds": []
+              }
+            ]
+          },
+          {
+            "table_id": "TE 6-2",
+            "title": "TE 6 Table 6-2 Athletic Fields",
+            "kind": "grounds",
+            "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+            "pages": "22",
+            "row_count": 4,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": [
+              {
+                "value": 11.6,
+                "unit": "acres",
+                "kinds": [
+                  "athletic_field"
+                ]
+              }
+            ]
+          },
+          {
+            "table_id": "TE 6-3",
+            "title": "TE 6 Table 6-3 Landscaped Beds and Paved Areas",
+            "kind": "grounds",
+            "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+            "pages": "22",
+            "row_count": 4,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": []
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "3101",
+            "line_item": null,
+            "name": "Child Development Center I",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 28640,
+            "added_areas": null,
+            "cleanable_area": 25230,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability I - Enhanced Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 9420,
+              "resilient": 13950,
+              "hard_tile": 1860,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "1 | 3101 | Child Development Center I | CYS | 74028 | 2009 | 1 | 28,640 | 1,860 | 9,420 | 13,950 | 25,230 | 5W | 3"
+            },
+            "confidence": 0.95,
+            "notes": "Note 3: Restrooms (and locker rooms in Bldgs 1520 and 1524) are serviced 2X daily on each service day (TE 4). USING ORG CYS; CATCD 74028; YR BLT 2009. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "3104",
+            "line_item": null,
+            "name": "Child Development Center II",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 32180,
+            "added_areas": null,
+            "cleanable_area": 28320,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability I - Enhanced Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 10860,
+              "resilient": 15320,
+              "hard_tile": 2140,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "2 | 3104 | Child Development Center II | CYS | 74028 | 2016 | 1 | 32,180 | 2,140 | 10,860 | 15,320 | 28,320 | 5W | 3"
+            },
+            "confidence": 0.95,
+            "notes": "Note 3: Restrooms (and locker rooms in Bldgs 1520 and 1524) are serviced 2X daily on each service day (TE 4). USING ORG CYS; CATCD 74028; YR BLT 2016. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "3108",
+            "line_item": null,
+            "name": "School Age Center",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 18450,
+            "added_areas": null,
+            "cleanable_area": 15870,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability I - Enhanced Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 4980,
+              "resilient": 9870,
+              "hard_tile": 1020,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "3 | 3108 | School Age Center | CYS | 74029 | 2004 | 1 | 18,450 | 1,020 | 4,980 | 9,870 | 15,870 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG CYS; CATCD 74029; YR BLT 2004. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "3110",
+            "line_item": null,
+            "name": "Youth Center",
+            "status": null,
+            "status_reason": null,
+            "category": "child_care",
+            "gross_area": 21760,
+            "added_areas": null,
+            "cleanable_area": 18600,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability I - Enhanced Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "6W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 3240,
+              "resilient": 14050,
+              "hard_tile": 1310,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "4 | 3110 | Youth Center | CYS | 74085 | 1998 | 1 | 21,760 | 1,310 | 3,240 | 14,050 | 18,600 | 6W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG CYS; CATCD 74085; YR BLT 1998. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "3112",
+            "line_item": null,
+            "name": "CYS Parent Central Services",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 4820,
+            "added_areas": null,
+            "cleanable_area": 4250,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability I - Enhanced Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 3060,
+              "resilient": 980,
+              "hard_tile": 210,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "5 | 3112 | CYS Parent Central Services | CYS | 61050 | 1987 | 1 | 4,820 | 210 | 3,060 | 980 | 4,250 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG CYS; CATCD 61050; YR BLT 1987. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1520",
+            "line_item": null,
+            "name": "Physical Fitness Center (Bergstrom)",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 46300,
+            "added_areas": null,
+            "cleanable_area": 37620,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability II - Standard Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 1120,
+              "resilient": 17440,
+              "hard_tile": 4860,
+              "concrete": null,
+              "wood": 14200,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "6 | 1520 | Physical Fitness Center (Bergstrom) | DFMWR | 74046 | 1992 | 2 | 46,300 | 4,860 | 1,120 | 31,640 | 37,620 | 7W | 3, 10"
+            },
+            "confidence": 0.95,
+            "notes": "Note 3: Restrooms (and locker rooms in Bldgs 1520 and 1524) are serviced 2X daily on each service day (TE 4). Note 10: Hard floor SF includes the wood gymnasium floor (PWS 5.1.9). Hard floor SF 31,640 includes 14,200 SF wood gym floor (Note 10); floor_areas split into wood 14,200 and resilient 17,440. PWS 5.1.9: wood floors dust-mopped twice each service day; screen and recoat once a year. USING ORG DFMWR; CATCD 74046; YR BLT 1992. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1524",
+            "line_item": null,
+            "name": "Physical Fitness Center (North)",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 38900,
+            "added_areas": null,
+            "cleanable_area": 33130,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability II - Standard Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 760,
+              "resilient": 16850,
+              "hard_tile": 3920,
+              "concrete": null,
+              "wood": 11600,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "7 | 1524 | Physical Fitness Center (North) | DFMWR | 74046 | 2012 | 1 | 38,900 | 3,920 | 760 | 28,450 | 33,130 | 7W | 3, 10"
+            },
+            "confidence": 0.95,
+            "notes": "Note 3: Restrooms (and locker rooms in Bldgs 1520 and 1524) are serviced 2X daily on each service day (TE 4). Note 10: Hard floor SF includes the wood gymnasium floor (PWS 5.1.9). Hard floor SF 28,450 includes 11,600 SF wood gym floor (Note 10); floor_areas split into wood 11,600 and resilient 16,850. PWS 5.1.9: wood floors dust-mopped twice each service day; screen and recoat once a year. USING ORG DFMWR; CATCD 74046; YR BLT 2012. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1530",
+            "line_item": null,
+            "name": "Indoor Pool",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 24600,
+            "added_areas": null,
+            "cleanable_area": 10430,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability II - Standard Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 6980,
+              "hard_tile": 3450,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "8 | 1530 | Indoor Pool | DFMWR | 74054 | 1979 | 1 | 24,600 | 3,450 | 0 | 6,980 | 10,430 | 7W | 11"
+            },
+            "confidence": 0.95,
+            "notes": "Note 11: The pool basin and natatorium deck are maintained by NAF aquatics staff; CSF is lobby, offices, locker rooms and showers. USING ORG DFMWR; CATCD 74054; YR BLT 1979. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1532",
+            "line_item": null,
+            "name": "Outdoor Pool Bathhouse",
+            "status": null,
+            "status_reason": null,
+            "category": "fitness",
+            "gross_area": 2940,
+            "added_areas": null,
+            "cleanable_area": 2420,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability II - Standard Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "Memorial Day weekend",
+              "end": "Labor Day",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "service_frequency_text": "7W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 1240,
+              "hard_tile": 1180,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "9 | 1532 | Outdoor Pool Bathhouse | DFMWR | 74055 | 1968 | 1 | 2,940 | 1,180 | 0 | 1,240 | 2,420 | 7W | 6"
+            },
+            "confidence": 0.95,
+            "notes": "Note 6: Seasonal operation, Memorial Day weekend through Labor Day (approximately 15 weeks), plus one opening clean and one closing clean. No service outside the season. In season 7W; plus one opening and one closing clean. USING ORG DFMWR; CATCD 74055; YR BLT 1968. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1540",
+            "line_item": null,
+            "name": "Bowling Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 19800,
+            "added_areas": null,
+            "cleanable_area": 9040,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability II - Standard Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 4920,
+              "resilient": 3260,
+              "hard_tile": 860,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "10 | 1540 | Bowling Center | DFMWR | 74012 | 1984 | 1 | 19,800 | 860 | 4,920 | 3,260 | 9,040 | 7W | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Note 7: Bowling lanes, approaches, pinsetter area and the snack bar kitchen are maintained by the NAF activity and are not included in CSF. USING ORG DFMWR; CATCD 74012; YR BLT 1984. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1544",
+            "line_item": null,
+            "name": "Outdoor Recreation Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 7460,
+            "added_areas": null,
+            "cleanable_area": 3730,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability II - Standard Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 610,
+              "resilient": 2880,
+              "hard_tile": 240,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "11 | 1544 | Outdoor Recreation Center | DFMWR | 74056 | 1990 | 1 | 7,460 | 240 | 610 | 2,880 | 3,730 | 3W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DFMWR; CATCD 74056; YR BLT 1990. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1001",
+            "line_item": null,
+            "name": "Garrison Headquarters",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 52880,
+            "added_areas": null,
+            "cleanable_area": 38680,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 26350,
+              "resilient": 9870,
+              "hard_tile": 2460,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "12 | 1001 | Garrison Headquarters | GARRISON | 61050 | 1941 | 3 | 52,880 | 2,460 | 26,350 | 9,870 | 38,680 | 5W | 3"
+            },
+            "confidence": 0.95,
+            "notes": "Note 3: Restrooms (and locker rooms in Bldgs 1520 and 1524) are serviced 2X daily on each service day (TE 4). USING ORG GARRISON; CATCD 61050; YR BLT 1941. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1002",
+            "line_item": null,
+            "name": "DPW Administration",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18240,
+            "added_areas": null,
+            "cleanable_area": 14740,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 9880,
+              "resilient": 4120,
+              "hard_tile": 740,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "13 | 1002 | DPW Administration | DPW | 61050 | 1958 | 2 | 18,240 | 740 | 9,880 | 4,120 | 14,740 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DPW; CATCD 61050; YR BLT 1958. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1004",
+            "line_item": null,
+            "name": "Military Personnel Division / DHR",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 21600,
+            "added_areas": null,
+            "cleanable_area": 17810,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 11240,
+              "resilient": 5690,
+              "hard_tile": 880,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "14 | 1004 | Military Personnel Division / DHR | DHR | 61050 | 1962 | 2 | 21,600 | 880 | 11,240 | 5,690 | 17,810 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DHR; CATCD 61050; YR BLT 1962. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1006",
+            "line_item": null,
+            "name": "Installation Transportation Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 9350,
+            "added_areas": null,
+            "cleanable_area": 8040,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 3980,
+              "resilient": 3640,
+              "hard_tile": 420,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "15 | 1006 | Installation Transportation Office | LRC | 61050 | 1965 | 1 | 9,350 | 420 | 3,980 | 3,640 | 8,040 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG LRC; CATCD 61050; YR BLT 1965. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1010",
+            "line_item": null,
+            "name": "Main Post Chapel",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 11420,
+            "added_areas": null,
+            "cleanable_area": 8840,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 5860,
+              "resilient": 2460,
+              "hard_tile": 520,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "16 | 1010 | Main Post Chapel | RSO | 73017 | 1943 | 1 | 11,420 | 520 | 5,860 | 2,460 | 8,840 | 2W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG RSO; CATCD 73017; YR BLT 1943. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1012",
+            "line_item": null,
+            "name": "Religious Education Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 13280,
+            "added_areas": null,
+            "cleanable_area": 10970,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 6420,
+              "resilient": 3940,
+              "hard_tile": 610,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "17 | 1012 | Religious Education Center | RSO | 73018 | 1974 | 2 | 13,280 | 610 | 6,420 | 3,940 | 10,970 | 2W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG RSO; CATCD 73018; YR BLT 1974. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1020",
+            "line_item": null,
+            "name": "Army Community Service",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 12640,
+            "added_areas": null,
+            "cleanable_area": 10750,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 7320,
+              "resilient": 2870,
+              "hard_tile": 560,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "18 | 1020 | Army Community Service | DFMWR | 74016 | 1971 | 1 | 12,640 | 560 | 7,320 | 2,870 | 10,750 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DFMWR; CATCD 74016; YR BLT 1971. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1022",
+            "line_item": null,
+            "name": "Education Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 24180,
+            "added_areas": null,
+            "cleanable_area": 19710,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 13460,
+              "resilient": 5210,
+              "hard_tile": 1040,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "19 | 1022 | Education Center | DHR | 74021 | 1988 | 2 | 24,180 | 1,040 | 13,460 | 5,210 | 19,710 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DHR; CATCD 74021; YR BLT 1988. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1024",
+            "line_item": null,
+            "name": "Post Library",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 14960,
+            "added_areas": null,
+            "cleanable_area": 12040,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "6W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 9610,
+              "resilient": 1950,
+              "hard_tile": 480,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "20 | 1024 | Post Library | DFMWR | 74034 | 1966 | 1 | 14,960 | 480 | 9,610 | 1,950 | 12,040 | 6W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DFMWR; CATCD 74034; YR BLT 1966. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1026",
+            "line_item": null,
+            "name": "Transition Assistance Center (SFL-TAP)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 7840,
+            "added_areas": null,
+            "cleanable_area": 6480,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 4970,
+              "resilient": 1180,
+              "hard_tile": 330,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "21 | 1026 | Transition Assistance Center (SFL-TAP) | DHR | 61050 | 1999 | 1 | 7,840 | 330 | 4,970 | 1,180 | 6,480 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DHR; CATCD 61050; YR BLT 1999. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1030",
+            "line_item": null,
+            "name": "Military Police Station",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 16720,
+            "added_areas": null,
+            "cleanable_area": 14370,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 4980,
+              "resilient": 8630,
+              "hard_tile": 760,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "22 | 1030 | Military Police Station | DES | 73024 | 1976 | 2 | 16,720 | 760 | 4,980 | 8,630 | 14,370 | 7W | 3"
+            },
+            "confidence": 0.95,
+            "notes": "Note 3: Restrooms (and locker rooms in Bldgs 1520 and 1524) are serviced 2X daily on each service day (TE 4). USING ORG DES; CATCD 73024; YR BLT 1976. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1032",
+            "line_item": null,
+            "name": "Fire Station No. 1",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 13860,
+            "added_areas": null,
+            "cleanable_area": 6120,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 1240,
+              "resilient": 3960,
+              "hard_tile": 920,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "23 | 1032 | Fire Station No. 1 | DES | 73016 | 1993 | 1 | 13,860 | 920 | 1,240 | 3,960 | 6,120 | 7W | 8"
+            },
+            "confidence": 0.95,
+            "notes": "Note 8: offices, break rooms, latrines, locker / shower rooms, dayrooms and classrooms only; work bays, apparatus bays, shop floors and hangar floors are excluded. USING ORG DES; CATCD 73016; YR BLT 1993. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1034",
+            "line_item": null,
+            "name": "Visitor Control Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 3180,
+            "added_areas": null,
+            "cleanable_area": 2560,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 2340,
+              "hard_tile": 220,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "24 | 1034 | Visitor Control Center | DES | 73075 | 2011 | 1 | 3,180 | 220 | 0 | 2,340 | 2,560 | 7W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DES; CATCD 73075; YR BLT 2011. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1040",
+            "line_item": null,
+            "name": "Logistics Readiness Center Headquarters",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 17960,
+            "added_areas": null,
+            "cleanable_area": 13720,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 9140,
+              "resilient": 3860,
+              "hard_tile": 720,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "25 | 1040 | Logistics Readiness Center Headquarters | LRC | 61050 | 1981 | 2 | 17,960 | 720 | 9,140 | 3,860 | 13,720 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG LRC; CATCD 61050; YR BLT 1981. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1044",
+            "line_item": null,
+            "name": "Network Enterprise Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 12480,
+            "added_areas": null,
+            "cleanable_area": 8250,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 5880,
+              "resilient": 1960,
+              "hard_tile": 410,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "26 | 1044 | Network Enterprise Center | NEC | 13115 | 1997 | 1 | 12,480 | 410 | 5,880 | 1,960 | 8,250 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG NEC; CATCD 13115; YR BLT 1997. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1050",
+            "line_item": null,
+            "name": "Fort Brannock Museum",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 9720,
+            "added_areas": null,
+            "cleanable_area": 7400,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 1640,
+              "resilient": 5480,
+              "hard_tile": 280,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "27 | 1050 | Fort Brannock Museum | GARRISON | 76010 | 1939 | 2 | 9,720 | 280 | 1,640 | 5,480 | 7,400 | 2W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG GARRISON; CATCD 76010; YR BLT 1939. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1402",
+            "line_item": null,
+            "name": "UPH Barracks",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 46800,
+            "added_areas": null,
+            "cleanable_area": 9320,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 6940,
+              "hard_tile": 2380,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "28 | 1402 | UPH Barracks | GARRISON (UH) | 72111 | 1987 | 3 | 46,800 | 2,380 | 0 | 6,940 | 9,320 | 5W | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Note 5: UPH barracks: common areas only (entry lobbies, dayrooms, laundry rooms, corridors, stairwells and common latrines). Soldier living modules are excluded. PWS 5.1.6: during annual training (June-August) the COR may direct up to two additional services per week in common latrines, ordered under CLIN 0009. USING ORG GARRISON (UH); CATCD 72111; YR BLT 1987. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1403",
+            "line_item": null,
+            "name": "UPH Barracks",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 46800,
+            "added_areas": null,
+            "cleanable_area": 9320,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 6940,
+              "hard_tile": 2380,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "29 | 1403 | UPH Barracks | GARRISON (UH) | 72111 | 1987 | 3 | 46,800 | 2,380 | 0 | 6,940 | 9,320 | 5W | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Note 5: UPH barracks: common areas only (entry lobbies, dayrooms, laundry rooms, corridors, stairwells and common latrines). Soldier living modules are excluded. PWS 5.1.6: during annual training (June-August) the COR may direct up to two additional services per week in common latrines, ordered under CLIN 0009. USING ORG GARRISON (UH); CATCD 72111; YR BLT 1987. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1404",
+            "line_item": null,
+            "name": "UPH Barracks",
+            "status": null,
+            "status_reason": null,
+            "category": "barracks",
+            "gross_area": 61240,
+            "added_areas": null,
+            "cleanable_area": 11680,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 8720,
+              "hard_tile": 2960,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "30 | 1404 | UPH Barracks | GARRISON (UH) | 72111 | 2006 | 4 | 61,240 | 2,960 | 0 | 8,720 | 11,680 | 5W | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Note 5: UPH barracks: common areas only (entry lobbies, dayrooms, laundry rooms, corridors, stairwells and common latrines). Soldier living modules are excluded. PWS 5.1.6: during annual training (June-August) the COR may direct up to two additional services per week in common latrines, ordered under CLIN 0009. USING ORG GARRISON (UH); CATCD 72111; YR BLT 2006. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1405",
+            "line_item": null,
+            "name": "Battalion Headquarters / Company Operations",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 28450,
+            "added_areas": null,
+            "cleanable_area": 21580,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 10980,
+              "resilient": 9460,
+              "hard_tile": 1140,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 20,
+              "excerpt": "31 | 1405 | Battalion Headquarters / Company Operations | TNG BN | 14185 | 2006 | 2 | 28,450 | 1,140 | 10,980 | 9,460 | 21,580 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG TNG BN; CATCD 14185; YR BLT 2006. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "1407",
+            "line_item": null,
+            "name": "UPH Barracks – VACANT, NO SERVICE",
+            "status": "demolished",
+            "status_reason": "TE 5 line 32 \"UPH Barracks – VACANT, NO SERVICE\"; Note 4: \"Bldg 1407 was vacated 30 SEP 2026 and is programmed for demolition (FY28)... No custodial service is required; it is not included in any total in this exhibit.\"",
+            "category": "barracks",
+            "gross_area": 38200,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "32 | 1407 | UPH Barracks – VACANT, NO SERVICE | VACANT | 72111 | 1962 | 3 | 38,200 | – | – | – | – | — | 4"
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG VACANT; CATCD 72111; YR BLT 1962. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2104A",
+            "line_item": null,
+            "name": "NCO Academy Classroom Building",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 22940,
+            "added_areas": null,
+            "cleanable_area": 19010,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 8860,
+              "resilient": 9170,
+              "hard_tile": 980,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "33 | 2104A | NCO Academy Classroom Building | NCOA | 17120 | 1983 | 2 | 22,940 | 980 | 8,860 | 9,170 | 19,010 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG NCOA; CATCD 17120; YR BLT 1983. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2104B",
+            "line_item": null,
+            "name": "NCO Academy Classroom Annex",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 9860,
+            "added_areas": null,
+            "cleanable_area": 8440,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 3640,
+              "resilient": 4380,
+              "hard_tile": 420,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "34 | 2104B | NCO Academy Classroom Annex | NCOA | 17120 | 1983 | 1 | 9,860 | 420 | 3,640 | 4,380 | 8,440 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG NCOA; CATCD 17120; YR BLT 1983. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2110",
+            "line_item": null,
+            "name": "Simulation Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 26780,
+            "added_areas": null,
+            "cleanable_area": 18860,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 14120,
+              "resilient": 3980,
+              "hard_tile": 760,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "35 | 2110 | Simulation Training Center | DPTMS | 17136 | 2014 | 1 | 26,780 | 760 | 14,120 | 3,980 | 18,860 | 3W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DPTMS; CATCD 17136; YR BLT 2014. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2120",
+            "line_item": null,
+            "name": "Range Control",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 8640,
+            "added_areas": null,
+            "cleanable_area": 6910,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 3120,
+              "resilient": 3410,
+              "hard_tile": 380,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "36 | 2120 | Range Control | DPTMS | 14190 | 1995 | 2 | 8,640 | 380 | 3,120 | 3,410 | 6,910 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DPTMS; CATCD 14190; YR BLT 1995. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2302",
+            "line_item": null,
+            "name": "Tactical Equipment Maintenance Facility (TEMF)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 64300,
+            "added_areas": null,
+            "cleanable_area": 7720,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 1860,
+              "resilient": 4240,
+              "hard_tile": 1620,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "37 | 2302 | Tactical Equipment Maintenance Facility (TEMF) | TNG BN | 21410 | 2009 | 2 | 64,300 | 1,620 | 1,860 | 4,240 | 7,720 | 5W | 8"
+            },
+            "confidence": 0.95,
+            "notes": "Note 8: offices, break rooms, latrines, locker / shower rooms, dayrooms and classrooms only; work bays, apparatus bays, shop floors and hangar floors are excluded. USING ORG TNG BN; CATCD 21410; YR BLT 2009. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2306",
+            "line_item": null,
+            "name": "Vehicle Maintenance Shop (Motor Pool B)",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 21450,
+            "added_areas": null,
+            "cleanable_area": 2820,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 2180,
+              "hard_tile": 640,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "38 | 2306 | Vehicle Maintenance Shop (Motor Pool B) | LRC | 21410 | 1978 | 1 | 21,450 | 640 | 0 | 2,180 | 2,820 | 3W | 8"
+            },
+            "confidence": 0.95,
+            "notes": "Note 8: offices, break rooms, latrines, locker / shower rooms, dayrooms and classrooms only; work bays, apparatus bays, shop floors and hangar floors are excluded. USING ORG LRC; CATCD 21410; YR BLT 1978. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2310",
+            "line_item": null,
+            "name": "DPW Shops and Yard Office",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 33600,
+            "added_areas": null,
+            "cleanable_area": 3680,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "3W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 980,
+              "resilient": 2140,
+              "hard_tile": 560,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "39 | 2310 | DPW Shops and Yard Office | DPW | 21910 | 1964 | 1 | 33,600 | 560 | 980 | 2,140 | 3,680 | 3W | 8"
+            },
+            "confidence": 0.95,
+            "notes": "Note 8: offices, break rooms, latrines, locker / shower rooms, dayrooms and classrooms only; work bays, apparatus bays, shop floors and hangar floors are excluded. USING ORG DPW; CATCD 21910; YR BLT 1964. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2402",
+            "line_item": null,
+            "name": "Central Issue Facility",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 42800,
+            "added_areas": null,
+            "cleanable_area": 12960,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 2460,
+              "resilient": 9880,
+              "hard_tile": 620,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "40 | 2402 | Central Issue Facility | LRC | 44220 | 1985 | 1 | 42,800 | 620 | 2,460 | 9,880 | 12,960 | 5W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG LRC; CATCD 44220; YR BLT 1985. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2404",
+            "line_item": null,
+            "name": "General Purpose Warehouse",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 56400,
+            "added_areas": null,
+            "cleanable_area": 7600,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 1240,
+              "resilient": 5980,
+              "hard_tile": 380,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "41 | 2404 | General Purpose Warehouse | LRC | 44220 | 1956 | 1 | 56,400 | 380 | 1,240 | 5,980 | 7,600 | W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG LRC; CATCD 44220; YR BLT 1956. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2406",
+            "line_item": null,
+            "name": "Self-Service Supply Center",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 6720,
+            "added_areas": null,
+            "cleanable_area": 5000,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "2W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 4840,
+              "hard_tile": 160,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "42 | 2406 | Self-Service Supply Center | LRC | 44222 | 1972 | 1 | 6,720 | 160 | 0 | 4,840 | 5,000 | 2W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG LRC; CATCD 44222; YR BLT 1972. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2408",
+            "line_item": null,
+            "name": "Records Holding Area",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 8400,
+            "added_areas": null,
+            "cleanable_area": 1200,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "monthly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "M",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 1200,
+              "hard_tile": 0,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "43 | 2408 | Records Holding Area | GARRISON | 44224 | 1958 | 1 | 8,400 | 0 | 0 | 1,200 | 1,200 | M | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG GARRISON; CATCD 44224; YR BLT 1958. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2602",
+            "line_item": null,
+            "name": "Airfield Operations Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 15320,
+            "added_areas": null,
+            "cleanable_area": 11340,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "7W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 6180,
+              "resilient": 4520,
+              "hard_tile": 640,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "44 | 2602 | Airfield Operations Building | AAF | 14112 | 1990 | 2 | 15,320 | 640 | 6,180 | 4,520 | 11,340 | 7W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG AAF; CATCD 14112; YR BLT 1990. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2604",
+            "line_item": null,
+            "name": "Aircraft Maintenance Hangar",
+            "status": null,
+            "status_reason": null,
+            "category": "hangar",
+            "gross_area": 48600,
+            "added_areas": null,
+            "cleanable_area": 6960,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 2240,
+              "resilient": 3960,
+              "hard_tile": 760,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "45 | 2604 | Aircraft Maintenance Hangar | AAF | 21110 | 1990 | 1 | 48,600 | 760 | 2,240 | 3,960 | 6,960 | 5W | 8"
+            },
+            "confidence": 0.95,
+            "notes": "Note 8: offices, break rooms, latrines, locker / shower rooms, dayrooms and classrooms only; work bays, apparatus bays, shop floors and hangar floors are excluded. USING ORG AAF; CATCD 21110; YR BLT 1990. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2702",
+            "line_item": null,
+            "name": "ASP Office and Break Facility",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 2860,
+            "added_areas": null,
+            "cleanable_area": 1960,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 1840,
+              "hard_tile": 120,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "46 | 2702 | ASP Office and Break Facility | LRC | 42210 | 1981 | 1 | 2,860 | 120 | 0 | 1,840 | 1,960 | W | 9"
+            },
+            "confidence": 0.95,
+            "notes": "Note 9: Escort required; access scheduled with the ASP supervisor not less than 24 hours in advance. USING ORG LRC; CATCD 42210; YR BLT 1981. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2812",
+            "line_item": null,
+            "name": "Range 12 Control Tower and Classroom",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1840,
+            "added_areas": null,
+            "cleanable_area": 1420,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 1260,
+              "hard_tile": 160,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "47 | 2812 | Range 12 Control Tower and Classroom | DPTMS | 17140 | 2005 | 2 | 1,840 | 160 | 0 | 1,260 | 1,420 | W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DPTMS; CATCD 17140; YR BLT 2005. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part A",
+            "campus": null,
+            "building_number": "2818",
+            "line_item": null,
+            "name": "Range 18 Ammunition Breakdown / Latrine Building",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 960,
+            "added_areas": null,
+            "cleanable_area": 660,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 420,
+              "hard_tile": 240,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "48 | 2818 | Range 18 Ammunition Breakdown / Latrine Building | DPTMS | 17140 | 2007 | 1 | 960 | 240 | 0 | 420 | 660 | W | "
+            },
+            "confidence": 0.95,
+            "notes": "USING ORG DPTMS; CATCD 17140; YR BLT 2007. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE 5 Part B",
+            "campus": null,
+            "building_number": "1410",
+            "line_item": null,
+            "name": "UPH Barracks (under construction)",
+            "status": "option_only",
+            "status_reason": "TE 5 Part B – Optional Facilities (not in base requirement; Optional CLIN 0010 / x010, Note 12); PWS 5.1.12",
+            "category": "barracks",
+            "gross_area": 72600,
+            "added_areas": null,
+            "cleanable_area": 13440,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability III - Basic Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 0,
+              "resilient": 10180,
+              "hard_tile": 3260,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "B-1 | 1410 | UPH Barracks (under construction) | GARRISON (UH) | 72111 | 2028 est. | 4 | 72,600 | 3,260 | 0 | 10,180 | 13,440 | 5W | 5, 12"
+            },
+            "confidence": 0.95,
+            "notes": "Note 5: UPH barracks: common areas only (entry lobbies, dayrooms, laundry rooms, corridors, stairwells and common latrines). Soldier living modules are excluded. Note 12: not serviced until Optional CLIN 0010 (x010) is exercised after beneficial occupancy (PWS 5.1.12); GSF and CSF are design estimates. USING ORG GARRISON (UH); CATCD 72111; YR BLT 2028 est.. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          },
+          {
+            "table_id": "TE 5 Part B",
+            "campus": null,
+            "building_number": "3116",
+            "line_item": null,
+            "name": "Child Development Center III (programmed)",
+            "status": "option_only",
+            "status_reason": "TE 5 Part B – Optional Facilities (not in base requirement; Optional CLIN 0010 / x010, Note 12); PWS 5.1.12",
+            "category": "child_care",
+            "gross_area": 30400,
+            "added_areas": null,
+            "cleanable_area": 26720,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": null,
+              "cleaning_standard": "Capability I - Enhanced Service",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "service_frequency_text": "5W",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": {
+              "carpet": 10120,
+              "resilient": 14560,
+              "hard_tile": 2040,
+              "concrete": null,
+              "wood": null,
+              "other": null
+            },
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 21,
+              "excerpt": "B-2 | 3116 | Child Development Center III (programmed) | CYS | 74028 | 2029 est. | 1 | 30,400 | 2,040 | 10,120 | 14,560 | 26,720 | 5W | 3, 12"
+            },
+            "confidence": 0.95,
+            "notes": "Note 3: Restrooms (and locker rooms in Bldgs 1520 and 1524) are serviced 2X daily on each service day (TE 4). Note 12: not serviced until Optional CLIN 0010 (x010) is exercised after beneficial occupancy (PWS 5.1.12); GSF and CSF are design estimates. USING ORG CYS; CATCD 74028; YR BLT 2029 est.. GSF (col 8) is real property inventory, information only; CSF (col 12) is the pricing basis (Notes 1-2)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "G-01 Cantonment core – Garrison HQ, chapel, community and administrative facilities (Bldgs 1001–1050)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "improved_turf",
+            "document_label": "Improved",
+            "mowing_frequency_text": "24 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 21.6,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-01 | Cantonment core – Garrison HQ, chapel, community and administrative facilities (Bldgs 1001–1050) | Improved | 21.6 | AC | 24 | 5.3.2"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "G-02 Barracks and battalion area (Bldgs 1402–1410)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "improved_turf",
+            "document_label": "Improved",
+            "mowing_frequency_text": "24 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 17.3,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-02 | Barracks and battalion area (Bldgs 1402–1410) | Improved | 17.3 | AC | 24 | 5.3.2"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "G-03 Child, Youth and School Services campus (Bldgs 3101–3116)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "improved_turf",
+            "document_label": "Improved",
+            "mowing_frequency_text": "24 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 8.9,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-03 | Child, Youth and School Services campus (Bldgs 3101–3116) | Improved | 8.9 | AC | 24 | 5.3.2"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "G-04 Fitness and recreation complex (Bldgs 1520–1544), excluding athletic fields",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "improved_turf",
+            "document_label": "Improved",
+            "mowing_frequency_text": "24 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 12.4,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-04 | Fitness and recreation complex (Bldgs 1520–1544), excluding athletic fields | Improved | 12.4 | AC | 24 | 5.3.2"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "G-05 Main Gate and North Gate, Brannock Boulevard medians, road rights-of-way to 30 ft",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "improved_turf",
+            "document_label": "Improved",
+            "mowing_frequency_text": "24 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 19.8,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-05 | Main Gate and North Gate, Brannock Boulevard medians, road rights-of-way to 30 ft | Improved | 19.8 | AC | 24 | 5.3.2"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "G-06 Post cemetery (hand trim at headstones)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "improved_turf",
+            "document_label": "Improved",
+            "mowing_frequency_text": "24 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3.1,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-06 | Post cemetery (hand trim at headstones) | Improved | 3.1 | AC | 24 | 5.3.2"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "G-07 Industrial area, motor pools and DPW yard (Bldgs 2302–2416)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "semi_improved",
+            "document_label": "Semi-Improved",
+            "mowing_frequency_text": "8 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 41.7,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-07 | Industrial area, motor pools and DPW yard (Bldgs 2302–2416) | Semi-Improved | 41.7 | AC | 8 | 5.3.3"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "G-08 Brannock AAF – airfield infield, clear zones and runway shoulders (BASH height, Note 3)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "semi_improved",
+            "document_label": "Semi-Improved",
+            "mowing_frequency_text": "6 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 86.4,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-08 | Brannock AAF – airfield infield, clear zones and runway shoulders (BASH height, Note 3) | Semi-Improved | 86.4 | AC | 6 | 5.3.3"
+            },
+            "confidence": 0.95,
+            "notes": "Note 3: maintain 7–14 in. IAW the Brannock AAF BASH Plan; coordinate with Airfield Operations 24 hours in advance (PWS 5.3.3). 6 cycles/yr = semi-improved."
+          },
+          {
+            "name": "G-09 Ammunition Supply Point – inside fence (Bldg 2702) (Note 4)",
+            "campus": null,
+            "facility_building_number": "2702",
+            "table_id": "TE 6-1",
+            "kind": "semi_improved",
+            "document_label": "Semi-Improved",
+            "mowing_frequency_text": "8 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 18.2,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-09 | Ammunition Supply Point – inside fence (Bldg 2702) (Note 4) | Semi-Improved | 18.2 | AC | 8 | 5.3.3"
+            },
+            "confidence": 0.95,
+            "notes": "Note 4: escort required inside the ASP fence; schedule with the ASP supervisor 24 hours in advance."
+          },
+          {
+            "name": "G-10 Range complex – Range Control, Ranges 12 and 18, range road shoulders",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "semi_improved",
+            "document_label": "Semi-Improved",
+            "mowing_frequency_text": "4 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 27.6,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-10 | Range complex – Range Control, Ranges 12 and 18, range road shoulders | Semi-Improved | 27.6 | AC | 4 | 5.3.3"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "G-11 Firebreaks and perimeter fence lines",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "unimproved",
+            "document_label": "Unimproved",
+            "mowing_frequency_text": "1 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 264,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-11 | Firebreaks and perimeter fence lines | Unimproved | 264.0 | AC | 1 | 5.3.4"
+            },
+            "confidence": 0.95,
+            "notes": "PWS 5.3.4: mowed or cut once each year after 15 July."
+          },
+          {
+            "name": "G-12 Stormwater ponds, drainage channels and retention basins",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "unimproved",
+            "document_label": "Unimproved",
+            "mowing_frequency_text": "2 mowing cycles (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 38.5,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-12 | Stormwater ponds, drainage channels and retention basins | Unimproved | 38.5 | AC | 2 | 5.3.4"
+            },
+            "confidence": 0.95,
+            "notes": "PWS 5.3.4: cut twice each year."
+          },
+          {
+            "name": "G-13 Family housing areas (Residential Communities Initiative) – NOT IN CONTRACT (Note 5)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-1",
+            "kind": "improved_turf",
+            "document_label": "Improved",
+            "mowing_frequency_text": "—",
+            "status": "excluded",
+            "status_reason": "Note 5: \"G-13 (146.0 AC) is maintained by the RCI partner and is listed for information only. It is not part of this contract and is not included in any subtotal or total.\"",
+            "quantity": 146,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "G-13 | Family housing areas (Residential Communities Initiative) – NOT IN CONTRACT (Note 5) | Improved | 146.0 | AC | — | —"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "F-1 Softball Field 1 (east of Bldg 1524)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-2",
+            "kind": "athletic_field",
+            "document_label": "Athletic field",
+            "mowing_frequency_text": "48 mowing (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.3,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "F-1 | Softball Field 1 (east of Bldg 1524) | 2.3 | AC | 48 | 34"
+            },
+            "confidence": 0.95,
+            "notes": "Lining 34 times annually (PWS 5.3.5). Not included in Table 6-1."
+          },
+          {
+            "name": "F-2 Softball Field 2 (east of Bldg 1524)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-2",
+            "kind": "athletic_field",
+            "document_label": "Athletic field",
+            "mowing_frequency_text": "48 mowing (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.3,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "F-2 | Softball Field 2 (east of Bldg 1524) | 2.3 | AC | 48 | 34"
+            },
+            "confidence": 0.95,
+            "notes": "Lining 34 times annually (PWS 5.3.5). Not included in Table 6-1."
+          },
+          {
+            "name": "F-3 Brannock Stadium – football / soccer (natural turf)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-2",
+            "kind": "athletic_field",
+            "document_label": "Athletic field",
+            "mowing_frequency_text": "48 mowing (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.9,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "F-3 | Brannock Stadium – football / soccer (natural turf) | 2.9 | AC | 48 | 22"
+            },
+            "confidence": 0.95,
+            "notes": "Lining 22 times annually (PWS 5.3.5). Not included in Table 6-1."
+          },
+          {
+            "name": "F-4 Multi-purpose / PT field (south of Bldg 1405)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-2",
+            "kind": "athletic_field",
+            "document_label": "Athletic field",
+            "mowing_frequency_text": "48 mowing (# times annually)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 4.1,
+            "unit": "acres",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "F-4 | Multi-purpose / PT field (south of Bldg 1405) | 4.1 | AC | 48 | 30"
+            },
+            "confidence": 0.95,
+            "notes": "Lining 30 times annually (PWS 5.3.5). Not included in Table 6-1."
+          },
+          {
+            "name": "Shrub and planting beds (mulched)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-3",
+            "kind": "shrub_bed",
+            "document_label": "Shrub and planting beds (mulched)",
+            "mowing_frequency_text": "Weed 6; prune 1; mulch 1",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 58400,
+            "unit": "sqft",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "1 | Shrub and planting beds (mulched) | 58,400 | SF | Weed 6; prune 1; mulch 1 | 5.3.6"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "Parking lots – policing and sweeping",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-3",
+            "kind": "parking",
+            "document_label": "Parking lots – policing and sweeping (Note 6)",
+            "mowing_frequency_text": "Police 38; sweep 4; spring sand removal 1",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 131800,
+            "unit": "sqyd",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "2 | Parking lots – policing and sweeping (Note 6) | 131,800 | SY | Police 38; sweep 4; spring sand removal 1 | 5.3.7"
+            },
+            "confidence": 0.95,
+            "notes": "Note 6: includes motor pool hardstands and ASP lots (16,200 SY) policed and swept under this contract but cleared of snow by the using units (TE 8 Note 1)."
+          },
+          {
+            "name": "Sidewalks, walkways and building entrances – policing",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-3",
+            "kind": "sidewalk",
+            "document_label": "Sidewalks, walkways and building entrances – policing",
+            "mowing_frequency_text": "Police 38; blow after each mowing",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 196300,
+            "unit": "sqft",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "3 | Sidewalks, walkways and building entrances – policing | 196,300 | SF | Police 38; blow after each mowing | 5.3.7"
+            },
+            "confidence": 0.95,
+            "notes": "TE 8 Table 8-2: 172,500 SF of these are cleared of snow by the Contractor (seasonal walks 23,800 SF not cleared, TE 8 Note 2)."
+          },
+          {
+            "name": "Edging – walks and curbs adjacent to improved grounds",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE 6-3",
+            "kind": "sidewalk",
+            "document_label": "Edging – walks and curbs adjacent to improved grounds (workload only; not an area)",
+            "mowing_frequency_text": "Edge 12",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 54600,
+            "unit": "lf",
+            "source": {
+              "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+              "page": 22,
+              "excerpt": "4 | Edging – walks and curbs adjacent to improved grounds (workload only; not an area) | 54,600 | LF | Edge 12 | 5.3.2"
+            },
+            "confidence": 0.95,
+            "notes": "Linear edging workload, not an area (edged every other week during mowing season, 12 times)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Northwoods Integrated Services, LLC",
+        "contract_number": "W9131B-22-C-0003",
+        "contract_type": "Firm-fixed price with cost-reimbursable DMO material line items",
+        "total_value": 38947260,
+        "period_months": 60,
+        "annual_value": null,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": 2022,
+        "source": {
+          "file": "W9131B-27-R-0006 Attachment 0001 - BOS PWS.pdf",
+          "page": 26,
+          "excerpt": "Table 10-1 Current Contract: Total contract value, base period and all option periods (as awarded) | $38,947,260"
+        },
+        "confidence": 0.9,
+        "notes": "TE 10 Table 10-1: awarded 27 June 2022; period of performance 1 July 2022 – 30 June 2027 (12-month base and four 12-month options; 60 months). Services included CLS 402, 403, 404, 408 and 420. Pest management (CLS 510) was performed under a separate contract, W9131B-23-P-0118, and is consolidated into this requirement, so the prior value excludes pest management. Annual value not stated. PWS 1.2.2: current BOS contract expires 30 June 2027."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "USAG Fort Brannock BOS PWS (W9131B-27-R-0006). TE 5 Part A: 48 rows registered (47 serviced facilities, 1,060,920 GSF / 557,560 CSF; Bldg 1407 vacant and programmed for demolition, out of scope). TE 5 Part B: 2 optional facilities (1410, 3116; 103,000 GSF / 40,160 CSF design estimates) as option_only (CLIN 0010). Grounds: TE 6 Table 6-1 (83.1 AC improved, 173.9 AC semi-improved, 302.5 AC unimproved; G-13 RCI family housing 146.0 AC excluded), Table 6-2 athletic fields 11.6 AC, Table 6-3 beds 58,400 SF, parking 131,800 SY, sidewalks 196,300 SF, edging 54,600 LF. Prior contract W9131B-22-C-0003 (Northwoods Integrated Services, LLC), $38,947,260 over 60 months, excluding pest management (CLS 510, separate contract). No dining scope (DFAC 1310 is under the installation food service contract).",
+        "unresolved": [
+          "Buildings named in the PWS text but not in TE 5 and stated as not serviced under CLS 402 (PWS 1.2.1, 5.1.13): Army Health Clinic 1100, Veterinary Treatment Facility 1106, Dining Facility 1310, Brannock Club 1550, Commissary 1600, and family housing. Not registered; they appear only in the refuse, snow and pest exhibits (TE 7, TE 8, TE 9).",
+          "Table 3-1 Government-Furnished Facilities (2410 7,200 GSF; 2412 12,800 GSF; 2414 4,000 GSF; 2416 6,360 GSF): PWS 3.2.1 says the Contractor shall perform custodial services in GFF at no additional cost, but they are not in TE 5, are not invoiced under CLIN 0002, and are not serviced under CLS 402 (5.1.13). Not registered as workload. Carry the self-cleaning as overhead.",
+          "TE 5 Part B GSF and CSF are design estimates (Note 12), to be adjusted to as-built CSF when CLIN 0010 is exercised.",
+          "Bldgs 1520 and 1524: the TE 5 hard floor SF includes wood gym floors (14,200 and 11,600 SF, Note 10). floor_areas split wood out of the hard floor figure.",
+          "Snow and ice removal roads (50.8 lane-miles, TE 8 Table 8-1) cannot be registered as grounds areas. TE 8 Table 8-2 (115,600 SY parking, 172,500 SF walks) is a subset of TE 6 Table 6-3 and was not registered separately. TE 9 Table 9-2 pest areas overlap TE 6 and were not registered."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}
