@@ -10,7 +10,7 @@ import {
   applyToolCall, beginPass, buildingKey, cleanBuildingNumber, createState, diningMealsPerDay, docRank, extractionTools, facilityIdentity, finalize,
   isTotalRow, mapGroundsLabel, parseNumber, parseServiceFrequency, replayToolCalls, seasonDay, seasonServiceDays, type ToolCall,
 } from '../server/toolcalls';
-import { extractWithClaude, facilityId, mergeFacility, replayToolCalls as replayFromAi } from '../server/ai';
+import { describeRequests, extractWithClaude, facilityId, mergeFacility, replayToolCalls as replayFromAi } from '../server/ai';
 import { estimateInventory } from '../shared/estimate';
 import { normBn, scoreInventory, siteFieldOk } from './harness/score';
 import type { FixtureTruth } from './harness/truth';
@@ -1028,6 +1028,19 @@ test('score: building numbers match by the reader\'s identity rule; line items p
   assert.equal(siteFieldOk('installationName', 'USAG Italy', 'U.S. Army Garrison Italy (USAG Italy) – Vicenza'), true);
   assert.equal(siteFieldOk('solicitation', 'RFP No. 2026-041', 'RFP 2026-041'), false);
   assert.equal(siteFieldOk('climateZone', 'cold', 'cold'), true);
+});
+
+test('request intro: a file ranked as an amendment whose name says it is a base document as amended gets the tagging note', () => {
+  const doc = (name: string, amendment: number) => ({ name, mode: 'text' as const, text: '--- page 1 ---\nx', chars: 1, bytes: 1, role: 'amendment' as const, amendment });
+  const intro = (name: string) => describeRequests([doc(name, 1)]).passes[0].intro;
+  for (const name of ['Attachment B - Facility Listing (w Amd 0001).pdf', 'Section J Annex 15 (Conformed Amd 0002).pdf', 'RFP-2026-041-Janitorial-Services-with-Addendum-1.docx', 'Atch 2 - Appendix B Est SF (Amd 0001).xlsx']) {
+    assert.match(intro(name), /is ranked as amendment 0001, but its name says it holds a base document or attachment with the amendment applied or appended: rows printed in its tables \(also rows marked as revised\) get the table's id/, name);
+  }
+  for (const name of ['Amendment 0002.pdf', 'RFP 27031 Addendum No. 1.pdf', 'SF30 Amendment 0001.pdf']) assert.doesNotMatch(intro(name), /is ranked as/, name);
+  // the tagging rule itself is in every intro, and the line_item field is offered to the model
+  assert.match(intro('Amendment 0002.pdf'), /In a conformed or reissued table \(revised rows marked in place/);
+  const facility = (describeRequests([doc('a.pdf', 1)]).tools.find((t) => t.name === 'register_facilities')!.input_schema as { properties: { facilities: { items: { properties: Record<string, unknown> } } } }).properties.facilities.items.properties;
+  for (const k of ['line_item', 'floor_areas', 'service_season', 'events_per_year', 'restroom_rooms', 'cleaning_standard', 'area_by_class']) assert.ok(facility[k], k);
 });
 
 // ------------------------------------------------------------------------------------------------
