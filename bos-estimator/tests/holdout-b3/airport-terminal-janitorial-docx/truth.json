@@ -1,0 +1,455 @@
+{
+  "id": "airport-terminal-janitorial-docx",
+  "title": "Regional airport authority janitorial RFP (DOCX): terminal listed by Service Area (zone) with terrazzo/carpet/other split, support buildings with gross vs contract cleaning area, tenant/agency exclusions, CBP option, vacant building, exterior sidewalks, Addendum No. 1 revises/adds/deletes areas",
+  "theme": "airport",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://flymemphis.com/wp-content/uploads/2023/10/Janitorial-Services-Addenda-4-Final.pdf",
+        "note": "Memphis-Shelby County Airport Authority, Janitorial Services RFP 24-0001, Addendum 4: square-footage schedule by terminal level and zone (ground level, ticketing, mezzanine, concourses) with Hours of Operation, Janitorial Hours, Secure Area and Map Reference columns. Model for Exhibit A Part 1: zone-level rows grouped by level, a Zone (secure/sterile) column, and Hours of Operation printed separately from the cleaning coverage. No rows copied."
+      },
+      {
+        "url": "https://flymemphis.com/wp-content/uploads/2023/10/Q-A-24-0001-Janitorial-Services-1st-Final.pdf",
+        "note": "Memphis RFP 24-0001 Q&A: bidders asked for square footage and floor-type breakdowns (ceramic tile in restrooms, terrazzo vs carpet at gates); the Authority answered that an addendum would follow. Model for the Floor Area by Finish columns and Addendum Q3."
+      },
+      {
+        "url": "https://portofbellingham.com/DocumentCenter/View/15199/Airport_CBP_Janitorial_ADD3?bidId=",
+        "note": "Port of Bellingham, Airport and Customs & Border Protection Janitorial Services, Addendum No. 3 (Dec 2025): Q&A lists each bid item with an approximate area (\"Item 1 – International Arrivals Building – approximately 2860 sq. ft.\", \"Item 14 – Customs & Border Protection – 17,480 sq. ft.\", an \"N/A\" item, \"Commercial Terminal Exterior\" 10,000). Model for CBP/FIS space as its own line, an exterior terminal area in a janitorial scope, and areas restated in an addendum."
+      },
+      {
+        "url": "https://www.portofbellingham.com/bids.aspx?bidID=224",
+        "note": "Port of Bellingham bid page for the same solicitation: janitorial, window washing and carpet cleaning, Feb 1, 2026 – Jan 31, 2028, awarded to Del Sol, Inc. (two-year value reported in Commission minutes). Model for stating the incumbent and contract value."
+      },
+      {
+        "url": "https://bishopairport.org/application/files/9917/0629/0623/Janitorial_Services_RFP_-_FINAL.pdf",
+        "note": "Bishop International Airport, Request for Rebid for Janitorial Services (Jan 26, 2024): \"The Terminal building consists of approximately 242,000 total square feet, not all of which is included in the scope of services\"; Attachment A gives service locations and approximate square footages; entrance vestibules about 3,000 SF. Model for Section 1.2 (gross terminal area vs in-scope area) and the vestibule rows."
+      },
+      {
+        "url": "https://bishopairport.org/application/files/4316/9928/4089/Janitorial_and_Skycap_Services_Q_and_A_Addendum_1.pdf",
+        "note": "Bishop Janitorial and Skycap Services Addendum #1: revises the \"Public Open Floor Area\" (ticketing, baggage claim, rental car, restaurant seating and queuing) and its hard-floor area by addendum. Model for Addendum Item 1 (an area and its finish split revised)."
+      },
+      {
+        "url": "https://bishopairport.org/application/files/2917/0931/1014/Janitorial_Services_Q_and_A_Addendum_2.pdf",
+        "note": "Bishop Janitorial Services Addendum #2 (Mar 1, 2024): answers a bidder question with the prior-year contract amount (\"the contract amount for Janitorial and Skycap Services in 2023 was $339,960.00\") and consumables cost. Model for putting the prior-award figures in the Q&A (A4)."
+      },
+      {
+        "url": "https://cityofpensacola.com/DocumentCenter/View/27392/rfp-25023-AirportJanitorial_SpecializedFloorCareSvcs-PDF?bidId=",
+        "note": "City of Pensacola RFP No. 25-023, Airport Janitorial & Specialized Floor Care Services: terminal of more than 200,000 SF; GSA/CBP spaces listed separately with their square footage; about 13,000 SF of porcelain tile on the concourse; VCT strip and wax semi-annually at Fire Station #7 (ARFF). Model for the CBP suite as a separately priced item (Option Item 1), the ARFF VCT task and finish-specific floor care (Section 2.6)."
+      },
+      {
+        "url": "https://www.bidnetdirect.com/florida/city-of-pensacola/solicitations/Pensacola-International-Airport-Janitorial-and-Carpet-Cleaning-Services/0000204785",
+        "note": "Pensacola ITB 19-008 listing: \"Full service janitorial services in a facility of a size at least 200,000 square feet of enclosed space, open 24 hours per day, 7 days per week\". Model for the 24/7 terminal coverage."
+      },
+      {
+        "url": "https://www.flystl.com/wp-content/uploads/2026/01/Terminal-Cleaning-Services-1-20-2026.pdf",
+        "note": "St. Louis Lambert Terminal Cleaning Services RFP (Jan 2026): Section 5.0 Current Airport Conditions with approximate areas (restrooms about 25,500 SF, interior service animal relief areas 650 SF, lactation suites 800 SF); Appendix A Minimum Service Summary with cleanable SF by terminal and concourse, service frequency, staffing and cleaning hours. Model for Exhibit D and the SARA / nursing-suite area added by Addendum Item 2."
+      },
+      {
+        "url": "https://www.flystl.com/wp-content/uploads/2026/02/Second-Addendum-Terminal-Cleaning-Services-RFP.pdf",
+        "note": "STL Second Addendum: Q&A pointing bidders to Section 5.0 and Appendix A for square footages, excluded areas, frequencies and cleaning hours. Model for the Addendum Q&A format."
+      },
+      {
+        "url": "https://www.flystl.com/wp-content/uploads/2025/01/9.6.12_Terminal-Cleaning_Regency_2018.09.05_200311_081633.pdf",
+        "note": "STL 2018 Terminal 1 and 2 cleaning agreement: square footage amounts are for reference only and inexact; task intervals such as quarterly floor stripping. Model for the Section 2.2 disclaimer and the periodic floor-care table."
+      },
+      {
+        "url": "https://files.ocair.com/media/2021-01/Item3_web.pdf",
+        "note": "John Wayne Airport (County of Orange) staff report: janitorial services performed 24 hours a day, seven days a week, 365 days a year at the terminal, exterior walkways, administrative and maintenance buildings, and parking structure lobbies and stairways; prior contract (Flagship, 2017) stated as a five-year cumulative value. Model for the 24/7 code, the parking-garage lobbies/stair-towers row and a not-to-exceed value over the full term."
+      },
+      {
+        "url": "https://airportscouncil.org/wp-content/uploads/2018/08/bna_2010_custodial_rfp.pdf",
+        "note": "Metropolitan Nashville Airport Authority 2010 custodial RFP: pricing forms split by terminal and concourses, leased space, short-term parking garage and outlying buildings, with a five-year summary. Model for Exhibit B lines grouped by area type and the support-building list."
+      },
+      {
+        "url": "https://flynashville.com/opportunity/custodial-services",
+        "note": "MNAA Custodial Services RFP 25-020 (canceled): the Authority may add or delete buildings and areas from the Cleanable Square Footage in Exhibit \"B\". Model for Section 2.9."
+      },
+      {
+        "url": "https://airportscouncil.org/wp-content/uploads/2018/08/rdu_2008_custodial_rfp.pdf",
+        "note": "Raleigh-Durham Janitorial Services Project MNT0801 (2008): bid form separating terminal area types (airline hold rooms, common areas, tenant areas) with square footage, plus parking garage and outlying shelters. Model for pricing by area type and for carving out tenant areas."
+      },
+      {
+        "url": "https://www.flyhia.com/wp-content/uploads/2019/08/Janitorial-RFQ-RFP-.pdf",
+        "note": "Susquehanna Area Regional Airport Authority (Harrisburg) Janitorial RFQ/RFP (2019): terminal, multi-modal transportation facility (rental car counters), airport maintenance facilities and airport fire department in one janitorial scope; about 150,510 SF of terrazzo; price weighted 30%. Model for the support-facility mix and the evaluation table."
+      },
+      {
+        "url": "https://procurement.opengov.com/portal/volusia/projects/84295/document?section=all",
+        "note": "Volusia County, Janitorial Services for Daytona Beach International Airport: about 141,738 SF, daily including weekends and holidays; the County may add or remove square footage and/or frequency of service at any time. Model for Section 2.9."
+      },
+      {
+        "url": "https://wwwcfprd.doa.louisiana.gov/osp/lapac/agency/pdf/9004400.pdf",
+        "note": "Baton Rouge Metropolitan Airport floor care RFP: areas given by finish (about 37,500 SF terrazzo, 11,500 SF tile, 46,650 SF carpet). Model for the terrazzo / carpet / other columns."
+      },
+      {
+        "url": "https://procurement.opengov.com/portal/cvgairport/projects/147046/document?section=all",
+        "note": "Kenton County Airport Board (CVG) Passenger Facilities, Commercial Cleaning Services: around-the-clock coverage every day of the year for the areas in Attachment B (Passenger Facilities). Model for the 24/7 definition."
+      },
+      {
+        "url": "https://duluthmn.gov/media/awcdisiq/24-4410-rfp-for-duluth-international-airport-janitorial-services.pdf",
+        "note": "Duluth Airport Authority RFP 24-4410: narrative terminal description with terrazzo and carpet square footage and a bathroom count; public and defined private areas; staff onsite 6:00am-10:00pm; work defined in Attachment 1. Model for the Section 1.2 narrative counts (terrazzo, carpet, restroom groups), which are distractors."
+      }
+    ],
+    "notes": "All names and values are illustrative: the Ashbury County Regional Airport Authority (a fictional Wisconsin airport authority; no IATA code is used so it cannot collide with a real airport), RFP No. 26-118, every area, square footage, fixture count, staffing number, the incumbent (Kinnick & Vail Building Services, Inc., Contract No. ACRAA-C-22-009) and its contract values. No rows were copied, so fidelity is real-format. The layout and wording follow the real airport janitorial solicitations cited: terminal SF by level and zone with hours and secure-area columns (Memphis Addendum 4), area-by-finish breakdowns (Memphis Q&A, Baton Rouge, Duluth), per-item square footage restated in a Q&A addendum and CBP space as its own item (Port of Bellingham), gross terminal area vs in-scope area and a prior-year contract amount in a Q&A addendum (Bishop), CBP/GSA space, ARFF and floor-care tasks (Pensacola), minimum service summary and SARA / lactation suites (St. Louis), 24/7/365 coverage of terminal, admin and maintenance buildings and parking structure lobbies (John Wayne, CVG), pricing grouped by area type with tenant carve-outs (Nashville, RDU) and add/delete clauses (Nashville, Daytona Beach). Research limits: WebFetch and direct downloads were blocked in this session (DNS / egress policy), so every source was read through WebSearch result excerpts only; the column wording above is what those excerpts quote or describe, not a full reading of each PDF. Review (adversarial check): cleanableSqft added to the 23 terminal zones (= Total SF, 'the area to be serviced' per Section 2.2 / A1) and to Bldg. 200 (= its 14,600 Contract Cleaning Area); Exhibit D posts (60 -> 33/day) and the A5 incumbent headcount (71 FT + 12 PT -> 41 FT + 9 PT) scaled down so they fit the $2.85M/yr prior-award figures. WebFetch/curl were blocked in the review session as well."
+  },
+  "inputs": [
+    {
+      "src": "rfp-26-118-janitorial.html",
+      "as": "docx"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "T1-01",
+        "name": "Baggage Claim Hall (Claim Devices 1–6)",
+        "grossSqft": 38450,
+        "cleanableSqft": 38450,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 48
+      },
+      {
+        "buildingNumber": "T1-02",
+        "name": "Arrivals Vestibules & Entrances (8 vestibules)",
+        "grossSqft": 3120,
+        "cleanableSqft": 3120,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "T1-03",
+        "name": "Ground Transportation Lobby & Rental Car Counter Queuing",
+        "grossSqft": 9860,
+        "cleanableSqft": 9860,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 20
+      },
+      {
+        "buildingNumber": "T1-04",
+        "name": "Level 1 Service Corridors, Freight Elevator Lobbies & Loading Dock Vestibule",
+        "grossSqft": 14280,
+        "cleanableSqft": 14280,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "T1-05",
+        "name": "Airport Operations Center (AOC) & Airport Communications",
+        "grossSqft": 4550,
+        "cleanableSqft": 4550,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 5
+      },
+      {
+        "buildingNumber": "T1-06",
+        "name": "Employee Break Room, Locker Rooms & Showers",
+        "grossSqft": 2860,
+        "cleanableSqft": 2860,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 20
+      },
+      {
+        "buildingNumber": "T2-01",
+        "name": "Ticketing Hall (Ticket Lobby, public side of counters)",
+        "grossSqft": 41200,
+        "cleanableSqft": 41200,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 43
+      },
+      {
+        "buildingNumber": "T2-02",
+        "name": "Departures Vestibules & Entrances (6 vestibules)",
+        "grossSqft": 2340,
+        "cleanableSqft": 2340,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "T2-03",
+        "name": "Pre-Security Food Court Common Seating",
+        "grossSqft": 11250,
+        "cleanableSqft": 11250,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "T2-04",
+        "name": "Security Checkpoint Queue & Recompose Area (excl. TSA screening lanes)",
+        "grossSqft": 7640,
+        "cleanableSqft": 7640,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "T2-05",
+        "name": "Central Connector & Post-Security Marketplace Common Area",
+        "grossSqft": 27140,
+        "cleanableSqft": 27140,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 50
+      },
+      {
+        "buildingNumber": "T2-06",
+        "name": "Level 2 Service Corridors & Airline Support Corridor",
+        "grossSqft": 6920,
+        "cleanableSqft": 6920,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 7
+      },
+      {
+        "buildingNumber": "T3-01",
+        "name": "Observation Mezzanine, Meditation Room & USO Lounge",
+        "grossSqft": 8670,
+        "cleanableSqft": 8670,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 13
+      },
+      {
+        "buildingNumber": "T3-02",
+        "name": "Authority Terminal Offices (Terminal Operations & Customer Service)",
+        "grossSqft": 8420,
+        "cleanableSqft": 8420,
+        "serviceLevel": "daily_5",
+        "category": "admin",
+        "restroomFixtures": 9
+      },
+      {
+        "buildingNumber": "CA-01",
+        "name": "Concourse A Holdrooms & Circulation (Gates A1–A8)",
+        "grossSqft": 49700,
+        "cleanableSqft": 49700,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 94
+      },
+      {
+        "buildingNumber": "CA-02",
+        "name": "Concourse A Passenger Boarding Bridges",
+        "grossSqft": 8400,
+        "cleanableSqft": 8400,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "CA-03",
+        "name": "Concourse A Apron Level – Airline Operations Corridors & Ramp Restrooms",
+        "grossSqft": 11630,
+        "cleanableSqft": 11630,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 14
+      },
+      {
+        "buildingNumber": "CB-01",
+        "name": "Concourse B Holdrooms & Circulation (Gates B1–B6)",
+        "grossSqft": 46790,
+        "cleanableSqft": 46790,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 75
+      },
+      {
+        "buildingNumber": "CB-02",
+        "name": "Concourse B Passenger Boarding Bridges",
+        "grossSqft": 6300,
+        "cleanableSqft": 6300,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "CB-03",
+        "name": "Concourse B Apron Level – Operations Corridors & Ramp Restrooms",
+        "grossSqft": 8970,
+        "cleanableSqft": 8970,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 7
+      },
+      {
+        "buildingNumber": "CB-04",
+        "name": "Concourse B Interior Service Animal Relief Areas (2) and Nursing Suites (3)",
+        "grossSqft": 1180,
+        "cleanableSqft": 1180,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "F-01",
+        "name": "FIS Sterile Corridor, Primary Inspection Hall & Secondary Inspection",
+        "grossSqft": 11280,
+        "cleanableSqft": 11280,
+        "restroomFixtures": 26
+      },
+      {
+        "buildingNumber": "F-02",
+        "name": "International Baggage Claim & Exit Hall",
+        "grossSqft": 6740,
+        "cleanableSqft": 6740,
+        "restroomFixtures": 18
+      },
+      {
+        "buildingNumber": "100",
+        "name": "Administration Building (Authority Headquarters)",
+        "grossSqft": 42800,
+        "cleanableSqft": 38950,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "admin",
+        "restroomFixtures": 41
+      },
+      {
+        "buildingNumber": "200",
+        "name": "Parking Garage – Elevator Lobbies, Stair Towers & Level 3 Pedestrian Skybridge",
+        "grossSqft": 14600,
+        "cleanableSqft": 14600,
+        "floors": 6,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "205",
+        "name": "Parking Office & Exit Plaza Cashier Booths",
+        "grossSqft": 4180,
+        "cleanableSqft": 3960,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 5
+      },
+      {
+        "buildingNumber": "230",
+        "name": "Cell Phone Waiting Lot Restroom Building",
+        "grossSqft": 640,
+        "cleanableSqft": 600,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 9
+      },
+      {
+        "buildingNumber": "300",
+        "name": "Rental Car Customer Service Building (CSB)",
+        "grossSqft": 18900,
+        "cleanableSqft": 7350,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 21
+      },
+      {
+        "buildingNumber": "500",
+        "name": "Public Safety Building (Airport Police & Emergency Communications)",
+        "grossSqft": 11400,
+        "cleanableSqft": 10260,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 20
+      },
+      {
+        "buildingNumber": "510",
+        "name": "Credentialing & Badging Office",
+        "grossSqft": 3150,
+        "cleanableSqft": 2980,
+        "floors": 1,
+        "serviceLevel": "daily_6",
+        "category": "admin",
+        "restroomFixtures": 5
+      },
+      {
+        "buildingNumber": "600",
+        "name": "Commercial Vehicle Holding Lot – Driver Lounge & Restrooms",
+        "grossSqft": 1240,
+        "cleanableSqft": 1180,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 7
+      },
+      {
+        "buildingNumber": "400",
+        "name": "ARFF Station (Fire Station 41)",
+        "grossSqft": 21600,
+        "cleanableSqft": 5180,
+        "floors": 2,
+        "serviceLevel": "2x_week",
+        "restroomFixtures": 10
+      },
+      {
+        "buildingNumber": "410",
+        "name": "Airfield Maintenance & Snow Removal Equipment (SRE) Building",
+        "grossSqft": 33400,
+        "cleanableSqft": 6880,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "maintenance",
+        "restroomFixtures": 23
+      },
+      {
+        "buildingNumber": "420",
+        "name": "Authority Maintenance Hangar (Hangar 3)",
+        "grossSqft": 38600,
+        "cleanableSqft": 2940,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "hangar",
+        "restroomFixtures": 5
+      },
+      {
+        "buildingNumber": "430",
+        "name": "Central Receiving & Warehouse",
+        "grossSqft": 12200,
+        "cleanableSqft": 1450,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "warehouse",
+        "restroomFixtures": 2
+      },
+      {
+        "buildingNumber": "440",
+        "name": "Facilities Maintenance Shops",
+        "grossSqft": 16750,
+        "cleanableSqft": 3320,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance",
+        "restroomFixtures": 12
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "sidewalk",
+        "quantity": 28400,
+        "unit": "sqft",
+        "name": "Terminal Curbside Sidewalks – Departures (Level 2) and Arrivals (Level 1)"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 9650,
+        "unit": "sqft",
+        "name": "Ground Transportation Plaza & Crosswalk Islands (Terminal to Parking Garage)"
+      }
+    ],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "cold",
+      "installationName": "Ashbury County Regional Airport",
+      "solicitation": "RFP No. 26-118"
+    },
+    "priorAward": {
+      "totalValue": 13750000,
+      "periodMonths": 60,
+      "annualValue": 2846520,
+      "spendToDate": 12174880.42,
+      "spendPeriodMonths": 54,
+      "incumbent": "Kinnick & Vail Building Services, Inc.",
+      "contractNumber": "ACRAA-C-22-009",
+      "awardYear": 2022
+    }
+  },
+  "traps": [
+    "Facility granularity follows the document: the Passenger Terminal (Building 1) is listed by Service Area (zone) with an Area No. (T1-01 ... F-02), and each support building is one row with a Bldg. No. The terminal gross area (approximately 486,000 GSF, Section 1.2 and A2) is not a facility row and must not be emitted as one; the 23 terminal zones (22 + CB-04 added by Addendum) are the facilities, keyed by Area No.",
+    "Floor Area by Finish: each terminal row prints Terrazzo / Carpet / Other before Total SF, under a two-row header whose group cell \"Floor Area by Finish (SF)\" spans three columns and leaves blank cells under the other headers. Truth grossSqft is the Total SF column (e.g. T1-01 Baggage Claim Hall = 35,870 + 0 + 2,580 = 38,450), not the terrazzo figure. Section 2.2 and Addendum A1 say the Total SF column is the area to be serviced, so truth cleanableSqft = the same Total SF on every terminal zone (no category cleanable share applied on top of it, as in scanned-facility-exhibit). Zero finishes print as an em dash.",
+    "Group header rows (LEVEL 1 – ARRIVALS / BAGGAGE CLAIM, LEVEL 2 – TICKETING / DEPARTURES, LEVEL 3 – MEZZANINE, CONCOURSE A – GATES A1–A8, CONCOURSE B – GATES B1–B6, FEDERAL INSPECTION SERVICES (FIS) – CONCOURSE B, LEVEL 1, LANDSIDE FACILITIES, AIRFIELD SUPPORT FACILITIES) are not facilities.",
+    "Subtotals and totals are not facilities: Level 1/2/3, Concourse A/B and FIS (Base) subtotals, LANDSIDE TERMINAL SUBTOTAL (TABLE A-1) 185,050, AIRSIDE SUBTOTAL (TABLE A-2, BASE) 149,810, PASSENGER TERMINAL TOTAL 334,860, Landside Subtotal 79,880, Airfield Support Subtotal 20,390, SUPPORT FACILITIES TOTAL 100,270, Total Exterior Areas 38,050, the Exhibit A Summary (435,130), Exhibit B line areas (235,840 / 72,580 / 8,420 / 37,950 / 62,320 / 38,050), Exhibit C subtotals, Addendum Item 5 revised totals (337,690 / 99,650 / 437,340), and the Section 1.2 prose (486,000 GSF, about 335,000 SF, 185,000 SF terrazzo, 83,000 SF carpet, 18 public restroom groups).",
+    "Exhibit A Part 1 is split into two Word tables, Table A-1 (landside, Levels 1–3) and Table A-2 (concourses and FIS) under \"Exhibit A, Part 1 (continued)\", each with the same repeated two-row header.",
+    "Support buildings print Gross Bldg. SF and Contract Cleaning Area (SF): truth grossSqft = gross, cleanableSqft = contract cleaning area (Section 2.2 and A1: the area to be serviced) for the 12 buildings that give both (e.g. Bldg. 420 hangar 38,600 / 2,940; ARFF 400 21,600 / 5,180; Rental Car CSB 300 18,900 / 7,350). Bldg. 200 (parking garage lobbies, stair towers and skybridge) prints \"—\" for gross (Note b: parking decks excluded), and its Contract Cleaning Area is 14,600 (the lobbies on six levels, four stair towers and the skybridge). Truth cleanableSqft = 14,600, and grossSqft carries the same 14,600 because no other area is given.",
+    "Tenant / airline / agency areas are excluded: Exhibit A Part 3 lists ATOs (31,840), concession leaseholds (26,410), TSA checkpoint and offices (14,960), rental car counters (2,150), the airline club (3,600), BHS rooms (38,700), Bldg. 310 Rental Car QTA (44,800), Bldg. 700 FAA ATCT (9,950) and Bldg. 710 General Aviation Terminal / FBO (6,800) with square footage \"for information only\". None is a facility. Building 300 also carries a note that 11,550 SF of rental-car leased space is excluded.",
+    "Option-only area: F-03 CBP Administrative Offices & Hold Rooms (3,420 SF) sits inside Table A-2 between the FIS subtotal and the airside subtotal, marked \"OPTION ITEM 1 – not included in subtotals or totals\"; it is priced as Exhibit B Line 11 and repeated in Exhibit C. It is NOT expected.",
+    "Vacant building: Bldg. 800 Former Air Cargo Building (26,500 gross) is in Table A-3 with \"—\" cleaning area and \"No service (vacant)\", Note f and Addendum A7. It is NOT expected.",
+    "Addendum No. 1 (at the end of the file, dated December 1, 2026) controls: Item 1 revises T2-03 Pre-Security Food Court Common Seating from 9,600 to 11,250 SF (terrazzo 8,920 to 10,570); Item 2 adds CB-04 Concourse B Interior Service Animal Relief Areas (2) and Nursing Suites (3), 1,180 SF, 24/7 (it appears only in the addendum, in a one-row table with the full Exhibit A header); Item 3 deletes Bldg. 450 Central Utility Plant (620 SF), which is NOT expected; Item 4 changes Bldg. 420 Maintenance Hangar coverage from M/W/F to Tu/Th (truth 2x_week). The RFP body only says the Level 2 concessions redevelopment \"may change areas\" (Section 2.9, Note 5).",
+    "Janitorial Coverage codes map to service levels (Section 2.3 legend): \"24/7\" and \"Daily (7)\" = daily_7; \"M–F\" = daily_5; \"M–Sa\" = daily_6 (Bldg. 510); \"M/W/F\" = 3x_week (Bldg. 440); \"Tu/Th\" = 2x_week (Bldgs. 400, 420 after Addendum); \"Wkly\" = weekly (Bldg. 430). FIS areas F-01 and F-02 are \"Per Arrival\" (cleaned on international arrival days, est. 148 per year), which has no service-level equivalent, so serviceLevel is omitted for them. Model limitation: 24/7 continuous multi-shift coverage and once-nightly Daily (7) both map to daily_7.",
+    "Hours of Operation (e.g. \"03:30–01:00\", \"24 hrs\", \"Per CBP arrival schedule\") is printed next to Janitorial Coverage but is the hours the area is open, not a cleaning frequency (Note 3). Periodic floor-care frequencies in Section 2.6 (nightly, monthly, quarterly, semi-annually, every 2 hours) are tasks, not service levels.",
+    "Restroom data lives only in Exhibit C, keyed by Area / Bldg. No. without names: Restroom Groups, WC, UR, LAV, SH and Total Fixtures. Truth restroomFixtures = the Total Fixtures column, only for the areas listed there (e.g. CA-01 = 44 + 16 + 34 = 94; Bldg. 410 = 6 + 3 + 6 + 8 showers = 23). The Restroom Groups column (e.g. CA-01 = 4) is not a fixture count. Areas not listed (vestibules, boarding bridges, checkpoint queue, food court seating, CB-04, Bldg. 200) have no restroomFixtures in truth. Exhibit C also lists F-03 (option) and Bldg. 450 (deleted by Addendum Item 7), which are not facilities.",
+    "Boarding bridge rows carry a count and unit area in the name (\"Concourse A Passenger Boarding Bridges (8 @ approx. 1,050 SF)\", 8,400 SF; Concourse B 6 @ 1,050 = 6,300). They are one facility each, not 8 or 6.",
+    "Exterior areas are grounds, not facilities: Exhibit A Part 4 E-1 Terminal Curbside Sidewalks 28,400 SF (Daily (7)) and E-2 Ground Transportation Plaza & Crosswalk Islands 9,650 SF (Wkly) are expected as grounds kind \"sidewalk\" in sqft. Snow removal is excluded.",
+    "Exhibit B repeats the areas only as grouped pricing lines with Area No. lists and SF subtotals (Lines 1–6), plus unit-priced Line 7 (FIS per arrival day, est. 148), hourly Lines 8–10 (600 / 300 / 120 hours) and Option Item 1 as Line 11 (Area F-03, 3,420 SF, unit Month, quantity 12). Line numbers are not building numbers.",
+    "Numeric distractors near the facility data: Year Built (1979–2016), Floors, gate counts (14 gates, A1–A8, B1–B6), 1,146,318 enplanements, Exhibit D staffing posts (13 / 11 / 9 / 33), 41 full-time and 9 part-time incumbent employees, 151 FIS arrivals on 139 days, a 5% area tolerance, badge fees ($85 / $150), minimum compensation ($18.40 + $3.25 per hour), insurance limits ($2,000,000 / $4,000,000 / $5,000,000 / $1,000,000 / $250,000), a 25% performance bond, liquidated damages ($150 / $250) and evaluation points (25 / 25 / 15 / 35 / 100).",
+    "Prior award appears in two places: Section 1.4 names the incumbent, contract number, February 2022 award and April 1, 2022 – March 31, 2027 term; the dollar figures appear only in Addendum answer A4: $2,846,520.00 paid for calendar year 2025 (annualValue), a $13,750,000.00 not-to-exceed authorization for the 60-month term (totalValue / periodMonths), and $12,174,880.42 paid through September 30, 2026 (54 months: spendToDate / spendPeriodMonths). A4 also warns the scopes are not directly comparable.",
+    "Contract term: three-year initial term (April 1, 2027 – March 31, 2030) plus two one-year renewal options = 5 contract years. Location Ashbury, Wisconsin, with a stated snow season (November 1 – April 15) = cold climate.",
+    "DOCX structure: the schedule-of-events table, the coverage-code legend, the floor-care table, the Part 3 exclusions table, the Part 4 exterior table, the Exhibit A Summary, the Exhibit B pricing tables, the Exhibit C fixture table, the Exhibit D staffing table and the Addendum change tables are all Word tables; only Tables A-1, A-2, A-3 and the Addendum Item 2 one-row table hold in-scope facilities. Line breaks inside cells (the Option note under F-03, floor-care tasks) are Word soft breaks. Note markers are printed in parentheses after names (\"Pre-Security Food Court Common Seating (5)\", boarding bridges \"(4)\") and in a Notes column (a–g) in Table A-3."
+  ]
+}

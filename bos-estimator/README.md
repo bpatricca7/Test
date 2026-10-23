@@ -108,6 +108,12 @@ to plainer request parameters if an account or model rejects any of them.
   productive hours, so SF per FTE = SF per shift × 0.888 for 5-day service and × 0.617 for 7-day
   service. The sources are secondary summaries of paid publications (APPA *Operational Guidelines:
   Custodial*, ISSA 612, PGMS, RSMeans); they give plausible bands, not licensed line values.
+* **Cleaning standard (APPA Level 1–3).** A project assumption with a per-facility override; the AI
+  reader sets a facility's level when the document assigns it one APPA level. Appearance tasks scale
+  (Level 1 ×1.75, Level 3 ×0.6, so a 100k SF office lands at ≈10.5K / ≈18K / ≈29K SF per custodian
+  shift), restroom sanitation stays within 3–6 minutes per fixture, infection control and periodic
+  work do not scale, and Level 1 does not raise medical buildings past their Level 1–2 calibration.
+  Commercial janitorial contracts usually price near Level 3; BOS PWS standards near Level 2.
 * `shared/topdown.ts` — the should-cost arithmetic: `price = (loaded labor + ODC + subs) × (1 + G&A)
   × (1 + fee)`, solved for loaded labor and divided by the loaded cost per FTE. `server/ai.ts`
   (`topDownWithClaude`) asks the model for the assumptions and a written reconciliation;
@@ -116,6 +122,27 @@ to plainer request parameters if an account or model rejects any of them.
 
 > RSMeans data is licensed. The values shipped here are representative BOS estimating defaults;
 > reconcile each line against your organization's current RSMeans edition before pricing a bid.
+
+## Accuracy on RFPs the reader has not seen
+
+Besides the 16 development fixtures in `tests/fixtures/`, three batches of held-out fixtures
+(`tests/holdout/`, `tests/holdout-b2/`, `tests/holdout-b3/`) were written by agents that never saw the
+reader code, modelled on public solicitations (NAVFAC, Air Force, VA, Army Reserve, Marine Corps,
+county, university, airport and National Park Service packages, a three-file package with a separate
+addendum, a long full BOS PWS and a scanned image-only exhibit). Each truth file was checked by a
+second agent against the rendered document. First-run scores, before any fixes from that batch:
+
+| Batch | AI reader (simulated) | Rule-based parser |
+|---|---|---|
+| 1 (4 packages) | 99.5 | 67.9 |
+| 2 (4 packages) | 96.7 | 75.6 |
+| 3 (4 packages) | 100 | 47.6 |
+
+AI scores come from a stand-in model driving the real prompt and tool handlers
+(`scripts/sim-session.ts`), because the build environment had no API key; the recorded calls replay
+with `npx tsx scripts/eval.ts --provider replay --sim opus-sim tests/holdout*/*` (all 100 after
+fixes). The rule-based parser reaches 100 on batches 1–2 after fixes but stays near 48 on batch 3:
+it is a fallback for clean facility lists, and every row it reads is marked for review.
 
 ## Layout
 

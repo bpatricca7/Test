@@ -50,7 +50,10 @@ export function siteFieldOk(field: string, expected: unknown, got: unknown): boo
   };
   return normTexts(expected).some((e) => normTexts(got).some((g) => ok(e, g)));
 }
-const tokens = (s: string) => new Set(s.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter((t) => t.length > 1 && !['the', 'and', 'of', 'bldg', 'building'].includes(t)));
+/** Name words, lower case; a one-character word counts only as a designator (an upper-case letter or a digit: "Concourse A",
+ *  "Wing 2"), never as the article "a". */
+const tokens = (s: string) => new Set(s.replace(/&/g, ' and ').split(/[^A-Za-z0-9]+/).filter((w) => (w.length > 1 || /^[A-Z0-9]$/.test(w)))
+  .map((w) => w.toLowerCase()).filter((t) => !['the', 'and', 'of', 'bldg', 'building'].includes(t)));
 export function nameSim(a: string, b: string): number {
   const A = tokens(a), B = tokens(b); if (!A.size || !B.size) return 0;
   let inter = 0; for (const t of A) if (B.has(t)) inter++;
@@ -66,6 +69,12 @@ export function canonical(kind: string, g: { quantity: number; unit: GroundsArea
   return { qty: groundsSqft(area), unit: 'sqft' };
 }
 
+/**
+ * The line item a reader row carries ("Line item: CA-02" in its notes): one of several separately priced parts of a
+ * building, often keyed by the zone or area number that a truth file uses as the building number.
+ */
+export const lineItemOf = (f: Pick<Facility, 'notes'>) => f.notes?.match(/(?:^|; )Line item: ([^;|]+)/)?.[1].trim();
+
 export function scoreInventory(truth: FixtureTruth, inv: Inventory, provider: string, gotAward?: PriorAward): ScoreReport {
   const exp = truth.expect.facilities;
   // Rows the reader marked excluded / deleted / demolished / vacant are not in the inventory being estimated.
@@ -76,7 +85,14 @@ export function scoreInventory(truth: FixtureTruth, inv: Inventory, provider: st
   // facility whose area agrees is paired first - over all truth lines, so a collapsed or stray line does not take the
   // place of a line found with its area - then the rest by the most similar name, then the closest area
   const gotKeys = got.map((g) => normBn(g.buildingNumber));
-  const numberCands = (t: TruthFacility) => { const k = normBn(t.buildingNumber); return k ? got.map((_, i) => i).filter((i) => !used.has(i) && gotKeys[i] === k) : []; };
+  // a line item printed under its own zone / area number (building 1, line CA-02) answers to that number when the truth
+  // does not list its building as a whole; a line item without a letter (a floor or level number) only with its area
+  const truthKeys = new Set(exp.map((t) => normBn(t.buildingNumber)).filter(Boolean));
+  const lineKeys = got.map((g) => { const l = lineItemOf(g); return l && !truthKeys.has(normBn(g.buildingNumber)) ? normBn(l) : ''; });
+  const numberCands = (t: TruthFacility) => {
+    const k = normBn(t.buildingNumber);
+    return k ? got.map((_, i) => i).filter((i) => !used.has(i) && (gotKeys[i] === k || (lineKeys[i] === k && (/[A-Z]/.test(k) || close(got[i].grossSqft, t.grossSqft))))) : [];
+  };
   const byNumber = new Map<TruthFacility, number>();
   for (const t of exp) {
     const idx = numberCands(t).filter((i) => close(got[i].grossSqft, t.grossSqft)).sort((a, b) => nameSim(t.name, got[b].name) - nameSim(t.name, got[a].name))[0];
@@ -88,11 +104,13 @@ export function scoreInventory(truth: FixtureTruth, inv: Inventory, provider: st
     if (idx != null) { used.add(idx); byNumber.set(t, idx); }
   }
   for (const t of exp) { const idx = byNumber.get(t); matches.push(idx != null ? { truth: t, got: got[idx], via: 'number' } : { truth: t }); }
-  // pass 2: names for the rest (best similarity ≥ 0.6)
+  // pass 2: names for the rest (best similarity ≥ 0.6; equally similar names by the closest area, so the pairing does not
+  // depend on the order the rows were registered in)
   for (const m of matches) {
     if (m.got) continue;
     let best = -1, bestSim = 0;
-    got.forEach((g, i) => { if (used.has(i)) return; const s = nameSim(m.truth.name, g.name); if (s > bestSim) { bestSim = s; best = i; } });
+    const dist = (i: number) => Math.abs(got[i].grossSqft - m.truth.grossSqft);
+    got.forEach((g, i) => { if (used.has(i)) return; const s = nameSim(m.truth.name, g.name); if (s > bestSim || (s === bestSim && best >= 0 && s > 0 && dist(i) < dist(best))) { bestSim = s; best = i; } });
     if (best >= 0 && bestSim >= 0.6) { used.add(best); m.got = got[best]; m.via = 'name'; }
   }
   let sfExact = 0, cleanN = 0, cleanOk = 0, floorsN = 0, floorsOk = 0, lvlN = 0, lvlOk = 0, catN = 0, catOk = 0;

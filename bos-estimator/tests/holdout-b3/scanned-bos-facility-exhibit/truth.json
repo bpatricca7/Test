@@ -1,0 +1,364 @@
+{
+  "id": "scanned-bos-facility-exhibit",
+  "title": "Scanned USCG Training Center janitorial package: SF 30 Amendment 0001 + continuation/Q&A + conformed PWS Technical Exhibit 5 building list with pen-and-ink changes (image-only PDF, 5 pages)",
+  "theme": "military-bos",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID151682101211780583073746200899112515222/PWS%20Attachment%2009132018.pdf",
+        "note": "USCG Base Seattle Janitorial Services PWS, HSCG84-17-R-PTE001 (Attachment #1, July 2016). Read from a local copy of this file downloaded earlier in the workspace (WebFetch could not resolve any host in this session). Taken: the Coast Guard janitorial PWS with workload in Technical Exhibits, 'Technical Exhibit #5 provides the square footage of space to be cleaned by building and level of service', 'Contractor shall only bill for the square footage serviced' (copied into TE 5 para 5.1), buildings serviced only in part ('2nd FLOOR', 'Foyer and Restroom'), unoccupied buildings get no service until the KO says so (Bldg 41), secure areas with escorts (Note 7), and the page furniture: solicitation number top right, 'Attachment #1 ... PAGE n OF N' footer."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID297162707687379821580624672536441025401/Attachment%201%20-%20Custodial%20PWS.pdf",
+        "note": "Dyess AFB Custodial Services PWS (13 Aug 2021), Appendix B 'Estimated Square Footage and Cleaning Level'. Read from a local copy. Taken: one table grouped into blocks with a subtotal row per block that carries the building count in the facility-number column ('6  Total # Facilities ... 47,266') and a grand total ('All Level Totals'); 'estimated' cleaned SF per facility as the pricing basis; modification pricing tied to the Appendix B 'cleaning area' SF (para 4.20); per-facility hour restrictions in the table (para 4.1.2.1: CDC floor care on weekends, 'During normal duty hours')."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID239120740891441165113625913503342013529/Atch_02_Custodial_Services_-_PWS.pdf",
+        "note": "Sheppard AFB / Frederick AAF Custodial PWS, Appendix B. Read from a local copy. Taken: category blocks with 'Total Cat ...' rows whose Bldg # column holds the building count, and buildings that appear in more than one block (here only the subtotal-row convention is used)."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID31544869489761803466574390107441771546/Attachment_A_-_Custodial_Performance_Work_Statement.pdf",
+        "note": "Fort Wainwright Custodial Services PWS (08 Jan 2019 v.4). Read from a local copy. Taken: workload data exhibits kept separate from the cleaning standards and frequencies exhibits (TE-A vs TE-B; here TE 5 vs TE 3), and changes to the workload computed from the square footage added or deleted (paraphrased as TE 5 para 5.1 / PWS 5.7)."
+      },
+      {
+        "url": "https://home.army.mil/hood/download_file/force/2d03cdaa-93fd-4ee5-b8bc-a3ef7e4b38ef/418",
+        "note": "Fort Cavazos Garrison Custodial Services Policy memorandum (search-result text only; the file could not be opened): 'The baseline custodial services provided for by the DPW operate on a bi-weekly schedule'. Basis for schedule code F, which the exhibit defines as 'Every other week (bi-weekly)' so the ambiguous word is pinned down."
+      },
+      {
+        "url": "https://www.leonschools.net/cms/lib/FL01903265/Centricity/Domain/195/CURRENT%20RFPS/RFP%20303-2013/AddendumNo1RFPNo3032013CustodialServices%20for%20ChilesHSAddendumNo152012.pdf",
+        "note": "Leon County Schools Addendum No. 1 to custodial RFP 303-2013 (search-result text only): 'Total square footage estimate: 167,223 ... Delete buildings 200, 300 and all portables.' Model for an amendment that deletes a building and restates the total (Amendment 0001 items (1) and (5))."
+      },
+      {
+        "url": "https://leegov.com/procurement/Project%20Documents/RFP240120SML%20Custodial%20Services%20for%20Downtown%20Buildings/RFP240120SML-%20Custodial%20for%20Downtown%20Buildings%20-%20USSI%20-%20Am%202%20-%20HVS%20Sqft%20Correction%20-%20EXEC%20OCR.pdf",
+        "note": "Lee County (FL) RFP240120SML amendment 'HVS Sqft Correction - EXEC OCR' (search-result text only): a signed, scanned amendment posted as a PDF that corrects one location's understated square footage. Model for posting the executed amendment as a scan and for the single-building SF correction (item (3), Bldg 3)."
+      },
+      {
+        "url": "https://www.bidnetdirect.com/public/supplier/solicitations/statewide/2569597752/abstract",
+        "note": "Fort Riley custodial services solicitation revision history (search-result text only): 'AT 7 Facility List-Job Orders updated. (2 buildings added and PWS tasks corrected)'. Model for a facility list revised by amendment with buildings added (item (4), M-115)."
+      },
+      {
+        "url": "https://www.gsaadvantage.gov/ref_text/47QSWA21D005Y/47QSWA21D005Y_SF30.pdf",
+        "note": "Example SF 30 found by search (Block 14 'See Attached'); search results also gave the standard Block 14 closing sentence 'Except as provided herein, all terms and conditions of the document referenced in Item 9A or 10A, as heretofore changed, remains unchanged and in full force and effect.' The SF 30 (REV. 11/2016) block layout and the OF 336 continuation sheet on pages 1-2 are drawn from the author's knowledge of the standard forms."
+      },
+      {
+        "url": "https://apfs-cloud.dhs.gov/record/69898/public-print",
+        "note": "DHS Acquisition Planning Forecast System record for a USCG janitorial requirement (search-result text only). The same search returned USCG janitorial numbers such as 70Z03724PLALB0081, 70Z08426QAA850700 and 70Z03326QSEAT0020, which set the format of the fictional solicitation 70Z08427QTCPA0019 and contract 70Z08422CTCPA0007."
+      }
+    ],
+    "notes": "Every name, number and value is illustrative: U.S. Coast Guard Training Center Port Arden, Alabama, the solicitation, the contracting officer, the incumbent (Seawall Facility Services, LLC) and its contract, and all building data. No rows were copied, so fidelity is real-format. WebFetch failed DNS resolution for every host in this session (proxy-level), so the four PWS sources were read from local copies of the same public files downloaded earlier in this workspace, and the other sources were used through search-result text only (marked in each note). The HTML and truth.json are generated together from one data table (generator script kept outside the fixture), so printed subtotals, the hand-corrected subtotals, the amendment text and truth all come from the same rows."
+  },
+  "inputs": [
+    {
+      "src": "70z08427qtcpa0019-amd0001-te5-conformed.html",
+      "as": "scanned-pdf",
+      "out": "70Z08427QTCPA0019_Amd0001_TE5_Bldg_List_Conformed_SCAN.pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "10",
+        "name": "Recruit Training Command Headquarters",
+        "grossSqft": 24860,
+        "cleanableSqft": 21140,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "11",
+        "name": "Recruit Barracks – Alpha Regiment",
+        "grossSqft": 61420,
+        "cleanableSqft": 9860,
+        "floors": 3,
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "12",
+        "name": "Recruit Barracks – Bravo Regiment",
+        "grossSqft": 61420,
+        "cleanableSqft": 9860,
+        "floors": 3,
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "13",
+        "name": "Recruit Barracks – Charlie Regiment",
+        "grossSqft": 58310,
+        "cleanableSqft": 9240,
+        "floors": 3,
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "15",
+        "name": "Recruit Processing Center (\"Receiving\")",
+        "grossSqft": 14725,
+        "cleanableSqft": 12980,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "16",
+        "name": "Academic Building (Classrooms 101–124)",
+        "grossSqft": 33640,
+        "cleanableSqft": 29310,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "17",
+        "name": "Seamanship Training Building",
+        "grossSqft": 18200,
+        "cleanableSqft": 15450,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "18",
+        "name": "Recruit Galley",
+        "grossSqft": 29880,
+        "cleanableSqft": 11620,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "19",
+        "name": "Drill Hall / Indoor Training Facility",
+        "grossSqft": 42500,
+        "cleanableSqft": 6300,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "20",
+        "name": "Aquatics Training Center (Pool)",
+        "grossSqft": 37940,
+        "cleanableSqft": 24880,
+        "floors": 2,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "M-115",
+        "name": "Modular Classroom",
+        "grossSqft": 2880,
+        "cleanableSqft": 2640,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "1",
+        "name": "Training Center Headquarters (Command / Admin)",
+        "grossSqft": 46200,
+        "cleanableSqft": 39850,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2",
+        "name": "Health Services Clinic (Medical / Dental)",
+        "grossSqft": 31560,
+        "cleanableSqft": 27940,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "3",
+        "name": "Personnel Support Building (PSD / Admin Svcs)",
+        "grossSqft": 26480,
+        "cleanableSqft": 22610,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "4",
+        "name": "Facilities Engineering Office",
+        "grossSqft": 12060,
+        "cleanableSqft": 9780,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "5",
+        "name": "Supply Warehouse",
+        "grossSqft": 48000,
+        "cleanableSqft": 3420,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "5A",
+        "name": "Supply Annex / Receiving Office",
+        "grossSqft": 6400,
+        "cleanableSqft": 1150,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "6",
+        "name": "Vehicle Maintenance Shop",
+        "grossSqft": 16800,
+        "cleanableSqft": 2240,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "7",
+        "name": "Main Gate / Visitor Center",
+        "grossSqft": 2960,
+        "cleanableSqft": 2640,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "8",
+        "name": "Electronics & Information Systems Training Ctr",
+        "grossSqft": 19120,
+        "cleanableSqft": 16380,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "14",
+        "name": "Unaccompanied Personnel Housing (Perm. Party)",
+        "grossSqft": 72600,
+        "cleanableSqft": 14880,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "30",
+        "name": "Station Port Arden – Operations Building",
+        "grossSqft": 14300,
+        "cleanableSqft": 12060,
+        "floors": 2,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "31",
+        "name": "Boathouse / Boat Maintenance Facility",
+        "grossSqft": 22480,
+        "cleanableSqft": 1860,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "32",
+        "name": "Aids to Navigation (ATON) Team Building",
+        "grossSqft": 7840,
+        "cleanableSqft": 3120,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "33",
+        "name": "Damage Control / Firefighting Trainer",
+        "grossSqft": 9600,
+        "cleanableSqft": 2100,
+        "floors": 1,
+        "serviceLevel": "biweekly"
+      },
+      {
+        "buildingNumber": "50",
+        "name": "Child Development Center",
+        "grossSqft": 15940,
+        "cleanableSqft": 14210,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "51",
+        "name": "Fitness Center",
+        "grossSqft": 34200,
+        "cleanableSqft": 29640,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "52",
+        "name": "Community Center (Lighthouse Club)",
+        "grossSqft": 12480,
+        "cleanableSqft": 10960,
+        "floors": 1,
+        "serviceLevel": "daily_6",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "53",
+        "name": "Chapel",
+        "grossSqft": 6920,
+        "cleanableSqft": 6150,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "54",
+        "name": "Library / Education Services Office",
+        "grossSqft": 5880,
+        "cleanableSqft": 5300,
+        "floors": 1,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "55",
+        "name": "Outdoor Recreation / Marina Office",
+        "grossSqft": 1920,
+        "cleanableSqft": 1640,
+        "floors": 1,
+        "serviceLevel": "biweekly"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "hot_humid",
+      "installationName": "Training Center Port Arden",
+      "solicitation": "70Z08427QTCPA0019"
+    },
+    "priorAward": {
+      "totalValue": 5862340,
+      "periodMonths": 60,
+      "incumbent": "Seawall Facility Services, LLC",
+      "contractNumber": "70Z08422CTCPA0007",
+      "awardYear": 2022
+    }
+  },
+  "traps": [
+    "Image-only scan: no text layer (pdffonts lists no fonts, pdftotext returns only form feeds). 110 dpi gray page images with 0.2-0.4 degree skew, scanner edge shadow, three-hole-punch shadows, a staple on page 1 and specks. The rule-based reader is expected to find nothing; this measures the vision path.",
+    "Package order: page 1 is the SF 30 (Amendment 0001), page 2 the OF 336 continuation sheet (typed list of changes + Q&A), pages 3-5 the conformed PWS Technical Exhibit 5. The SF 30 and continuation sheet carry many numbers that are not facilities (requisition 2127-TCPA-JAN-0418, office code 70Z084, PAGE OF PAGES 1 | 5, dates).",
+    "Pen-and-ink deletion: Item 11, Building T-47, Temporary Classroom Building (1 floor, 8,640 / 7,920, code A) is struck through across the whole row with 'DELETED A0001 JRM' hand-lettered beside it; continuation item (1) confirms. NOT expected.",
+    "Handwritten added row: '11A  M-115  MODULAR CLASSROOM  1  2,880  2,640  A  ADD A0001' is hand-lettered (block capitals, ballpoint strokes, not a font) in a blank row at the end of Area I; continuation item (4) types the same values. Expected: M-115, 2,880 gross, 2,640 cleanable, 1 floor, daily_5.",
+    "Struck value with a handwritten replacement: Building 3 Service Area '18,450' is struck and '22,610' is hand-lettered to its left in the same cell (continuation item (3)). Expected cleanableSqft 22,610; gross 26,480 is unchanged.",
+    "Schedule code change in ink: Building 17 printed code 'D' (M/W/F) is struck and 'A' hand-lettered beside it (continuation item (2)). Expected daily_5, not 3x_week.",
+    "Totals are not facilities, and the printed ones are superseded: Area I subtotal gross 391,535 struck -> 385,775, service area 158,560 struck -> 153,280; Area II service area 136,730 struck -> 140,890 (gross 282,180 unchanged); Area III 54,220 / 19,140 and Area IV 77,340 / 67,900 unchanged; TOTAL gross 805,275 struck -> 799,515, service area 382,330 struck -> 381,210. The building counts (11, 10, 4, 6, 31) sit in the Bldg No. column of the subtotal rows, the way the Dyess and Sheppard appendices print them. Corrected totals equal the sum of the expected rows; the count stays 31 because one building is deleted and one added.",
+    "Gross SF (column 5, real property inventory, 'for information only') vs Service Area SF (column 6, the pricing basis). grossSqft = column 5, cleanableSqft = column 6. Large gaps where service is limited: Supply Warehouse 48,000 / 3,420, Drill Hall 42,500 / 6,300, Boathouse 22,480 / 1,860, recruit barracks 61,420 / 9,860, UPH 72,600 / 14,880, Recruit Galley 29,880 / 11,620 (kitchen excluded, Note 4).",
+    "Service frequency is a letter code that needs the para 5.2 legend on page 3: A = Monday-Friday (daily_5), B = 7 days incl. holidays (daily_7), C = Monday-Saturday (daily_6), D = Mon/Wed/Fri (3x_week), E = one day per week (weekly), F = 'Every other week (bi-weekly)' (biweekly, not twice a week), P = periodic services only (no serviceLevel in truth).",
+    "Code P recruit barracks (Buildings 11, 12, 13) are in scope: recruits do the routine cleaning and the contractor gives the passageways, ladderwells and quarterdecks periodic services only (Note 5, Q&A A2). They are expected, with cleanableSqft = the small service area and no serviceLevel.",
+    "Vacant building listed in the table: Item 22, Building 41, Former Band Building, 2 floors, 9,850 gross, Service Area '—', code '—', 'VACANT - Note 8'; Note 8 and A1 say no service and not in totals. NOT expected.",
+    "Option-only building listed with full values: Item 33, Building 118, Unaccompanied Personnel Housing (New), 4 floors, 68,000 / 15,200, code A, 'OPTION - Note 9'; Note 9 and A3 say optional CLIN 0005 only, not in totals. NOT expected.",
+    "Section 5.4 'Buildings Not Included in This PWS (For Information Only)' lists Building 21 Permanent Party Galley 12,450, Building 60 Coast Guard Exchange / Mini-Mart 18,700, Building 35 Fuel Pier Pump House 640 and Buildings 201-236 Family Housing (36 units). NOT expected.",
+    "Item numbers (column 1: 1-33 plus 11A) collide with building numbers (column 2): Item 12 is Building 1, Building 12 is Item 3, Item 14 is Building 3, Building 14 is Item 21. Building numbers are taken from column 2 only and include '5A', 'T-47', 'M-115', '118'.",
+    "Distractor numbers next to the data: footnote superscripts glued to header words (SF1, Area SF2, Code3), 'Note n' in Remarks, times (0600, 1600, 1830), 'Rms 204-212', 'CLIN 0005', 'March 2028', and the column-number row (1)...(8).",
+    "Grounds out of scope: para 5.3 states the Training Center occupies approximately 418 acres but grounds maintenance is under a separate contract; expected grounds is an empty list.",
+    "Prior award only in the Q&A on page 2 (A4): contract 70Z08422CTCPA0007, Seawall Facility Services, LLC, awarded September 2022, 12-month base + four 12-month options (60 months), total value including options $5,862,340. No annual value is stated, so annualValue is left out.",
+    "Contract term only in the Q&A (A5): one 12-month base period and four 12-month option periods = 5 contract years.",
+    "Rubber stamp 'CONFORMED COPY / AMENDMENT 0001 / 21 OCT 2026' overlaps the end of the exhibit title on page 3, with the KO's hand-lettered initials 'JRM 10/21/26' at the top left.",
+    "The table runs over two pages with the column headers and the (1)...(8) column-number row repeated, '(Continued on next page)' and '(Notes on next page)' markers, and the notes on the page after the table. Long names wrap inside the narrow name column (e.g. 'Electronics & Information Systems Training Ctr', 'Unaccompanied Personnel Housing (Perm. Party)').",
+    "Climate: Port Arden, Alabama (Gulf Coast, humid subtropical) = hot_humid. Site: installation 'Training Center Port Arden', solicitation 70Z08427QTCPA0019."
+  ]
+}

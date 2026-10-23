@@ -8,11 +8,11 @@ import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import {
   applyToolCall, appaLevel, beginPass, buildingKey, cleanBuildingNumber, createState, diningMealsPerDay, docRank, extractionTools, facilityIdentity, finalize,
-  finishClass, isTotalRow, mapGroundsLabel, parseNumber, parseServiceFrequency, replayToolCalls, seasonDay, seasonServiceDays, type ToolCall,
+  finishClass, isTotalRow, mapGroundsLabel, parseNumber, parseServiceFrequency, periodicFactor, printedWidthFt, replayToolCalls, seasonDay, seasonServiceDays, type ToolCall,
 } from '../server/toolcalls';
-import { describeRequests, extractWithClaude, facilityId, mergeFacility, replayToolCalls as replayFromAi } from '../server/ai';
+import { describeRequests, extractWithClaude, facilityId, looksCombined, mergeFacility, replayToolCalls as replayFromAi } from '../server/ai';
 import { estimateInventory } from '../shared/estimate';
-import { normBn, scoreInventory, siteFieldOk } from './harness/score';
+import { lineItemOf, nameSim, normBn, scoreInventory, siteFieldOk } from './harness/score';
 import type { FixtureTruth } from './harness/truth';
 import type { ExtractionEvent, Facility, PriorAward } from '../shared/types';
 
@@ -169,8 +169,15 @@ test('a stated service calendar overrides the level\'s day count', () => {
 });
 
 test('APPA levels 1–3 are read from a printed cleaning standard', () => {
-  for (const [t, want] of [['APPA Level 2', 2], ['APPA level III', 3], ['APPA Custodial Level 1 (orderly spotlessness)', 1], ['Level 3 per APPA', 3], ['appa lvl. 2', 2]] as const) assert.equal(appaLevel(t), want, t);
-  for (const t of ['APPA Level 4', 'Level V (APPA)', 'Service Class B', 'COL 2', 'Level 2', '', null]) assert.equal(appaLevel(t), undefined, String(t));
+  const levels: [string, number][] = [
+    ['APPA Level 2', 2], ['APPA level III', 3], ['APPA Custodial Level 1 (orderly spotlessness)', 1], ['Level 3 per APPA', 3], ['appa lvl. 2', 2],
+    ['APPA (i.e., Level 3)', 3], ['APPA Level Two', 2], ['APPA LEVEL-2', 2], ['APPA 2', 2], ['APPA Level 3 (Casual Inattention)', 3],
+    ['APPA Custodial Staffing Guidelines, 2nd ed., Level 2', 2], ['Cleaning to APPA standards, Level 3', 3], ['APPA appearance: ordinary tidiness', 2],
+  ];
+  for (const [t, want] of levels) assert.equal(appaLevel(t), want, t);
+  for (const t of ['APPA Level 4', 'Level V (APPA)', 'Service Class B', 'COL 2', 'Level 2', '', null,
+    'Basement and Level 1 lobbies cleaned per APPA', 'Restrooms: APPA Level 1; offices: APPA Level 3', 'APPA Level 2 for restrooms, Level 3 elsewhere',
+    'APPA Level 2–3', 'APPA Levels 2-3', 'APPA Level 1/2', 'APPA Level 2.5']) assert.equal(appaLevel(t), undefined, String(t));
   const st = createState(DOCS);
   applyToolCall(st, reg(row({ building_number: '12', name: 'HQ', gross_area: 20000, cleaning_detail: { restroom_rooms: null, cleaning_standard: 'APPA Level 3', area_by_class: null } }), row({ building_number: '13', name: 'Shop', gross_area: 8000 })));
   const fs = finalize(st).inventory.facilities;
@@ -375,13 +382,15 @@ test('precedence is per field group: an update row that supplies no area does no
     const st = createState(docs);
     for (const k of order) assert.equal(applyToolCall(st, calls[k]).isError, false, `${order.join('>')}: ${k}`);
     const f = finalize(st).inventory.facilities[0];
-    return { gross: f.grossSqft, level: f.serviceLevel, text: f.serviceFrequencyText, notes: f.notes, status: f.status };
+    return { gross: f.grossSqft, level: f.serviceLevel, text: f.serviceFrequencyText, notes: f.notes, status: f.status, excerpt: f.source?.excerpt };
   });
   for (const o of out) assert.deepEqual(o, out[0]);
   assert.equal(out[0].gross, 45200);
   assert.equal(out[0].level, 'weekly');
   assert.equal(out[0].status, 'in_scope');
-  assert.equal(out[0].notes, 'Superseded 40,000 SF from PWS.pdf');
+  // the facility cites the row its area came from; the other rows are listed once
+  assert.equal(out[0].excerpt, 'j4');
+  assert.equal(out[0].notes, 'Superseded 40,000 SF from PWS.pdf; Also from: PWS.pdf: "pws" · Amendment 0002.pdf: "am2 freq"');
 });
 
 test('an update row (no area) never brings an out-of-scope building back; a stated change does', () => {
@@ -1561,4 +1570,335 @@ test('live loop: a refusal or a terminal API error keeps what was registered; it
   assert.ok(rc.warnings.some((w) => /Not read by the AI because of the error above: c\.txt/.test(w)));
   assert.equal(c.requests.length, 2); // the run stops: pass 3 is not attempted
   assert.equal(events.filter((e) => e.type === 'warning' && /AI pass 2 stopped/.test(e.message)).length, 1);
+});
+
+// ------------------------------------------------------------------------------------------------
+// held-out batch 3: provenance, neutral revision rows, service calendars, echoes, column totals
+// ------------------------------------------------------------------------------------------------
+
+test('provenance: a merged building cites the row its area came from; rows that only add data are listed once, superseded derived notes dropped', () => {
+  const XL = 'Attachment A - Facility List.xlsx'; const ADD = 'Addendum No. 1.pdf';
+  const docs = [{ name: 'ITB.pdf', role: 'solicitation' as const }, { name: XL, role: 'attachment' as const }, { name: ADD, role: 'amendment' as const, amendment: 1 }];
+  const base = row({ table_id: 'FL', building_number: '101', name: 'Admin', gross_area: 86400, cleanable_area: 71250, source: { file: XL, page: null, excerpt: 'Facility List: 101 | Admin | 86400 | 71250' } });
+  // a floor-finish table that prints no gross area (its hard-floor column would read as the gross)
+  const floors = row({ table_id: 'PS', building_number: '101', name: 'Admin', gross_area: null, status: null, area_missing: false, floor_areas: [{ finish: 'Carpet', area: 44180 }, { finish: 'Hard floor', area: 27070 }], source: { file: XL, page: null, excerpt: 'Periodic Services: 101 | Admin | 44180 | 27070' } });
+  const revisedFloors = row({ table_id: null, building_number: '101', name: 'Admin', gross_area: null, status: null, area_missing: false, floor_areas: [{ finish: 'Carpet', area: 45650 }, { finish: 'Hard floor', area: 27985 }], source: { file: ADD, page: 2, excerpt: 'Item 2: 101 | 44,180 → 45,650 | 27,070 → 27,985' } });
+  for (const order of [[base, floors, revisedFloors], [base, revisedFloors, floors]]) {
+    const st = createState(docs);
+    for (const r of order) assert.equal(applyToolCall(st, reg(r)).isError, false);
+    const f = finalize(st).inventory.facilities[0];
+    assert.equal(f.source?.excerpt, 'Facility List: 101 | Admin | 86400 | 71250');
+    assert.equal(f.tableId, 'FL');
+    assert.equal(f.grossSqft, 86400);
+    assert.equal(f.floorMix?.carpet, 0.6199, 'the later floor areas are kept'); // 45,650 / 73,635
+    const notes = f.notes ?? '';
+    assert.equal(notes.match(/Floor mix from printed SF/g)?.length, 1, notes);
+    assert.match(notes, /Floor mix from printed SF by finish: carpet 45,650, resilient 27,985/);
+    assert.match(notes, /Also from: Attachment A - Facility List\.xlsx \(PS\): "Periodic Services: 101 \/ Admin \/ 44180 \/ 27070" · Addendum No\. 1\.pdf p\. 2: "Item 2: 101 \/ 44,180 → 45,650 \/ 27,070 → 27,985"/);
+  }
+  // an amendment that revises the gross becomes the source (it prints the kept area)
+  const st = createState(docs);
+  applyToolCall(st, reg(base));
+  applyToolCall(st, reg(row({ table_id: null, building_number: '101', name: 'Admin', gross_area: 88880, cleanable_area: 73635, status: null, source: { file: ADD, page: 1, excerpt: '1.1 | 101 | 86,400 / 71,250 | 88,880 / 73,635' } })));
+  applyToolCall(st, reg(floors));
+  const f = finalize(st).inventory.facilities[0];
+  assert.equal(f.source?.file, ADD);
+  assert.equal(f.tableId, undefined);
+  assert.match(f.notes ?? '', /Also from: .*Attachment A - Facility List\.xlsx \(FL\): "Facility List: 101/);
+  // a building registered without a printed area (area_missing) is still cited over a row that only adds data
+  const st2 = createState(docs);
+  applyToolCall(st2, reg(row({ table_id: 'FL', building_number: '7', name: 'Shed', gross_area: null, area_missing: true, estimated_gross_area: null, source: { file: XL, excerpt: '7 | Shed | — ' } })));
+  applyToolCall(st2, reg(row({ table_id: 'FX', building_number: '7', name: 'Shed', gross_area: null, status: null, area_missing: false, fixtures: { water_closets: 1 }, source: { file: ADD, excerpt: 'fixtures 7' } })));
+  const shed = finalize(st2).inventory.facilities[0];
+  assert.equal(shed.source?.excerpt, '7 | Shed | —');
+  assert.equal(shed.restroomFixtures, 1);
+  assert.equal(shed.confidence, 0.4);
+});
+
+test('revision rows are neutral for what they leave out: scope and a season window stay, a later document can narrow scope', () => {
+  const TE = 'TE5.pdf'; const AM = 'Amendment 0001.pdf';
+  const docs = [{ name: TE, role: 'attachment' as const }, { name: AM, role: 'amendment' as const, amendment: 1 }];
+  const regRows = (later: Record<string, unknown>) => {
+    const st = createState(docs);
+    applyToolCall(st, reg(
+      row({ table_id: 'TE-5', building_number: '11', name: 'Barracks', gross_area: 61420, cleanable_area: 9860, service_level: null, service_frequency_text: 'P - periodic only', scope: ['floor_care'], source: { file: TE, page: 3, excerpt: '11 | Barracks | 61,420 | 9,860 | P' } }),
+      row({ table_id: 'TE-5', building_number: 'PS-22', name: 'Picnic Shelter', gross_area: 1200, cleanable_equals_gross: true, service_level: '2x_week', service_season: { start: '05/14', end: '10/15', days_per_week: 2 }, scope: ['custodial'], source: { file: TE, page: 3, excerpt: 'PS-22 | 1,200 | 05/14 – 10/15 | 2X/WK' } }),
+    ));
+    const r = applyToolCall(st, reg(
+      { building_number: '11', name: 'Barracks', table_id: null, gross_area: null, area_missing: false, area_unit: 'sf', confidence: 0.9, fixtures: { water_closets: 20 }, source: { file: AM, page: 1, excerpt: 'fixtures' }, ...later },
+      { building_number: 'PS-22', name: 'Picnic Shelter', table_id: null, gross_area: null, area_missing: false, area_unit: 'sf', confidence: 0.9, service_level: '2x_week', service_frequency_text: 'Shoulder 2X/WK', source: { file: AM, page: 1, excerpt: 'Change 3: PS-22 Shoulder 2X/WK' }, ...later },
+    ));
+    const fs = finalize(st).inventory.facilities;
+    return { r, b11: byBn(fs, '11')[0], ps: byBn(fs, 'PS-22')[0] };
+  };
+  for (const later of [{}, { scope: null }, { scope: [] }]) {
+    const { r, b11, ps } = regRows(later);
+    assert.deepEqual(b11.scope, ['floor_care'], JSON.stringify(later));
+    assert.deepEqual(ps.scope, ['custodial']);
+    assert.equal(ps.serviceDaysPerYear, 44, 'May 14 – Oct 15 at 2 days a week'); // 155 calendar days × 2/7
+    assert.equal(ps.source?.excerpt, 'PS-22 | 1,200 | 05/14 – 10/15 | 2X/WK');
+    assert.match(r.resultText, /Derived: .*PS-22 season 05\/14 – 10\/15 kept: 44 days at 2x_week/);
+    assert.match(r.resultText, /11 scope kept \(floor_care\)/);
+  }
+  // an amendment that states the services replaces what the base stated (it can narrow them)
+  const { b11, r } = regRows({ scope: ['custodial', 'floor_care'] });
+  assert.deepEqual(b11.scope, ['custodial', 'floor_care']);
+  const narrowed = createState(docs);
+  applyToolCall(narrowed, reg(row({ building_number: '12', name: 'Barracks', gross_area: 1000, scope: ['custodial', 'floor_care'], source: { file: TE, excerpt: '12' } })));
+  const rn = applyToolCall(narrowed, reg(row({ building_number: '12', name: 'Barracks', gross_area: null, status: null, scope: ['floor_care'], source: { file: AM, excerpt: 'Item 4: periodic only' } })));
+  assert.deepEqual(finalize(narrowed).inventory.facilities[0].scope, ['floor_care']);
+  assert.match(rn.resultText, /12 scope custodial, floor_care → floor_care \(stated by a later document\)/);
+  void r;
+  // rows of the base documents add up; a dining profile keeps dining in scope
+  const st = createState([{ name: 'PWS.pdf', role: 'pws' as const }, { name: J4, role: 'attachment' as const }, { name: AM, role: 'amendment' as const, amendment: 1 }]);
+  applyToolCall(st, reg(row({ building_number: '2410', name: 'DFAC', gross_area: 28500, scope: ['custodial'], source: { file: 'PWS.pdf', excerpt: 'a' } })));
+  applyToolCall(st, reg(row({ building_number: '2410', name: 'DFAC', gross_area: null, status: null, scope: ['dining'], dining: { meals_per_day: 900, service_style: 'full_food_service' }, source: { file: J4, excerpt: 'b' } })));
+  assert.deepEqual([...finalize(st).inventory.facilities[0].scope].sort(), ['custodial', 'dining']);
+  applyToolCall(st, reg(row({ building_number: '2410', name: 'DFAC', gross_area: null, status: null, scope: ['custodial', 'floor_care'], source: { file: AM, excerpt: 'c' } })));
+  assert.deepEqual([...finalize(st).inventory.facilities[0].scope].sort(), ['custodial', 'dining', 'floor_care']);
+  // a later dining-only row (a headcount revision) never removes the cleaning services
+  applyToolCall(st, reg(row({ building_number: '2410', name: 'DFAC', gross_area: null, status: null, scope: ['dining'], dining: { meals_per_day: 950, service_style: 'full_food_service' }, source: { file: AM, excerpt: 'd' } })));
+  assert.deepEqual([...finalize(st).inventory.facilities[0].scope].sort(), ['custodial', 'dining', 'floor_care']);
+});
+
+test('service calendar is its own field group: a level-only revision recounts a season window, a calendar-only revision keeps the level', () => {
+  const docs = [{ name: J4, role: 'attachment' as const }, { name: AM2, role: 'amendment' as const, amendment: 2 }];
+  const st = createState(docs);
+  applyToolCall(st, reg(
+    row({ building_number: '1', name: 'Beach House', gross_area: 2000, service_level: 'daily_7', service_season: { start: 'May 1', end: 'Oct 15', days_per_week: null }, source: { file: J4, excerpt: '1' } }),
+    row({ building_number: '2', name: 'School', gross_area: 50000, service_level: 'daily_5', service_days_per_year: 200, source: { file: J4, excerpt: '2' } }),
+    row({ building_number: '3', name: 'Marina', gross_area: 1000, service_level: '3x_week', source: { file: J4, excerpt: '3' } }),
+  ));
+  const r = applyToolCall(st, reg(
+    row({ building_number: '1', name: 'Beach House', gross_area: null, status: null, service_level: '3x_week', source: { file: AM2, excerpt: 'Item 1: 3X/WK' } }),
+    row({ building_number: '2', name: 'School', gross_area: null, status: null, service_level: 'daily_6', source: { file: AM2, excerpt: 'Item 2: Mon–Sat' } }),
+    row({ building_number: '3', name: 'Marina', gross_area: null, status: null, service_season: { start: 'May 1', end: 'Oct 15', days_per_week: null }, source: { file: AM2, excerpt: 'Item 3: season May 1 – Oct 15' } }),
+  ));
+  const by = (bn: string) => byBn(finalize(st).inventory.facilities, bn)[0];
+  assert.equal(by('1').serviceLevel, '3x_week');
+  assert.equal(by('1').serviceDaysPerYear, 69, '168 calendar days at 3x_week (150 days a year)');
+  assert.equal(by('1').notes?.match(/Service season /g)?.length, 1);
+  assert.match(by('1').notes ?? '', /Service season May 1 – Oct 15: 168 calendar days × 2\.88 days\/week \(3x_week\) = 69 service days/);
+  assert.equal(by('2').serviceDaysPerYear, undefined, 'a stated day count gives way to a different level');
+  assert.match(r.resultText, /2 stated service days replaced by the daily_6 calendar \(300 days a year\)/);
+  assert.equal(by('3').serviceLevel, '3x_week');
+  assert.equal(by('3').serviceDaysPerYear, 69, 'the window is counted at the kept level, not the default');
+});
+
+test('service_schedule: one entry per season is counted and summed; services per day are kept; a bad entry is reported, not applied', () => {
+  const st = createState(DOCS);
+  const r = applyToolCall(st, reg(
+    row({ building_number: 'VT-51', name: 'Vault Toilet', gross_area: 72, service_level: '3x_week', service_schedule: [
+      { label: 'Peak', start: '05/28', end: '09/06', days_per_week: 3, services_per_day: null },
+      { label: 'Shoulder', start: '09/07', end: '10/15', days_per_week: 1, services_per_day: null },
+      { label: 'Winter', start: '10/16', end: '05/27', days_per_week: 1, services_per_day: null },
+    ] }),
+    row({ building_number: '310', name: 'Beach House', gross_area: 2240, service_level: 'daily_7', service_schedule: [{ label: 'Peak', start: '05/28', end: '09/06', days_per_week: 7, services_per_day: 2 }] }),
+    row({ building_number: '311', name: 'Comfort Station', gross_area: 600, service_schedule: [{ label: 'Summer', start: 'summer', end: 'fall', days_per_week: 7, services_per_day: null }] }),
+    row({ building_number: '312', name: 'Terminal Restrooms', gross_area: 900, service_level: 'daily_7', services_per_day: 3 }),
+  ));
+  const by = (bn: string) => byBn(finalize(st).inventory.facilities, bn)[0];
+  assert.equal(by('VT-51').serviceDaysPerYear, 82); // 44 + 6 + 32 (102, 39 and 224 calendar days)
+  assert.match(by('VT-51').notes ?? '', /Service schedule: Peak 05\/28 – 09\/06 3 d\/wk = 44 days \+ Shoulder 09\/07 – 10\/15 1 d\/wk = 6 days \+ Winter 10\/16 – 05\/27 1 d\/wk = 32 days: 82 service days/);
+  assert.equal(by('310').serviceDaysPerYear, 102);
+  assert.match(by('310').notes ?? '', /× 2\/day = 102 days: 102 service days, 204 services/);
+  assert.equal(by('311').serviceDaysPerYear, undefined);
+  assert.match(r.resultText, /311: service_schedule Summer "summer – fall" not understood, so the schedule was not applied/);
+  assert.match(by('312').notes ?? '', /Services per day: 3/);
+  assert.match(r.resultText, /Derived: .*310 schedule 102 days \/ 204 services.*312 3 services\/day|Derived: .*312 3 services\/day/);
+  assert.match(r.resultText, /the estimate prices one routine service per service day/);
+  // a level-only revision keeps a schedule
+  applyToolCall(st, reg(row({ building_number: 'VT-51', name: 'Vault Toilet', gross_area: null, status: null, service_level: 'daily_7', source: { file: AM2, excerpt: 'peak daily' } })));
+  assert.equal(by('VT-51').serviceDaysPerYear, 82);
+});
+
+test('caps and derived values are reported: additional days past a year, finish classes, per-table status at finish', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare({ table_id: 'FL', row_count: 2, printed_total_gross_area: 3280 }));
+  const r = applyToolCall(st, reg(
+    row({ table_id: 'FL', building_number: '404', name: 'Beach Restroom', gross_area: 1280, service_level: 'daily_7', additional_service_days: { days_per_year: 99, label: 'second service Memorial Day – Labor Day' }, source: { file: J4, excerpt: '404 | 1280' } }),
+    row({ table_id: 'FL', building_number: '405', name: 'Concession', gross_area: 2000, floor_areas: [{ finish: 'Hard floor', area: 2000 }], source: { file: J4, excerpt: '405 | 2000' } }),
+  ));
+  assert.match(r.resultText, /404 360 routine \+ 99 additional days → capped at 366, 93 dropped \(a second service on the same day is services_per_day/);
+  assert.match(r.resultText, /finishes mapped: Hard floor → resilient/);
+  assert.match(byBn([...st.facilities.values()], '404')[0].notes ?? '', /= 459, capped at 366 \(93 days dropped\)/);
+  const f = applyToolCall(st, finishCall());
+  assert.equal(f.isError, false);
+  assert.match(f.resultText, /Tables: FL: 2\/2 rows, 3,280 SF ✓\./);
+});
+
+test('declare_tables: printed cleanable and area-column totals are reconciled against the rows, like the gross', () => {
+  const st = createState(DOCS);
+  applyToolCall(st, declare(
+    { table_id: 'A-3', row_count: 2, printed_total_gross_area: null, printed_total_cleanable_area: 8380, printed_column_totals: [] },
+    { table_id: 'PS', row_count: 2, printed_total_gross_area: null, printed_column_totals: [{ label: 'Carpet SF', value: 3000 }, { label: 'Hard Floor SF', value: 5000 }, { label: 'Wood Gym SF', value: 1200 }] },
+  ));
+  applyToolCall(st, reg(
+    row({ table_id: 'A-3', building_number: '400', name: 'Fire Station', gross_area: 21600, cleanable_area: 5180, source: { file: J4, excerpt: '400 | 21,600 | 5,180' } }),
+    // gross read as the serviced area: the gross total cannot see it, the cleanable total does
+    row({ table_id: 'A-3', building_number: '410', name: 'SRE Building', gross_area: 6880, cleanable_area: 6880, source: { file: J4, excerpt: '410 | 33,400 | 3,200' } }),
+  ));
+  applyToolCall(st, reg(
+    row({ table_id: 'PS', building_number: '400', name: 'Fire Station', gross_area: null, status: null, floor_areas: [{ finish: 'Carpet', area: 1000 }, { finish: 'Hard floor', area: 3000 }], source: { file: J4, excerpt: 'PS 400' } }),
+    row({ table_id: 'PS', building_number: '410', name: 'SRE Building', gross_area: null, status: null, floor_areas: [{ finish: 'CPT', area: 2000 }, { finish: 'Hard floor', area: 2000 }, { finish: 'Wood gym floor', area: 1200, included_in: 'Hard floor' }], source: { file: J4, excerpt: 'PS 410' } }),
+  ));
+  const f = applyToolCall(st, finishCall());
+  assert.equal(f.isError, true);
+  assert.match(f.resultText, /A-3: registered cleanable 12,060 SF vs printed cleanable total 8,380 SF/);
+  assert.doesNotMatch(f.resultText, /PS:/, 'carpet by code (CPT), hard floor and the wood gym floor included in it all reconcile');
+  // corrected: the printed cleanable of 410 is 3,200
+  applyToolCall(st, reg(row({ table_id: 'A-3', building_number: '410', name: 'SRE Building', gross_area: 33400, cleanable_area: 3200, source: { file: J4, excerpt: '410 | 33,400 | 3,200' } })));
+  const f2 = applyToolCall(st, finishCall());
+  assert.equal(f2.isError, false, f2.resultText);
+  assert.match(f2.resultText, /A-3: 2\/2 rows, cleanable 8,380 SF ✓; PS: 2\/2 rows, Carpet SF 3,000 SF, Hard Floor SF 5,000 SF, Wood Gym SF 1,200 SF ✓/);
+});
+
+test('posts, periodic task frequencies and the previous contract\'s scope are kept for the estimator', () => {
+  assert.equal(periodicFactor('Carpet extraction'), 'fc_carpet_extract');
+  assert.equal(periodicFactor('Strip & refinish'), 'fc_strip_wax');
+  assert.equal(periodicFactor('Scrub and recoat'), 'fc_scrub_recoat');
+  assert.equal(periodicFactor('Interior glass'), 'cust_windows');
+  assert.equal(periodicFactor('Pressure-wash restroom floors'), undefined);
+  const st = createState(DOCS);
+  const r = applyToolCall(st, reg(row({ building_number: '102', name: 'Courthouse', gross_area: 168900,
+    posts: [{ label: 'day porter', count: 2, hours_per_day: 8.5, days_per_week: 5 }],
+    periodic_tasks: [{ task: 'Carpet extraction', times_per_year: 2 }, { task: 'Scrub & recoat', times_per_year: 3 }, { task: 'Pressure wash', times_per_year: 12 }] })));
+  const notes = [...st.facilities.values()][0].notes ?? '';
+  assert.match(notes, /Staffed posts: 2 × day porter 8\.5 h\/day 5 d\/wk \(4,420 post-hours a year\)/);
+  assert.match(notes, /Periodic tasks \(times a year, as stated\): Carpet extraction 2 \[fc_carpet_extract\], Scrub & recoat 3 \[fc_scrub_recoat, default 4\], Pressure wash 12/);
+  assert.match(r.resultText, /102 posts 4,420 h\/yr/);
+  const a = applyToolCall(st, { name: 'set_previous_award', input: { incumbent: 'X', annual_value: 500000, source: { file: J4, page: 1, excerpt: 'x' }, confidence: 0.9, notes: null, scope_note: 'janitorial only; grounds added in this requirement', covers_facilities: ['101', 'Bldg 102'] } });
+  assert.match(a.resultText, /not like-for-like/);
+  assert.match(finalize(st).priorAward?.notes ?? '', /Previous contract scope: janitorial only, grounds added in this requirement; Previous contract covered: 101, 102/);
+});
+
+test('grounds: a walk printed in LF whose row prints a width is registered as length × width; another length is flagged; widths are read in feet', () => {
+  assert.equal(printedWidthFt('W-2 Paved trail, 8 ft wide (1.8 mi)'), 8);
+  assert.equal(printedWidthFt("Median strip 12' wide"), 12);
+  assert.equal(printedWidthFt('Bike path, avg. width 10 feet'), 10);
+  assert.equal(printedWidthFt('Fence line, 6 ft high'), undefined);
+  const st = createState([{ name: RFP }]);
+  applyToolCall(st, declare({ table_id: 'P-1', kind: 'grounds', file: RFP, pages: '4', row_count: 3, area_unit: null, printed_totals: [{ value: 12704, unit: 'lf', kinds: [] }] }));
+  const r = applyToolCall(st, regG(gArea('W-2 Paved trail, 8 ft wide (1.8 mi)', 'sidewalk', 9504, 'lf', 'W-2 | Paved trail, 8 ft wide (1.8 mi) | 9,504 | LF', { table_id: 'P-1', source: { file: RFP, page: 4, excerpt: 'W-2 | Paved trail, 8 ft wide (1.8 mi) | 9,504 | LF' } })));
+  assert.match(r.resultText, /9,504 LF × 8 ft \(the width its row prints\) = 76,032 sqft: registered as a sidewalk area in sqft/);
+  assert.doesNotMatch(r.resultText, /assumes a 5-ft width/);
+  // the same row resent in sqft (as rule 8 asks) is the same area, not a second walk
+  applyToolCall(st, regG(gArea('W-2 Paved trail, 8 ft wide (1.8 mi)', 'sidewalk', 76032, 'sqft', 'W-2 | Paved trail, 8 ft wide (1.8 mi) | 9,504 | LF', { table_id: 'P-1', source: { file: RFP, page: 4, excerpt: 'W-2 | Paved trail, 8 ft wide (1.8 mi) | 9,504 | LF' } })));
+  assert.deepEqual(finalize(st).inventory.grounds.map((g) => [g.kind, g.quantity, g.unit]), [['sidewalk', 76032, 'sqft']]);
+  // a length that is not a walk stays a length; the width is pointed out
+  const r2 = applyToolCall(st, regG(gArea('Drainage ditch, 4 ft wide', 'unimproved', 2000, 'lf', 'D-1 | Drainage ditch, 4 ft wide | 2,000 | LF', { table_id: 'P-1', source: { file: RFP, page: 4, excerpt: 'D-1 | Drainage ditch, 4 ft wide | 2,000 | LF' } })));
+  assert.match(r2.resultText, /"Drainage ditch, 4 ft wide" is recorded as a length, but its row prints a width \(4 ft\): .*2,000 LF × 4 ft = 8,000 sqft/);
+  const r3 = applyToolCall(st, regG(gArea('Curb and gutter', 'parking', 1200, 'lf', 'Curb | 1,200 | LF', { table_id: 'P-1', source: { file: RFP, page: 4, excerpt: 'Curb | 1,200 | LF' } })));
+  assert.doesNotMatch(r3.resultText, /prints a width/);
+  // the printed LF still reconciles the table's LF total
+  assert.equal(applyToolCall(st, finishCall()).isError, false);
+});
+
+test('grounds: in a file ranked as an amendment, its change list before the conformed table revises the table area (no double count)', () => {
+  const AMF = 'Amendment 0001 Conformed Exhibit G.pdf';
+  const st = createState([{ name: AMF, role: 'amendment' as const, amendment: 1 }]);
+  applyToolCall(st, declare({ table_id: 'G-1', kind: 'grounds', file: AMF, pages: '3', row_count: 1, area_unit: null, printed_totals: [{ value: 5.85, unit: 'acres', kinds: [] }] }));
+  applyToolCall(st, regG(gArea('Site A – turf', 'improved_turf', 5.85, 'acres', 'Item 4: Site A turf revised to 5.85 acres', { table_id: null, source: { file: AMF, page: 1, excerpt: 'Item 4: Site A turf revised to 5.85 acres' } })));
+  applyToolCall(st, regG(gArea('Site A – turf', 'improved_turf', 5.85, 'acres', 'A | 5.85', { source: { file: AMF, page: 3, excerpt: 'A | 5.85' } })));
+  assert.deepEqual(finalize(st).inventory.grounds.map((g) => [g.name, g.quantity]), [['Site A – turf', 5.85]]);
+  assert.equal(applyToolCall(st, finishCall()).isError, false);
+});
+
+test('request intro: an underscore-separated amendment file name that says it is conformed gets the tagging note; the combined-file rule is order-free', () => {
+  assert.equal(looksCombined('70Z084_Amd0001_TE5_Bldg_List_Conformed_SCAN.pdf', 'amendment'), true);
+  assert.equal(looksCombined('W912_Attachment_J-4_with_Amd_0002.xlsx', 'amendment'), true);
+  assert.equal(looksCombined('Amendment_0002.pdf', 'amendment'), false);
+  const doc = { name: '70Z084_Amd0001_TE5_Bldg_List_Conformed_SCAN.pdf', mode: 'text' as const, text: '--- page 1 ---\nx', chars: 1, bytes: 1, role: 'amendment' as const, amendment: 1 };
+  const intro = describeRequests([doc]).passes[0].intro;
+  assert.match(intro, /is ranked as amendment 0001, but its name says it holds a base document or attachment/);
+  assert.match(intro, /In a file that holds both an amendment \(or its change list or Q&A\) and a base or conformed table, in either order, rows printed in the table get the table's id/);
+  const sys = describeRequests([doc]).system;
+  for (const re of [/gross_area is the building's gross area as printed, even when the contract services only part of it/, /A row that prints only the area to be serviced \(no gross area\) gives it as gross_area, with cleanable_equals_gross true/, /whole buildings are serviced/, /the zones are the inventory/, /A list of buildings or areas the package says this contract does not cover/, /leave service_level null and custodial out of its scope/, /twice a day is services_per_day 2/, /also when the quantity is in LF and the width only in the name or a note/]) assert.match(sys, re);
+  // no header literals of the held-out documents
+  for (const re of [/contract cleaning/i, /2X\/DAY/, /peak \/ shoulder/i, /total SF is the area/i]) assert.doesNotMatch(sys, re);
+  assert.match(intro, /leave the other fields null: they keep their registered values, including scope and the service season or schedule/);
+});
+
+test('score: a line item keyed by its zone number answers to that number; equally similar names pair by area, not registration order', () => {
+  const fac = (bn: string, name: string, grossSqft: number, notes?: string): Facility => ({ id: `${bn}-${name}`, buildingNumber: bn, name, category: 'other', grossSqft, floors: 1, serviceLevel: 'daily_5', scope: ['custodial'], confidence: 1, ...(notes ? { notes } : {}) });
+  const truth = (facilities: FixtureTruth['expect']['facilities']): FixtureTruth => ({ id: 't', title: 't', theme: 't', provenance: { fidelity: 'synthetic', sources: [] }, inputs: [], traps: [], expect: { facilities, facilitiesComplete: true } });
+  const zones = truth([{ buildingNumber: 'CA-02', name: 'Concourse A Passenger Boarding Bridges', grossSqft: 8400 }, { buildingNumber: 'CB-02', name: 'Concourse B Passenger Boarding Bridges', grossSqft: 6300 }]);
+  const a = fac('1', 'Terminal – Concourse A Passenger Boarding Bridges – CA-02', 8400, 'Line item: CA-02');
+  const b = fac('1', 'Terminal – Concourse B Passenger Boarding Bridges – CB-02', 6300, 'Line item: CB-02');
+  assert.equal(lineItemOf(a), 'CA-02');
+  for (const facilities of [[a, b], [b, a]]) {
+    const rep = scoreInventory(zones, { site: {}, facilities, grounds: [] }, 'test');
+    assert.equal(rep.score, 100, JSON.stringify(rep.misses));
+  }
+  // without line items, names that differ only by a one-letter designator pair by name, then by area
+  const plain = [fac('1', 'Concourse B Passenger Boarding Bridges', 6300), fac('1', 'Concourse A Passenger Boarding Bridges', 8400)];
+  assert.equal(scoreInventory(zones, { site: {}, facilities: plain, grounds: [] }, 'test').score, 100);
+  assert.ok(nameSim('Concourse A Boarding Bridges', 'Concourse B Boarding Bridges') < 1);
+  assert.equal(nameSim('Hangar A', 'Hangar a'), nameSim('Hangar', 'Hangar'), 'a lower-case "a" is an article, not a designator');
+  // a numeric line item (a floor) never stands in for another building number unless the area agrees
+  const floorLine = scoreInventory(truth([{ buildingNumber: '2', name: 'Annex', grossSqft: 5000 }]), { site: {}, facilities: [fac('1', 'HQ – 2', 9000, 'Line item: 2')], grounds: [] }, 'test');
+  assert.equal(floorLine.facilities.matched, 0);
+});
+
+test('scope: a dining- or grounds-only row never drops the default cleaning of a row that registers the building without stating its services', () => {
+  const DIN = 'Attachment J-7 Dining Workload.pdf';
+  const docs = [{ name: J4, role: 'attachment' as const }, { name: DIN, role: 'attachment' as const }, { name: AM2, role: 'amendment' as const, amendment: 2 }];
+  for (const baseScope of [null, []]) {
+    for (const order of ['base-first', 'dining-first']) {
+      const st = createState(docs);
+      const base = row({ building_number: '2410', name: 'DFAC', gross_area: 28500, scope: baseScope, source: { file: J4, excerpt: '2410 | DFAC | 28,500' } });
+      const dining = row({ building_number: '2410', name: 'DFAC', gross_area: null, status: null, area_missing: false, scope: ['dining'], dining: { meals_per_day: 900, service_style: 'full_food_service' }, source: { file: DIN, excerpt: '2410 | 900' } });
+      for (const r of order === 'base-first' ? [base, dining] : [dining, base]) applyToolCall(st, reg(r));
+      assert.deepEqual([...finalize(st).inventory.facilities[0].scope].sort(), ['custodial', 'dining', 'floor_care'], `${JSON.stringify(baseScope)} ${order}`);
+    }
+  }
+  // a status-only row (no area, no scope) still adds nothing to a stated scope
+  const st = createState(docs);
+  applyToolCall(st, reg(row({ building_number: '7', name: 'Kiosk', gross_area: 400, scope: ['custodial'], source: { file: J4, excerpt: '7' } })));
+  applyToolCall(st, reg(row({ building_number: '7', name: 'Kiosk', gross_area: null, status: 'deleted_by_amendment', status_reason: 'Item 3: deleted', scope: null, source: { file: AM2, excerpt: 'Item 3' } })));
+  assert.deepEqual(finalize(st).inventory.facilities[0].scope, ['custodial']);
+});
+
+test('service calendar: services per day on a revision row is kept beside a registered season; a schedule season with no service adds no days', () => {
+  const st = createState([{ name: J4, role: 'attachment' as const }, { name: AM2, role: 'amendment' as const, amendment: 2 }]);
+  applyToolCall(st, reg(row({ building_number: '5', name: 'Beach House', gross_area: 1000, service_level: 'daily_7', service_season: { start: 'May 1', end: 'Sep 30', days_per_week: 7 }, source: { file: J4, excerpt: '5' } })));
+  applyToolCall(st, reg(row({ building_number: '5', name: 'Beach House', gross_area: null, status: null, services_per_day: 2, source: { file: AM2, excerpt: 'Item 5: 2X/day' } })));
+  const f = finalize(st).inventory.facilities[0];
+  assert.equal(f.serviceDaysPerYear, 153);
+  assert.match(f.notes ?? '', /Service season May 1 – Sep 30: 153 calendar days/);
+  assert.match(f.notes ?? '', /Services per day: 2/);
+  const st2 = createState([{ name: J4 }]);
+  const r = applyToolCall(st2, reg(row({ building_number: '6', name: 'Visitor Center', gross_area: 3000, service_level: 'daily_7', service_schedule: [
+    { label: 'Summer', start: 'May 15', end: 'Sep 15', days_per_week: 7, services_per_day: 2 },
+    { label: 'Winter', start: 'Nov 1', end: 'Mar 31', days_per_week: 0, services_per_day: null },
+  ], source: { file: J4, excerpt: '6' } })));
+  const v = finalize(st2).inventory.facilities[0];
+  assert.equal(v.serviceDaysPerYear, 124, 'May 15 – Sep 15 only'); // 124 calendar days at 7 a week
+  assert.match(v.notes ?? '', /Winter Nov 1 – Mar 31 no service/);
+  assert.match(r.resultText, /service days counted: 6: 124 days \/ 248 services/);
+  // a level-only revision keeps a schedule (its seasons print their own days per week)
+  applyToolCall(st2, reg(row({ building_number: '6', name: 'Visitor Center', gross_area: null, status: null, service_level: 'daily_5', source: { file: J4, page: 9, excerpt: '6 rev' } })));
+  assert.equal(finalize(st2).inventory.facilities[0].serviceDaysPerYear, 124);
+});
+
+test('a counted season is reported as kept: a row whose window another calendar overrides is not echoed as counted (names with spaces too)', () => {
+  const st = createState([{ name: J4, role: 'attachment' as const }, { name: AM2, role: 'amendment' as const, amendment: 2 }]);
+  // the amendment's stated day count is registered first; the base row's season arrives later and ranks below it
+  applyToolCall(st, reg(row({ building_number: null, name: 'Lake Shelter', table_id: null, gross_area: 500, service_level: 'weekly', service_days_per_year: 30, source: { file: AM2, excerpt: '' } })));
+  const r = applyToolCall(st, reg(row({ building_number: null, name: 'Lake Shelter', table_id: null, gross_area: 500, service_level: 'weekly', service_season: { start: 'May 1', end: 'Oct 31', days_per_week: 1 }, source: { file: J4, excerpt: '' } })));
+  assert.equal(finalize(st).inventory.facilities[0].serviceDaysPerYear, 30);
+  assert.doesNotMatch(r.resultText, /service days counted: Lake Shelter/);
+});
+
+test('append mode: merging a re-read keeps the rows the facility already listed as "Also from"', () => {
+  const st = createState([{ name: J4 }, { name: 'Fixtures.pdf' }]);
+  applyToolCall(st, reg(row({ building_number: '7', name: 'Admin', gross_area: 1000, source: { file: J4, excerpt: 'row 7' } })));
+  applyToolCall(st, reg(row({ building_number: '7', name: 'Admin', gross_area: null, status: null, fixtures: { water_closets: 3 }, source: { file: 'Fixtures.pdf', excerpt: 'fixtures 7' } })));
+  const a = finalize(st).inventory.facilities[0];
+  assert.match(a.notes ?? '', /^Also from: Fixtures\.pdf: "fixtures 7"$/);
+  const st2 = createState([{ name: AM2, role: 'amendment' as const, amendment: 2 }]);
+  applyToolCall(st2, reg(row({ building_number: '7', name: 'Admin', gross_area: 1100, source: { file: AM2, excerpt: 'Item 7: 1,100' } })));
+  const m = mergeFacility(a, finalize(st2).inventory.facilities[0]);
+  assert.equal(m.source?.excerpt, 'Item 7: 1,100');
+  assert.match(m.notes ?? '', /Also from: Fixtures\.pdf: "fixtures 7" · Attachment J-4 Facility List\.xlsx: "row 7"/);
 });

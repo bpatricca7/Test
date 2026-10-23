@@ -1,0 +1,429 @@
+{
+  "id": "nps-park-janitorial-grounds-pdf",
+  "title": "National Park Service janitorial and grounds PWS (Attachment J-1): 3-page landscape facility schedule of 34 park structures (visitor centers, admin, shop, comfort stations, shower houses, vault toilets, picnic shelters) with Peak / Shoulder / Winter frequencies, fixture counts, grounds schedule, and Amendment 0001 that corrects, deletes and adds rows (PDF)",
+  "theme": "federal-parks",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID202944747771807500442080869327059204931/Updated_Attach_J01_SOW_WHIS_Septic_Pumping.pdf",
+        "note": "NPS Whiskeytown National Recreation Area, solicitation 140P8419Q0071, Attachment J01 Statement of Work (8 pages, read in full). Model for the repeated centered page header (solicitation number / attachment title / service / park name on every page), the Location and Background sections (park acreage and lake acreage, address block), the 140P solicitation-number format, 'a base year, with the potential for up to four option years', the 'on a weekly basis, or more often, as necessary' frequency wording, and vault toilets pumped under a separate contract (PWS 1.2, 2.5(f), Q4). No rows copied."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID167819653642157368861870817738396665411/Attachment%201.%20Statement%20of%20Work%20final%20.pdf",
+        "note": "USDA Forest Service, Oconee Ranger District janitorial Statement of Work (21 pages, read). Model for stating area and frequency together ('approximately 4,474 sq. feet ... twice per week (Wednesday and once on weekend)'), the base year + 4 option-year date list (PWS 1.4), 'The frequencies listed are the suggested minimum and are in no way intended to limit the frequency...' (PWS 2.3.1), the 'Out of Order' sign duty (2.7), and the Exhibit 2 Quality and Performance Standards table with Task / Standard / Frequency / AQL-Deductions columns and deductions such as '95% - $1.50 per sq. ft. for the entire room or area being serviced' and '100% - $50 for each instance when standard is not met' (PWS 4.2)."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID151682101211780583073746200899112515222/PWS%20Attachment%2009132018.pdf",
+        "note": "U.S. Coast Guard Base Seattle janitorial PWS, HSCG84-17-R-PTE001 Attachment #1 (21 pages, read in part). Model for numbered 'Technical Exhibits' (frequency by task and level of service; square footage by building), for 'Contractor shall only bill for the square footage serviced', and for the stop-service notice 'no less than forty-eight (48) hours in advance' (PWS 2.2, 2.6)."
+      },
+      {
+        "url": "https://g2x.com/app/opportunities/sam/1e0c34db-4374-45f8-9de1-a4d97903a9b1",
+        "note": "USACE Sacramento District, Pine Flat Lake Janitorial Services (W9123826QA027; earlier W9123825QA011 at https://govtribe.com/opportunity/federal-contract-opportunity/pine-flat-lake-janitorial-w9123825qa011-1). Known only from search-result summaries (host not reachable from this session): headquarters compound plus several recreation areas; separate line items for permanent restroom service in the recreation season and off season, vault restroom service, and fish cleaning stations. Model for seasonal frequencies per restroom type and the fish cleaning station row."
+      },
+      {
+        "url": "https://govtribe.com/opportunity/federal-contract-opportunity/janitorial-services-for-winnibigoshish-dam-recreation-area-w912es24q0052",
+        "note": "USACE St. Paul District, Janitorial Services for Winnibigoshish Dam Recreation Area (W912ES24Q0052). Search-result summary only: custodial services for shower and restroom facilities, a fish cleaning house and a picnic shelter, seven days a week from May 1 through October 16, one year plus four option years. Model for a Minnesota campground shower house cleaned 7X/WK for the whole season (Bldgs. 210, 211) and the shelter / fish cleaning rows."
+      },
+      {
+        "url": "https://www.highergov.com/contract-opportunity/vault-toilet-cleaning-olympic-national-forest-and-1240bd25q0023-o-85652/",
+        "note": "USDA Forest Service, Vault Toilet Cleaning, Olympic NF and Mt. Baker-Snoqualmie NF (1240BD25Q0023). Search-result summary only: 'single riser vault toilet buildings, double riser vault toilet buildings, and multi-stall flush toilet buildings', building types delineated in the schedule items with square footage in the General Facility Information; seasonal servicing May-September; contractor may visit each site multiple times per week. Model for the VT-S / VT-D type codes, a square footage for every vault toilet building, and risers counted as toilets."
+      },
+      {
+        "url": "https://www.highergov.com/contract-opportunity/coyote-valley-dam-and-lake-mendocino-recreation-ar-w912p726qa006-k-013a7/",
+        "note": "USACE San Francisco District, Coyote Valley Dam and Lake Mendocino Recreation Area Janitorial Services (W912P726QA006). Search-result summary only: scope varies by recreation and non-recreation season; cleaning of fixtures, floors, inside walls, partitions, benches, showers and toilet stalls in restroom and shower buildings. Model for season-dependent frequencies and the shower-house task list (Table 2-B)."
+      },
+      {
+        "url": "https://www.nps.gov/romo/toilets.htm",
+        "note": "Rocky Mountain National Park, 'Ever Wonder Who Cleans the Toilets?' (search-result summary): the custodial crew cleans comfort stations and vault toilets at trailheads and along roads daily in summer, plus campground comfort stations and visitor center toilets; when campground water is off, vault toilets are used. Model for the mix of facility types and for seasonal water-system shutdown (PWS 1.2, 2.4)."
+      },
+      {
+        "url": "https://www.nps.gov/cuva/restrooms-and-drinking-water.htm",
+        "note": "Cuyahoga Valley National Park restroom list (search-result summary): each park restroom described by its count of stalls, urinals and sinks, with family/ADA rooms. Model for listing plumbing fixture counts per restroom building (Technical Exhibit 1, Columns 7-10)."
+      },
+      {
+        "url": "https://fredericksburgva.gov/DocumentCenter/View/31887/IFB-26-0044-Janitorial-Services?bidId=",
+        "note": "City of Fredericksburg, VA, IFB #26-0044 Janitorial Services (parks restrooms; search-result summary): days per week change by date range ('5 days per week (Tuesday-Saturday...) Sept 1 - May 31; 6 days per week (Monday-Saturday...) June 1 - Aug 31'). Model for frequency codes with named days ('5X/WK (W-Su)', '5X/WK (Th-M)') and season-dependent frequency."
+      },
+      {
+        "url": "https://www.fs.usda.gov/t-d/pubs/html/95231206/95231206.htm",
+        "note": "USDA Forest Service Technology & Development, 'Cleaning Recreation Sites' (9523-1206; search-result summary): cleaning frequency set by site managers according to use patterns; vaults pumped before they are more than three-fourths full. Model for PWS 2.3.1 minimum-frequency language and the 'vaults more than three-quarters full' reporting duty (2.7)."
+      },
+      {
+        "url": "https://www.publications.usace.army.mil/Portals/76/Publications/EngineerManuals/EM_1110-1-400.pdf",
+        "note": "USACE EM 1110-1-400, Recreation Facility and Customer Services Standards (search-result summary): restrooms in campgrounds and day use areas; shower houses at campgrounds and at beaches where feasible. Basis for the campground shower houses and the beach house with rinse showers."
+      }
+    ],
+    "notes": "Everything is illustrative: the park (Tamarack Lakes National Recreation Area, a fictional NPS unit in Aitkin and Itasca Counties, Minnesota), solicitation 140P6127Q0018, Amendment 0001, all building numbers, FMSS location numbers, square footages, fixture counts, season dates, acreages, the incumbent (North Country Facility Services, LLC, contract 140P6122C0009, $2,731,460 over 60 months, $574,920 option-year-4 price), the contracting officer and the wage determination revision. No rows were copied, so fidelity is real-format. Three source documents (Whiskeytown J01 SOW, Oconee RD SOW, USCG Base Seattle PWS) were downloaded and read; the others were reachable only as web-search summaries because this session's network allowed only S3-hosted files, so their wording is paraphrased from those summaries. The HTML and truth.json were generated together from one data table (generator kept outside the fixture), so exhibit rows, subtotals, the summary by type, the amendment's revised totals and truth agree. Adversarial check (separate agent): the HTML was edited by hand after generation in one place (Amendment Change 5 now revises the Table 3-B total line to 'Total parking (Items P-1 - P-6), 235,900 SF' instead of calling a total that includes the aggregate-surface P-6 lot 'paved'), and truth W-2 was changed from 9,504 lf to 76,032 sqft (the row states the 8-ft width). The external generator does not carry these edits."
+  },
+  "inputs": [
+    {
+      "src": "tala-140P6127Q0018-pws.html",
+      "as": "pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "101",
+        "name": "Lakeview Visitor Center",
+        "grossSqft": 12940,
+        "floors": 2,
+        "restroomFixtures": 23
+      },
+      {
+        "buildingNumber": "102",
+        "name": "Park Headquarters / Administration Building",
+        "grossSqft": 6420,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin",
+        "restroomFixtures": 9
+      },
+      {
+        "buildingNumber": "104",
+        "name": "Ranger Station / Law Enforcement Office",
+        "grossSqft": 2180,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "admin",
+        "restroomFixtures": 5
+      },
+      {
+        "buildingNumber": "105",
+        "name": "Main Entrance Station (Fee Booth)",
+        "grossSqft": 168,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 2
+      },
+      {
+        "buildingNumber": "120",
+        "name": "Maintenance Shop",
+        "grossSqft": 8960,
+        "cleanableSqft": 1240,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "maintenance",
+        "restroomFixtures": 6
+      },
+      {
+        "buildingNumber": "210",
+        "name": "Birch Point Shower House A (Loop A, sites A1–A34)",
+        "grossSqft": 1420,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 15
+      },
+      {
+        "buildingNumber": "211",
+        "name": "Birch Point Shower House B (Loop B, sites B1–B32)",
+        "grossSqft": 1420,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 15
+      },
+      {
+        "buildingNumber": "212",
+        "name": "Birch Point Comfort Station (Loop C, sites C1–C30)",
+        "grossSqft": 640,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 9
+      },
+      {
+        "buildingNumber": "213",
+        "name": "Birch Point Campground Registration Office",
+        "grossSqft": 320,
+        "floors": 1,
+        "restroomFixtures": 2
+      },
+      {
+        "buildingNumber": "VT-21",
+        "name": "Birch Point Boat Launch Vault Toilet",
+        "grossSqft": 144,
+        "floors": 1,
+        "restroomFixtures": 2
+      },
+      {
+        "buildingNumber": "PS-22",
+        "name": "Birch Point Picnic Shelter",
+        "grossSqft": 1200,
+        "floors": 1,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "FC-23",
+        "name": "Birch Point Fish Cleaning Station",
+        "grossSqft": 288,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "310",
+        "name": "Sandy Bay Beach House (Changing Rooms and Restrooms)",
+        "grossSqft": 2240,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "restroomFixtures": 16
+      },
+      {
+        "buildingNumber": "311",
+        "name": "Sandy Bay Comfort Station (Picnic Area)",
+        "grossSqft": 560,
+        "floors": 1,
+        "restroomFixtures": 7
+      },
+      {
+        "buildingNumber": "PS-31",
+        "name": "Sandy Bay Picnic Shelter No. 1 (Group, reservable)",
+        "grossSqft": 2400,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "PS-32",
+        "name": "Sandy Bay Picnic Shelter No. 2",
+        "grossSqft": 960,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "410",
+        "name": "North Arm Comfort Station",
+        "grossSqft": 720,
+        "floors": 1,
+        "restroomFixtures": 8
+      },
+      {
+        "buildingNumber": "411",
+        "name": "North Arm Contact Station (Seasonal Visitor Contact)",
+        "grossSqft": 1350,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "restroomFixtures": 4
+      },
+      {
+        "buildingNumber": "VT-41",
+        "name": "North Arm Boat Launch Vault Toilet",
+        "grossSqft": 156,
+        "floors": 1,
+        "restroomFixtures": 2
+      },
+      {
+        "buildingNumber": "PS-42",
+        "name": "North Arm Picnic Shelter",
+        "grossSqft": 1200,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "VT-51",
+        "name": "Eagle Bluff Overlook Vault Toilet",
+        "grossSqft": 72,
+        "floors": 1,
+        "restroomFixtures": 1
+      },
+      {
+        "buildingNumber": "VT-52",
+        "name": "Cedar Creek Trailhead Vault Toilet",
+        "grossSqft": 156,
+        "floors": 1,
+        "restroomFixtures": 2
+      },
+      {
+        "buildingNumber": "VT-53",
+        "name": "Tamarack Ski Trail Trailhead Vault Toilet",
+        "grossSqft": 64,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "restroomFixtures": 1
+      },
+      {
+        "buildingNumber": "VT-54",
+        "name": "Mud Lake Boat Access Vault Toilet",
+        "grossSqft": 72,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "restroomFixtures": 1
+      },
+      {
+        "buildingNumber": "VT-55",
+        "name": "Hidden Falls Trailhead Vault Toilet",
+        "grossSqft": 144,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "restroomFixtures": 2
+      },
+      {
+        "buildingNumber": "VT-57",
+        "name": "Old Mill Picnic Area Vault Toilet",
+        "grossSqft": 144,
+        "floors": 1,
+        "restroomFixtures": 2
+      },
+      {
+        "buildingNumber": "VT-58",
+        "name": "Pine Island Boat-in Campsites Vault Toilet",
+        "grossSqft": 64,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "restroomFixtures": 1
+      },
+      {
+        "buildingNumber": "PS-59",
+        "name": "Old Mill Picnic Shelter (CCC-era, historic)",
+        "grossSqft": 880,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "VT-60",
+        "name": "Lost Creek Trailhead Vault Toilet",
+        "grossSqft": 144,
+        "floors": 1,
+        "restroomFixtures": 2
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 6.4,
+        "unit": "acres",
+        "name": "G-1 Lakeview Visitor Center, Headquarters and Ranger Station grounds (Bldgs. 101, 102, 104)",
+        "buildingNumbers": [
+          "101",
+          "102",
+          "104"
+        ]
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 2.2,
+        "unit": "acres",
+        "name": "G-2 Maintenance compound perimeter (Bldg. 120)",
+        "buildingNumbers": [
+          "120"
+        ]
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 9.8,
+        "unit": "acres",
+        "name": "G-3 Birch Point Campground, Loops A–C (campsite pads and loop interiors)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 7.5,
+        "unit": "acres",
+        "name": "G-4 Sandy Bay Day Use Area lawns (excludes sand beach)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.6,
+        "unit": "acres",
+        "name": "G-5 North Arm Day Use Area"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 21.7,
+        "unit": "acres",
+        "name": "G-6 Park Road shoulders, 8-ft swath both sides (11.2 mi)"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 14.0,
+        "unit": "acres",
+        "name": "G-7 Old Mill historic meadow and picnic area margins"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 1.9,
+        "unit": "acres",
+        "name": "G-8 Trailhead and boat-access parking islands (8 sites, Area E)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 52800,
+        "unit": "sqft",
+        "name": "P-1 Lakeview Visitor Center parking lot (incl. bus/RV row)"
+      },
+      {
+        "kind": "parking",
+        "quantity": 14600,
+        "unit": "sqft",
+        "name": "P-2 Headquarters / Ranger Station employee lot"
+      },
+      {
+        "kind": "parking",
+        "quantity": 38400,
+        "unit": "sqft",
+        "name": "P-3 Birch Point day-use and boat launch trailer lot"
+      },
+      {
+        "kind": "parking",
+        "quantity": 71500,
+        "unit": "sqft",
+        "name": "P-4 Sandy Bay Beach Lots 1 and 2"
+      },
+      {
+        "kind": "parking",
+        "quantity": 46200,
+        "unit": "sqft",
+        "name": "P-5 North Arm boat launch and trailer parking"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 9850,
+        "unit": "sqft",
+        "name": "W-1 Visitor Center plaza and sidewalks"
+      },
+      {
+        "kind": "sidewalk",
+        "quantity": 76032,
+        "unit": "sqft",
+        "name": "W-2 Lakeshore Paved Trail, VC to Sandy Bay, 8 ft wide (1.8 mi) - 9,504 LF x 8 ft"
+      },
+      {
+        "kind": "parking",
+        "quantity": 12400,
+        "unit": "sqft",
+        "name": "P-6 Lost Creek Trailhead parking lot"
+      }
+    ],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "cold",
+      "installationName": "Tamarack Lakes National Recreation Area",
+      "solicitation": "140P6127Q0018"
+    },
+    "priorAward": {
+      "totalValue": 2731460,
+      "periodMonths": 60,
+      "annualValue": 574920,
+      "incumbent": "North Country Facility Services, LLC",
+      "contractNumber": "140P6122C0009",
+      "awardYear": 2022
+    }
+  },
+  "traps": [
+    "Three identifier columns: Column (1) Item No. (1-35), Column (2) FMSS Loc. No. (six digits, 108214-118734, easy to misread as a square footage) and Column (3) Bldg./Asset No. (101, 120, VT-21, PS-22, FC-23...). buildingNumber is the Bldg./Asset No.; the amendment refers to rows by Item No. (Item 1, Item 13, Item 31, Item 35).",
+    "Amendment 0001 (last two pages, dated 12/08/2026) controls, and the original pages never mention it: Change 1 raises Bldg. 101 Lakeview Visitor Center from 11,860 to 12,940 SF and its fixtures from 8/3/8/- to 10/3/10/- (restroomFixtures 23, not 19); Change 2 deletes Item 31 VT-56 Loon Narrows Boat Access Vault Toilet (not expected); Change 3 changes PS-22's Shoulder frequency from 1X/WK to 2X/WK, which makes it 2x_week; Change 4 adds Item 35 VT-60 Lost Creek Trailhead Vault Toilet (144 SF, 2 risers) as a full exhibit row inside the amendment; Change 5 adds grounds item P-6 (12,400 SF parking).",
+    "Five listed rows are not serviced and are not expected: Bldg. 121 Fire Cache / Cold Storage (N/S), Bldg. 214 Birch Point Group Camp Shower House (OPT, Optional CLIN 0004 only; Q3), Bldgs. 312 and 412 (CONC, cleaned by concessioners), and Bldg. 413 Pelican Point Comfort Station (N/S, closed and scheduled for demolition). They carry SF and fixture counts like the serviced rows and are shown in italics only.",
+    "Maintenance Shop (Bldg. 120): Gross SF 8,960 is the FMSS building area; service is limited to the office, break room and locker/restrooms, approx. 1,240 SF (Note (b), PWS 2.5(b), Q2). Truth grossSqft 8,960, cleanableSqft 1,240.",
+    "Seasonal frequencies: Columns (12)-(14) give Peak / Shoulder / Winter frequencies and Column (11) the open-close dates ('05/14 - 10/15', 'Year-round', 'Memorial Day wknd - Labor Day', 'Closed'). serviceLevel is in truth only where every open-season column has the same frequency: 102 5X/WK (M-F) -> daily_5; 104 3X/WK (M/W/F) -> 3x_week; 105, 210, 211, 212 7X/WK -> daily_7; 120, PS-32, VT-53, VT-54, VT-58, PS-59 1X/WK -> weekly; VT-55 and amended PS-22 2X/WK -> 2x_week; 411 5X/WK (Th-M) -> daily_5. Facilities whose Peak and Shoulder/Winter frequencies differ (e.g. Visitor Center 7X/WK / 7X/WK / 5X/WK (W-Su); comfort stations 7X/WK / 3X/WK; VT-51 3X/WK / 1X/WK / 1X/WK) have no single level and no serviceLevel in truth.",
+    "Sandy Bay Beach House (Bldg. 310) is '2X/DAY' in Peak and closed otherwise; Table 2-A and Q5 define 2X/DAY as twice daily, 7 days per week, so serviceLevel is daily_7 (the second daily service is intensity, not a different level).",
+    "Footnote letters and day qualifiers sit inside frequency cells: '1X/WK (d)', '2X/WK (e)', '1X/WK (f)', '5X/WK (W-Su)', '5X/WK (Th-M)', '3X/WK (M/W/F)'. Note (d) means the Winter frequency applies only while the facility is open (e.g. VT-41 open to 11/15); it does not change the frequency.",
+    "Vault toilets: the 'Toilets' column is the number of risers (Note 1), urinals/sinks/showers are dashes, and buildings are tiny (64-156 SF). restroomFixtures for a vault toilet = risers (1 or 2).",
+    "restroomFixtures = toilets + urinals + sinks + showers from Columns (7)-(10) (dash = 0). The fish cleaning station's two cleaning sinks and the Beach House's four exterior foot showers are explicitly not counted; picnic shelters and the fish cleaning station have no fixtures and no restroomFixtures in truth.",
+    "Open-sided structures are serviced facilities: five picnic shelters (PS-22, PS-31, PS-32, PS-42, PS-59) and the fish cleaning station (FC-23) are in expect.facilities with Gross SF measured at the roof drip line (PWS 2.2).",
+    "Totals are not facilities: 'Area A-E Subtotal - serviced facilities (n)5' rows (superscript 5 glued to the count in the text layer, e.g. '(9)5'), 'TOTAL - ALL AREAS: 34 facilities listed; 29 serviced5' with 46,274 SF and fixture totals 60 / 12 / 44 / 16, the 'Summary by Facility Type' table (VC 2 / 13,210 SF ... Total serviced 29 / 46,274), Amendment Change 6 revised totals (Area A 30,668; Area E 1,740; total 29 serviced, 47,426 SF; VC 2, 14,290 SF), Table 3-A subtotals and 67.1-acre total, Table 3-B 'Total paved parking (Items P-1 - P-5)' 223,500 SF (Change 5 revises the line to 'Total parking (Items P-1 - P-6)', 235,900 SF).",
+    "Area group header rows span the table and carry numbers that are not facilities or areas: 'AREA A - HEADQUARTERS / LAKEVIEW VISITOR CENTER (Park Road mile 0.4)', 'AREA B - BIRCH POINT CAMPGROUND AND BOAT LAUNCH (96 sites, Loops A-C)'.",
+    "The landscape 15-column exhibit spans three pages with a three-row header (group row, column titles with superscript markers glued to words such as 'Type3', 'Gross SF4', 'Season2', and a column-number row (1)...(15)), repeated on each page, and 'Continued on Technical Exhibit 1, page 2/3' lines.",
+    "Names carry numeric ranges and wrap: 'Birch Point Shower House A (Loop A, sites A1-A34)', 'Sandy Bay Beach House (Changing Rooms and Restrooms)', 'Old Mill Picnic Shelter (CCC-era, historic)'. Notes cells contain distractor numbers ('2.3 mi', '6 campsites', 'approx. 40 per season', '8 tables, 2 grills').",
+    "Two-level / two-story buildings are stated only in prose (PWS 2.1): Bldg. 101 and Bldg. 102 have floors 2; every other building or structure is single-story (floors 1).",
+    "Grounds (Technical Exhibit 3): Table 3-A mowing rows use Type I / II / III, which PWS 3.1 defines as Improved (1X/WK), Semi-improved (1X/3 WKS) and Unimproved (1X/YR) -> improved_turf / semi_improved / unimproved; G-1 and G-2 name their buildings. Table 3-B mixes SF parking lots (parking, including the aggregate-surface P-6 added by the amendment) with a concrete plaza in SF (W-1, sidewalk) and the Lakeshore Paved Trail W-2, whose Quantity column is 9,504 LF while the name says '8 ft wide (1.8 mi)'. The width is stated, so truth carries W-2 as sidewalk AREA, 9,504 LF x 8 ft = 76,032 SF (same LF x width convention as city-parks-mowing-pdf); reading 9,504 as SF, or keeping 9,504 LF (which the scorer would widen at a default 5 ft = 47,520 SF), is wrong. Sidewalk total 85,882 SF. Table 3-C is counts only (campsites, fire rings, grills, 46 bear-resistant containers) and is not grounds area. Natural-surface trails (approx. 41 miles), snow removal, beach sand grooming and prairie units are excluded (PWS 3.2, 3.4).",
+    "Prior award appears only in Amendment Q&A A1: incumbent North Country Facility Services, LLC, contract 140P6122C0009 awarded March 2022, total value $2,731,460 over 60 months (base + four options), Option Year 4 price $574,920. The incumbent scope was janitorial only (grounds were NPS staff and the Beach House was NPS-cleaned), which matters for a top-down cross-check but does not change the values.",
+    "Dollar amounts that are not award values: PRS deductions ($50, $25, $1.50 per sq. ft., $40 per acre, $0.02 per SF, $100), requisition number 0021947731, SCA Wage Determination 2015-5013 Rev. 27 and occupation codes 11150 / 11030.",
+    "Contract term: base year April 1, 2027 - March 31, 2028 plus four option years = 5 contract years; the FAR 52.217-8 six-month extension is not an option year.",
+    "Climate: Aitkin and Itasca Counties, northern Minnesota, Winter season October 16 - April 30, ski-trail and ice-fishing use = cold."
+  ]
+}

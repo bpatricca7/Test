@@ -1,0 +1,3637 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "rfp-26-118-janitorial.docx"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Ashbury County Regional Airport",
+        "location": "Ashbury, Wisconsin",
+        "solicitation": "RFP No. 26-118",
+        "contract_name": "Janitorial Services – Passenger Terminal and Airport Support Facilities",
+        "climate_zone": "cold",
+        "growing_season_weeks": null,
+        "snow_events_per_year": null,
+        "walk_clearing_events_per_year": null,
+        "contract_years": 5,
+        "notes": "Issued by Ashbury County Regional Airport Authority. Initial term 3 years (Apr 1, 2027 – Mar 31, 2030) + two 1-year renewal options = 5 years max (Sec. 1.3). Climate inferred from Wisconsin; snow and ice removal not included (Sec. 2.10). Terminal (Bldg 1) is ~486,000 gross SF, but only the Exhibit A Service Areas are serviced (A2). Minimum Compensation Policy: $18.40/hr + $3.25/hr health supplement in 2027. Exhibit D minimum posts: 13/11/9 per shift (33/day) + 3-person FIS crew per arrival."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "A-1",
+            "title": "Exhibit A Part 1, Table A-1 – Landside Terminal, Levels 1–3 (Passenger Terminal, Building 1, by Service Area)",
+            "kind": "facilities",
+            "file": "rfp-26-118-janitorial.docx",
+            "pages": null,
+            "row_count": 14,
+            "printed_total_gross_area": 185050,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "A-2",
+            "title": "Exhibit A Part 1 (continued), Table A-2 – Concourses A and B and Federal Inspection Services (Building 1)",
+            "kind": "facilities",
+            "file": "rfp-26-118-janitorial.docx",
+            "pages": null,
+            "row_count": 9,
+            "printed_total_gross_area": 149810,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "A-3",
+            "title": "Exhibit A Part 2, Table A-3 – Support Facilities by Building (printed total 100,270 SF is of the Contract Cleaning Area column; no gross total printed)",
+            "kind": "facilities",
+            "file": "rfp-26-118-janitorial.docx",
+            "pages": null,
+            "row_count": 15,
+            "printed_total_gross_area": null,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "A-P4",
+            "title": "Exhibit A Part 4 – Exterior Areas",
+            "kind": "grounds",
+            "file": "rfp-26-118-janitorial.docx",
+            "pages": null,
+            "row_count": 2,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": [
+              {
+                "value": 38050,
+                "unit": "sqft",
+                "kinds": []
+              }
+            ]
+          },
+          {
+            "table_id": "C",
+            "title": "Exhibit C – Restroom Fixture Inventory (by Area No. and Bldg. No.)",
+            "kind": "other",
+            "file": "rfp-26-118-janitorial.docx",
+            "pages": null,
+            "row_count": 29,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": []
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-01",
+            "name": "Passenger Terminal – Baggage Claim Hall (Claim Devices 1–6)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 38450,
+            "added_areas": null,
+            "cleanable_area": 38450,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 35870,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 2580,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T1-01 | Baggage Claim Hall (Claim Devices 1–6) | Public | 35,870 | — | 2,580 | 38,450 | 24 hrs | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T1-01 of the Passenger Terminal (Building 1); zone Public; hours of operation 24 hrs. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-02",
+            "name": "Passenger Terminal – Arrivals Vestibules & Entrances (8 vestibules)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 3120,
+            "added_areas": null,
+            "cleanable_area": 3120,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 3120,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T1-02 | Arrivals Vestibules & Entrances (8 vestibules) | Public | — | — | 3,120 | 3,120 | 24 hrs | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T1-02 of the Passenger Terminal (Building 1); zone Public; hours of operation 24 hrs. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-03",
+            "name": "Passenger Terminal – Ground Transportation Lobby & Rental Car Counter Queuing",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 9860,
+            "added_areas": null,
+            "cleanable_area": 9860,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 8710,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 1150,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T1-03 | Ground Transportation Lobby & Rental Car Counter Queuing | Public | 8,710 | — | 1,150 | 9,860 | 24 hrs | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T1-03 of the Passenger Terminal (Building 1); zone Public; hours of operation 24 hrs. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-04",
+            "name": "Passenger Terminal – Level 1 Service Corridors, Freight Elevator Lobbies & Loading Dock Vestibule",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 14280,
+            "added_areas": null,
+            "cleanable_area": 14280,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 14280,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T1-04 | Level 1 Service Corridors, Freight Elevator Lobbies & Loading Dock Vestibule | Non-Public | — | — | 14,280 | 14,280 | 24 hrs | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T1-04 of the Passenger Terminal (Building 1); zone Non-Public; hours of operation 24 hrs. Total SF is the area to be serviced (Sec. 2.2, A1)."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-05",
+            "name": "Passenger Terminal – Airport Operations Center (AOC) & Airport Communications",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 4550,
+            "added_areas": null,
+            "cleanable_area": 4550,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 3940,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 610,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T1-05 | Airport Operations Center (AOC) & Airport Communications | Non-Public | — | 3,940 | 610 | 4,550 | 24 hrs | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T1-05 of the Passenger Terminal (Building 1); zone Non-Public; hours of operation 24 hrs. Total SF is the area to be serviced (Sec. 2.2, A1)."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-06",
+            "name": "Passenger Terminal – Employee Break Room, Locker Rooms & Showers",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 2860,
+            "added_areas": null,
+            "cleanable_area": 2860,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 2860,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T1-06 | Employee Break Room, Locker Rooms & Showers | Non-Public | — | — | 2,860 | 2,860 | 24 hrs | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T1-06 of the Passenger Terminal (Building 1); zone Non-Public; hours of operation 24 hrs. Total SF is the area to be serviced (Sec. 2.2, A1)."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-01",
+            "name": "Passenger Terminal – Ticketing Hall (Ticket Lobby, public side of counters)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 41200,
+            "added_areas": null,
+            "cleanable_area": 41200,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 38940,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 2260,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T2-01 | Ticketing Hall (Ticket Lobby, public side of counters) | Public | 38,940 | — | 2,260 | 41,200 | 03:30–01:00 | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T2-01 of the Passenger Terminal (Building 1); zone Public; hours of operation 03:30–01:00. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-02",
+            "name": "Passenger Terminal – Departures Vestibules & Entrances (6 vestibules)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 2340,
+            "added_areas": null,
+            "cleanable_area": 2340,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 2340,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T2-02 | Departures Vestibules & Entrances (6 vestibules) | Public | — | — | 2,340 | 2,340 | 03:30–01:00 | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T2-02 of the Passenger Terminal (Building 1); zone Public; hours of operation 03:30–01:00. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-03",
+            "name": "Passenger Terminal – Pre-Security Food Court Common Seating",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 9600,
+            "added_areas": null,
+            "cleanable_area": 9600,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 8920,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 680,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T2-03 | Pre-Security Food Court Common Seating | Public | 8,920 | — | 680 | 9,600 | 04:00–22:00 | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T2-03 of the Passenger Terminal (Building 1); zone Public; hours of operation 04:00–22:00. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00. Note (5): concessions redevelopment may adjust area (see Addendum No. 1 Item 1)."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-04",
+            "name": "Passenger Terminal – Security Checkpoint Queue & Recompose Area (excl. TSA screening lanes)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 7640,
+            "added_areas": null,
+            "cleanable_area": 7640,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 7640,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T2-04 | Security Checkpoint Queue & Recompose Area (excl. TSA screening lanes) | Public / Sterile | 7,640 | — | — | 7,640 | 03:30–23:30 | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T2-04 of the Passenger Terminal (Building 1); zone Public / Sterile; hours of operation 03:30–23:30. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-05",
+            "name": "Passenger Terminal – Central Connector & Post-Security Marketplace Common Area",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 27140,
+            "added_areas": null,
+            "cleanable_area": 27140,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 21420,
+                "included_in": null
+              },
+              {
+                "finish": "Carpet",
+                "area": 4160,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 1560,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T2-05 | Central Connector & Post-Security Marketplace Common Area | Sterile | 21,420 | 4,160 | 1,560 | 27,140 | 04:00–24:00 | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T2-05 of the Passenger Terminal (Building 1); zone Sterile; hours of operation 04:00–24:00. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-06",
+            "name": "Passenger Terminal – Level 2 Service Corridors & Airline Support Corridor",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 6920,
+            "added_areas": null,
+            "cleanable_area": 6920,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 6920,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T2-06 | Level 2 Service Corridors & Airline Support Corridor | Non-Public | — | — | 6,920 | 6,920 | 24 hrs | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T2-06 of the Passenger Terminal (Building 1); zone Non-Public; hours of operation 24 hrs. Total SF is the area to be serviced (Sec. 2.2, A1)."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T3-01",
+            "name": "Passenger Terminal – Observation Mezzanine, Meditation Room & USO Lounge",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 8670,
+            "added_areas": null,
+            "cleanable_area": 8670,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 3210,
+                "included_in": null
+              },
+              {
+                "finish": "Carpet",
+                "area": 4940,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 520,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T3-01 | Observation Mezzanine, Meditation Room & USO Lounge | Public | 3,210 | 4,940 | 520 | 8,670 | 05:00–23:00 | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T3-01 of the Passenger Terminal (Building 1); zone Public; hours of operation 05:00–23:00. Total SF is the area to be serviced (Sec. 2.2, A1)."
+          },
+          {
+            "table_id": "A-1",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T3-02",
+            "name": "Passenger Terminal – Authority Terminal Offices (Terminal Operations & Customer Service)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 8420,
+            "added_areas": null,
+            "cleanable_area": 8420,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 7380,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 1040,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "T3-02 | Authority Terminal Offices (Terminal Operations & Customer Service) | Non-Public | — | 7,380 | 1,040 | 8,420 | 07:00–17:00 | M–F"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-1 Service Area T3-02 of the Passenger Terminal (Building 1); zone Non-Public; hours of operation 07:00–17:00. Total SF is the area to be serviced (Sec. 2.2, A1)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "A-2",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CA-01",
+            "name": "Passenger Terminal – Concourse A Holdrooms & Circulation (Gates A1–A8)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 49700,
+            "added_areas": null,
+            "cleanable_area": 49700,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 19140,
+                "included_in": null
+              },
+              {
+                "finish": "Carpet",
+                "area": 28400,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 2160,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "CA-01 | Concourse A Holdrooms & Circulation (Gates A1–A8) | Sterile | 19,140 | 28,400 | 2,160 | 49,700 | 04:00–01:00 | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-2 Service Area CA-01 of the Passenger Terminal (Building 1); zone Sterile; hours of operation 04:00–01:00. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00."
+          },
+          {
+            "table_id": "A-2",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CA-02",
+            "name": "Passenger Terminal – Concourse A Passenger Boarding Bridges (8 @ approx. 1,050 SF)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 8400,
+            "added_areas": null,
+            "cleanable_area": 8400,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 8400,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "CA-02 | Concourse A Passenger Boarding Bridges (8 @ approx. 1,050 SF) | Sterile | — | 8,400 | — | 8,400 | 04:00–01:00 | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-2 Service Area CA-02 of the Passenger Terminal (Building 1); zone Sterile; hours of operation 04:00–01:00. Total SF is the area to be serviced (Sec. 2.2, A1). Boarding bridge tunnel and cab floor areas; exteriors and glass by PBB maintenance contractor."
+          },
+          {
+            "table_id": "A-2",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CA-03",
+            "name": "Passenger Terminal – Concourse A Apron Level – Airline Operations Corridors & Ramp Restrooms",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 11630,
+            "added_areas": null,
+            "cleanable_area": 11630,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 11630,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "CA-03 | Concourse A Apron Level – Airline Operations Corridors & Ramp Restrooms | Non-Public | — | — | 11,630 | 11,630 | 24 hrs | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-2 Service Area CA-03 of the Passenger Terminal (Building 1); zone Non-Public; hours of operation 24 hrs. Total SF is the area to be serviced (Sec. 2.2, A1)."
+          },
+          {
+            "table_id": "A-2",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CB-01",
+            "name": "Passenger Terminal – Concourse B Holdrooms & Circulation (Gates B1–B6)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 46790,
+            "added_areas": null,
+            "cleanable_area": 46790,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 25230,
+                "included_in": null
+              },
+              {
+                "finish": "Carpet",
+                "area": 19940,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 1620,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "CB-01 | Concourse B Holdrooms & Circulation (Gates B1–B6) | Sterile | 25,230 | 19,940 | 1,620 | 46,790 | 04:00–01:00 | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-2 Service Area CB-01 of the Passenger Terminal (Building 1); zone Sterile; hours of operation 04:00–01:00. Total SF is the area to be serviced (Sec. 2.2, A1). 24/7 = continuous staffed coverage 24 hrs/day, 365 days incl. holidays; restrooms serviced every 30 min 04:00–01:00, hourly 01:00–04:00."
+          },
+          {
+            "table_id": "A-2",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CB-02",
+            "name": "Passenger Terminal – Concourse B Passenger Boarding Bridges (6 @ approx. 1,050 SF)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 6300,
+            "added_areas": null,
+            "cleanable_area": 6300,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 6300,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "CB-02 | Concourse B Passenger Boarding Bridges (6 @ approx. 1,050 SF) | Sterile | — | 6,300 | — | 6,300 | 04:00–01:00 | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-2 Service Area CB-02 of the Passenger Terminal (Building 1); zone Sterile; hours of operation 04:00–01:00. Total SF is the area to be serviced (Sec. 2.2, A1). Boarding bridge tunnel and cab floor areas; exteriors and glass by PBB maintenance contractor."
+          },
+          {
+            "table_id": "A-2",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CB-03",
+            "name": "Passenger Terminal – Concourse B Apron Level – Operations Corridors & Ramp Restrooms",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 8970,
+            "added_areas": null,
+            "cleanable_area": 8970,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 8970,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "CB-03 | Concourse B Apron Level – Operations Corridors & Ramp Restrooms | Non-Public | — | — | 8,970 | 8,970 | 24 hrs | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-2 Service Area CB-03 of the Passenger Terminal (Building 1); zone Non-Public; hours of operation 24 hrs. Total SF is the area to be serviced (Sec. 2.2, A1)."
+          },
+          {
+            "table_id": "A-2",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "F-01",
+            "name": "Passenger Terminal – FIS Sterile Corridor, Primary Inspection Hall & Secondary Inspection",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 11280,
+            "added_areas": null,
+            "cleanable_area": 11280,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": 148,
+            "additional_service_days": null,
+            "service_frequency_text": "Per Arrival",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 9420,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 1860,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "F-01 | FIS Sterile Corridor, Primary Inspection Hall & Secondary Inspection | FIS | 9,420 | — | 1,860 | 11,280 | Per CBP arrival schedule | Per Arrival"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-2 Service Area F-01 of the Passenger Terminal (Building 1); zone FIS; hours of operation Per CBP arrival schedule. Total SF is the area to be serviced (Sec. 2.2, A1). Cleaned after the last CBP international arrival of each arrival day; priced per arrival day, Exhibit B Line 7 est. annual quantity 148 arrival days (A6: 139 days in 2025). Crew of at least 3 custodians."
+          },
+          {
+            "table_id": "A-2",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "F-02",
+            "name": "Passenger Terminal – International Baggage Claim & Exit Hall",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 6740,
+            "added_areas": null,
+            "cleanable_area": 6740,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": 148,
+            "additional_service_days": null,
+            "service_frequency_text": "Per Arrival",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 6120,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 620,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "F-02 | International Baggage Claim & Exit Hall | FIS | 6,120 | — | 620 | 6,740 | Per CBP arrival schedule | Per Arrival"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-2 Service Area F-02 of the Passenger Terminal (Building 1); zone FIS; hours of operation Per CBP arrival schedule. Total SF is the area to be serviced (Sec. 2.2, A1). Cleaned after the last CBP international arrival of each arrival day; priced per arrival day, Exhibit B Line 7 est. annual quantity 148 arrival days (A6: 139 days in 2025). Crew of at least 3 custodians."
+          },
+          {
+            "table_id": "A-2",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "F-03",
+            "name": "Passenger Terminal – CBP Administrative Offices & Hold Rooms",
+            "status": "option_only",
+            "status_reason": "OPTION ITEM 1 – not included in subtotals or totals (Section 2.8); Exhibit B Line 11",
+            "category": "admin",
+            "gross_area": 3420,
+            "added_areas": null,
+            "cleanable_area": 3420,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 2680,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 740,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "F-03 | CBP Administrative Offices & Hold Rooms | FIS / Non-Public | — | 2,680 | 740 | 3,420 | Per CBP | Daily (7)"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit A-2 Service Area F-03 of the Passenger Terminal (Building 1); zone FIS / Non-Public; hours of operation Per CBP. Total SF is the area to be serviced (Sec. 2.2, A1). Option Item 1, may be added by written notice at any time; not in base Service Areas or Exhibit A totals."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "100",
+            "line_item": null,
+            "name": "Administration Building (Authority Headquarters)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 42800,
+            "added_areas": null,
+            "cleanable_area": 38950,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "100 | Administration Building (Authority Headquarters) | 3 | 2004 | 42,800 | 38,950 | M–F | a, g"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. (g) Board Room (2nd floor) used for evening Board meetings about twice per month; clean it after each meeting. Year built 2004. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1). Carpet hot water extraction semi-annually (offices, Sec. 2.6)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "200",
+            "line_item": null,
+            "name": "Parking Garage – Elevator Lobbies, Stair Towers & Level 3 Pedestrian Skybridge",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 14600,
+            "added_areas": null,
+            "cleanable_area": 14600,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 6,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "200 | Parking Garage – Elevator Lobbies, Stair Towers & Level 3 Pedestrian Skybridge | 6 | 1998 | — | 14,600 | Daily (7) | b"
+            },
+            "confidence": 0.95,
+            "notes": "(b) Parking decks, ramps and cashier lanes maintained by parking operator; a gross building area does not apply. Contract Cleaning Area = elevator lobbies on all six levels, four stair towers and Level 3 pedestrian skybridge. Year built 1998. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1). No gross building area printed ('a gross building area does not apply'); the Contract Cleaning Area (14,600 SF) is the whole area the contract covers here, used as gross."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "205",
+            "line_item": null,
+            "name": "Parking Office & Exit Plaza Cashier Booths",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 4180,
+            "added_areas": null,
+            "cleanable_area": 3960,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "205 | Parking Office & Exit Plaza Cashier Booths | 1 | 1998 | 4,180 | 3,960 | Daily (7) | a"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. Year built 1998. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "230",
+            "line_item": null,
+            "name": "Cell Phone Waiting Lot Restroom Building",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 640,
+            "added_areas": null,
+            "cleanable_area": 600,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "230 | Cell Phone Waiting Lot Restroom Building | 1 | 2016 | 640 | 600 | Daily (7) | a"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. Year built 2016. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1). Currently cleaned under a separate purchase order that ends when the new contract begins (Sec. 1.4)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "300",
+            "line_item": null,
+            "name": "Rental Car Customer Service Building (CSB)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 18900,
+            "added_areas": null,
+            "cleanable_area": 7350,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "300 | Rental Car Customer Service Building (CSB) | 1 | 2011 | 18,900 | 7,350 | Daily (7) | a, c"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. (c) Rental car counters, offices and service areas leased to concessionaires (11,550 SF) cleaned by concessionaires; Contractor cleans public lobby, corridors, restrooms. Year built 2011. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "500",
+            "line_item": null,
+            "name": "Public Safety Building (Airport Police & Emergency Communications)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 11400,
+            "added_areas": null,
+            "cleanable_area": 10260,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "500 | Public Safety Building (Airport Police & Emergency Communications) | 2 | 2007 | 11,400 | 10,260 | Daily (7) | a"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. Year built 2007. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1). Carpet extraction semi-annually; VCT scrub and recoat quarterly, strip and refinish semi-annually (Sec. 2.6)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "510",
+            "line_item": null,
+            "name": "Credentialing & Badging Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 3150,
+            "added_areas": null,
+            "cleanable_area": 2980,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M–Sa",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "510 | Credentialing & Badging Office | 1 | 2015 | 3,150 | 2,980 | M–Sa | a"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. Year built 2015. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1). Currently cleaned under a separate purchase order that ends when the new contract begins (Sec. 1.4)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "600",
+            "line_item": null,
+            "name": "Commercial Vehicle Holding Lot – Driver Lounge & Restrooms",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1240,
+            "added_areas": null,
+            "cleanable_area": 1180,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Daily (7)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "600 | Commercial Vehicle Holding Lot – Driver Lounge & Restrooms | 1 | 2010 | 1,240 | 1,180 | Daily (7) | a"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. Year built 2010. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "400",
+            "line_item": null,
+            "name": "ARFF Station (Fire Station 41)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 21600,
+            "added_areas": null,
+            "cleanable_area": 5180,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Tu/Th",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "400 | ARFF Station (Fire Station 41) | 2 | 2009 | 21,600 | 5,180 | Tu/Th | a, d"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. (d) Apparatus bays, dormitory, kitchen and day room cleaned by ARFF personnel; Contractor cleans admin offices, training room, public lobby and restrooms. Year built 2009. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1). VCT scrub and recoat quarterly, strip and refinish semi-annually (Sec. 2.6)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "410",
+            "line_item": null,
+            "name": "Airfield Maintenance & Snow Removal Equipment (SRE) Building",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 33400,
+            "added_areas": null,
+            "cleanable_area": 6880,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M–F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "410 | Airfield Maintenance & Snow Removal Equipment (SRE) Building | 1 | 2012 | 33,400 | 6,880 | M–F | a, e"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. (e) Vehicle bays, hangar floor, shop floors and warehouse storage not included; Contractor cleans offices, break rooms, locker/shower rooms and restrooms only. Year built 2012. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1). VCT scrub and recoat quarterly, strip and refinish semi-annually (Sec. 2.6)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "420",
+            "line_item": null,
+            "name": "Authority Maintenance Hangar (Hangar 3)",
+            "status": null,
+            "status_reason": null,
+            "category": "hangar",
+            "gross_area": 38600,
+            "added_areas": null,
+            "cleanable_area": 2940,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "420 | Authority Maintenance Hangar (Hangar 3) | 1 | 1987 | 38,600 | 2,940 | M/W/F | a, e"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. (e) Vehicle bays, hangar floor, shop floors and warehouse storage not included; Contractor cleans offices, break rooms, locker/shower rooms and restrooms only. Year built 1987. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "430",
+            "line_item": null,
+            "name": "Central Receiving & Warehouse",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 12200,
+            "added_areas": null,
+            "cleanable_area": 1450,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Wkly",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "430 | Central Receiving & Warehouse | 1 | 2001 | 12,200 | 1,450 | Wkly | a, e"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. (e) Vehicle bays, hangar floor, shop floors and warehouse storage not included; Contractor cleans offices, break rooms, locker/shower rooms and restrooms only. Year built 2001. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "440",
+            "line_item": null,
+            "name": "Facilities Maintenance Shops",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 16750,
+            "added_areas": null,
+            "cleanable_area": 3320,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "440 | Facilities Maintenance Shops | 1 | 2001 | 16,750 | 3,320 | M/W/F | a, e"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. (e) Vehicle bays, hangar floor, shop floors and warehouse storage not included; Contractor cleans offices, break rooms, locker/shower rooms and restrooms only. Year built 2001. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1). VCT scrub and recoat quarterly, strip and refinish semi-annually (Sec. 2.6)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "450",
+            "line_item": null,
+            "name": "Central Utility Plant",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 9800,
+            "added_areas": null,
+            "cleanable_area": 620,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Wkly",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "450 | Central Utility Plant | 2 | 1998 | 9,800 | 620 | Wkly | a"
+            },
+            "confidence": 0.95,
+            "notes": "(a) Contract Cleaning Area excludes mechanical, electrical, telecom and elevator machine rooms. Year built 1998. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1)."
+          },
+          {
+            "table_id": "A-3",
+            "campus": null,
+            "building_number": "800",
+            "line_item": null,
+            "name": "Former Air Cargo Building",
+            "status": "demolished",
+            "status_reason": "No service (vacant); note (f): vacant and scheduled for demolition in 2027. No service is required.",
+            "category": "warehouse",
+            "gross_area": 26500,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "No service (vacant)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "800 | Former Air Cargo Building | 1 | 1979 | 26,500 | — | No service (vacant) | f"
+            },
+            "confidence": 0.95,
+            "notes": "(f) Building 800 is vacant and scheduled for demolition in 2027. No service is required. Year built 1979. Gross Bldg. SF is for information only; Contract Cleaning Area is the area to be serviced (A1)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "310",
+            "line_item": null,
+            "name": "Rental Car Quick Turn-Around (QTA) Facility",
+            "status": "excluded",
+            "status_reason": "Exhibit A Part 3 – Areas Not Included (Information Only); maintained by Rental car concessionaires. Sec. 2.7: cleaned by others and not included.",
+            "category": "maintenance",
+            "gross_area": 44800,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Bldg. 310 | Rental Car Quick Turn-Around (QTA) Facility | 44,800 | Rental car concessionaires"
+            },
+            "confidence": 0.85,
+            "notes": "Listed in Exhibit A Part 3 (Areas Not Included, Information Only), Approx. SF 44,800. Sec. 2.7 (d) rental car counters and back offices in the terminal and Building 300, and the Rental Car QTA facility (Building 310). Part 3 is information only, so no table_id is declared for it."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "700",
+            "line_item": null,
+            "name": "FAA Airport Traffic Control Tower and Base Building",
+            "status": "excluded",
+            "status_reason": "Exhibit A Part 3 – Areas Not Included (Information Only); maintained by FAA. Sec. 2.7: cleaned by others and not included.",
+            "category": "other",
+            "gross_area": 9950,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Bldg. 700 | FAA Airport Traffic Control Tower and Base Building | 9,950 | FAA"
+            },
+            "confidence": 0.85,
+            "notes": "Listed in Exhibit A Part 3 (Areas Not Included, Information Only), Approx. SF 9,950. Sec. 2.7 (e) the FAA tower (Building 700). Part 3 is information only, so no table_id is declared for it."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "710",
+            "line_item": null,
+            "name": "General Aviation Terminal (FBO leasehold)",
+            "status": "excluded",
+            "status_reason": "Exhibit A Part 3 – Areas Not Included (Information Only); maintained by Fixed base operator. Sec. 2.7: cleaned by others and not included.",
+            "category": "other",
+            "gross_area": 6800,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Bldg. 710 | General Aviation Terminal (FBO leasehold) | 6,800 | Fixed base operator"
+            },
+            "confidence": 0.85,
+            "notes": "Listed in Exhibit A Part 3 (Areas Not Included, Information Only), Approx. SF 6,800. Sec. 2.7 the General Aviation Terminal (Building 710, FBO leasehold). Part 3 is information only, so no table_id is declared for it."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-01",
+            "name": "Passenger Terminal – Baggage Claim Hall (Claim Devices 1–6)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 48,
+              "water_closets": 22,
+              "urinals": 8,
+              "lavatories": 18,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: T1-01 | 2 | 22 | 8 | 18 | 0 | 48"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-03",
+            "name": "Passenger Terminal – Ground Transportation Lobby & Rental Car Counter Queuing",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 20,
+              "water_closets": 9,
+              "urinals": 3,
+              "lavatories": 8,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: T1-03 | 1 | 9 | 3 | 8 | 0 | 20"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-05",
+            "name": "Passenger Terminal – Airport Operations Center (AOC) & Airport Communications",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 5,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: T1-05 | 1 | 2 | 1 | 2 | 0 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T1-06",
+            "name": "Passenger Terminal – Employee Break Room, Locker Rooms & Showers",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 20,
+              "water_closets": 6,
+              "urinals": 2,
+              "lavatories": 6,
+              "showers": 6
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: T1-06 | 2 | 6 | 2 | 6 | 6 | 20"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-01",
+            "name": "Passenger Terminal – Ticketing Hall (Ticket Lobby, public side of counters)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 43,
+              "water_closets": 20,
+              "urinals": 7,
+              "lavatories": 16,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: T2-01 | 2 | 20 | 7 | 16 | 0 | 43"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-05",
+            "name": "Passenger Terminal – Central Connector & Post-Security Marketplace Common Area",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 50,
+              "water_closets": 24,
+              "urinals": 8,
+              "lavatories": 18,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: T2-05 | 2 | 24 | 8 | 18 | 0 | 50"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-06",
+            "name": "Passenger Terminal – Level 2 Service Corridors & Airline Support Corridor",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 7,
+              "water_closets": 3,
+              "urinals": 1,
+              "lavatories": 3,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: T2-06 | 1 | 3 | 1 | 3 | 0 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T3-01",
+            "name": "Passenger Terminal – Observation Mezzanine, Meditation Room & USO Lounge",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 13,
+              "water_closets": 6,
+              "urinals": 2,
+              "lavatories": 5,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: T3-01 | 1 | 6 | 2 | 5 | 0 | 13"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T3-02",
+            "name": "Passenger Terminal – Authority Terminal Offices (Terminal Operations & Customer Service)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 9,
+              "water_closets": 4,
+              "urinals": 1,
+              "lavatories": 4,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: T3-02 | 2 | 4 | 1 | 4 | 0 | 9"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CA-01",
+            "name": "Passenger Terminal – Concourse A Holdrooms & Circulation (Gates A1–A8)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 94,
+              "water_closets": 44,
+              "urinals": 16,
+              "lavatories": 34,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: CA-01 | 4 | 44 | 16 | 34 | 0 | 94"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 4 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CA-03",
+            "name": "Passenger Terminal – Concourse A Apron Level – Airline Operations Corridors & Ramp Restrooms",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 14,
+              "water_closets": 6,
+              "urinals": 2,
+              "lavatories": 6,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: CA-03 | 2 | 6 | 2 | 6 | 0 | 14"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CB-01",
+            "name": "Passenger Terminal – Concourse B Holdrooms & Circulation (Gates B1–B6)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 75,
+              "water_closets": 36,
+              "urinals": 12,
+              "lavatories": 27,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: CB-01 | 3 | 36 | 12 | 27 | 0 | 75"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 3 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CB-03",
+            "name": "Passenger Terminal – Concourse B Apron Level – Operations Corridors & Ramp Restrooms",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 7,
+              "water_closets": 3,
+              "urinals": 1,
+              "lavatories": 3,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: CB-03 | 1 | 3 | 1 | 3 | 0 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "F-01",
+            "name": "Passenger Terminal – FIS Sterile Corridor, Primary Inspection Hall & Secondary Inspection",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 26,
+              "water_closets": 12,
+              "urinals": 4,
+              "lavatories": 10,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: F-01 | 2 | 12 | 4 | 10 | 0 | 26"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "F-02",
+            "name": "Passenger Terminal – International Baggage Claim & Exit Hall",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 18,
+              "water_closets": 8,
+              "urinals": 3,
+              "lavatories": 7,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: F-02 | 1 | 8 | 3 | 7 | 0 | 18"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "1",
+            "line_item": "F-03",
+            "name": "Passenger Terminal – CBP Administrative Offices & Hold Rooms",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 5,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: F-03 (Option Item 1 – not in totals) | 1 | 2 | 1 | 2 | 0 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "100",
+            "line_item": null,
+            "name": "Administration Building (Authority Headquarters)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 41,
+              "water_closets": 18,
+              "urinals": 6,
+              "lavatories": 15,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 100 | 6 | 18 | 6 | 15 | 2 | 41"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 6 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "205",
+            "line_item": null,
+            "name": "Parking Office & Exit Plaza Cashier Booths",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 5,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 205 | 1 | 2 | 1 | 2 | 0 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "230",
+            "line_item": null,
+            "name": "Cell Phone Waiting Lot Restroom Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 9,
+              "water_closets": 4,
+              "urinals": 1,
+              "lavatories": 4,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 230 | 1 | 4 | 1 | 4 | 0 | 9"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "300",
+            "line_item": null,
+            "name": "Rental Car Customer Service Building (CSB)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 21,
+              "water_closets": 10,
+              "urinals": 3,
+              "lavatories": 8,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 300 | 2 | 10 | 3 | 8 | 0 | 21"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "500",
+            "line_item": null,
+            "name": "Public Safety Building (Airport Police & Emergency Communications)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 20,
+              "water_closets": 7,
+              "urinals": 2,
+              "lavatories": 7,
+              "showers": 4
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 500 | 3 | 7 | 2 | 7 | 4 | 20"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 3 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "510",
+            "line_item": null,
+            "name": "Credentialing & Badging Office",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 5,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 510 | 1 | 2 | 1 | 2 | 0 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "600",
+            "line_item": null,
+            "name": "Commercial Vehicle Holding Lot – Driver Lounge & Restrooms",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 7,
+              "water_closets": 3,
+              "urinals": 1,
+              "lavatories": 3,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 600 | 1 | 3 | 1 | 3 | 0 | 7"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "400",
+            "line_item": null,
+            "name": "ARFF Station (Fire Station 41)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 10,
+              "water_closets": 4,
+              "urinals": 2,
+              "lavatories": 4,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 400 | 2 | 4 | 2 | 4 | 0 | 10"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group). Showers in the Building 400 crew quarters are cleaned by ARFF personnel and are not listed."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "410",
+            "line_item": null,
+            "name": "Airfield Maintenance & Snow Removal Equipment (SRE) Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 23,
+              "water_closets": 6,
+              "urinals": 3,
+              "lavatories": 6,
+              "showers": 8
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 410 | 2 | 6 | 3 | 6 | 8 | 23"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "420",
+            "line_item": null,
+            "name": "Authority Maintenance Hangar (Hangar 3)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 5,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 420 | 1 | 2 | 1 | 2 | 0 | 5"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "430",
+            "line_item": null,
+            "name": "Central Receiving & Warehouse",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 2,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 1,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 430 | 1 | 1 | 0 | 1 | 0 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "440",
+            "line_item": null,
+            "name": "Facilities Maintenance Shops",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 12,
+              "water_closets": 4,
+              "urinals": 2,
+              "lavatories": 4,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 440 | 2 | 4 | 2 | 4 | 2 | 12"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 2 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          },
+          {
+            "table_id": "C",
+            "campus": null,
+            "building_number": "450",
+            "line_item": null,
+            "name": "Central Utility Plant",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 2,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 1,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit C: 450 | 1 | 1 | 0 | 1 | 0 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Exhibit C restroom fixtures: 1 restroom group(s) (a group = men's, women's and companion care room at one location; a single-user restroom in a support building counts as one group)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "1",
+            "line_item": "T2-03",
+            "name": "Passenger Terminal – Pre-Security Food Court Common Seating",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 11250,
+            "added_areas": null,
+            "cleanable_area": 11250,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Terrazzo",
+                "area": 10570,
+                "included_in": null
+              },
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 680,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Addendum No. 1 Item 1: T2-03 | Terrazzo | 8,920 | 10,570; T2-03 | Other | 680 | 680 (no change); T2-03 | Total SF | 9,600 | 11,250"
+            },
+            "confidence": 0.95,
+            "notes": "Addendum No. 1 Item 1: concessions redevelopment completed Nov 23, 2026; 1,650 SF of former lease space returned to Authority common seating. Coverage unchanged (24/7)."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "1",
+            "line_item": "CB-04",
+            "name": "Passenger Terminal – Concourse B Interior Service Animal Relief Areas (2) and Nursing Suites (3)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1180,
+            "added_areas": null,
+            "cleanable_area": 1180,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": {
+              "total": 0,
+              "water_closets": 0,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "24/7",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Other (ceramic/porcelain tile, VCT, sealed concrete, rubber, walk-off matting)",
+                "area": 1180,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Addendum No. 1 Item 2: CB-04 | Concourse B Interior Service Animal Relief Areas (2) and Nursing Suites (3) | Sterile | — | — | 1,180 | 1,180 | 04:00–01:00 | 24/7"
+            },
+            "confidence": 0.95,
+            "notes": "New Service Area added by Addendum No. 1 Item 2 under Concourse B; zone Sterile; hours 04:00–01:00. Added to Exhibit B Line 1 (235,840 -> 238,670 SF). Item 7: CB-04 has no restroom fixtures."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "450",
+            "line_item": null,
+            "name": "Central Utility Plant",
+            "status": "deleted_by_amendment",
+            "status_reason": "Addendum No. 1 Item 3: Delete Building 450, Central Utility Plant (Contract Cleaning Area 620 SF, Wkly), from the scope of services.",
+            "category": "maintenance",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Addendum No. 1 Item 3: Delete Building 450, Central Utility Plant (Contract Cleaning Area 620 SF, Wkly), from the scope of services."
+            },
+            "confidence": 0.95,
+            "notes": "Cleaned by Authority Facilities staff; also deleted from Exhibit B Line 5 and Exhibit C (Item 7)."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "420",
+            "line_item": null,
+            "name": "Authority Maintenance Hangar (Hangar 3)",
+            "status": null,
+            "status_reason": null,
+            "category": "hangar",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Tu/Th",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Addendum No. 1 Item 4: For Building 420 ... change the Janitorial Coverage from “M/W/F” to “Tu/Th”. The Contract Cleaning Area (2,940 SF) is unchanged."
+            },
+            "confidence": 0.95,
+            "notes": "Coverage changed from M/W/F to Tu/Th by Addendum No. 1 Item 4; area unchanged."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "E-1 Terminal Curbside Sidewalks – Departures (Level 2) and Arrivals (Level 1)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "A-P4",
+            "kind": "sidewalk",
+            "document_label": "Exterior Area E-1",
+            "mowing_frequency_text": "Daily (7): litter and gum removal; empty and wipe curbside receptacles and ash urns; pressure wash monthly, April–October",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 28400,
+            "unit": "sqft",
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit A Part 4: E-1 | Terminal Curbside Sidewalks – Departures (Level 2) and Arrivals (Level 1) | 28,400 | Daily (7) | Litter and gum removal; ..."
+            },
+            "confidence": 0.9,
+            "notes": "Janitorial policing and monthly pressure washing (Apr–Oct) only; snow and ice removal not included (Sec. 2.10). Currently cleaned under a separate PO (Sec. 1.4)."
+          },
+          {
+            "name": "E-2 Ground Transportation Plaza & Crosswalk Islands (Terminal to Parking Garage)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "A-P4",
+            "kind": "sidewalk",
+            "document_label": "Exterior Area E-2",
+            "mowing_frequency_text": "Wkly: litter removal; empty receptacles; pressure wash monthly, April–October",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 9650,
+            "unit": "sqft",
+            "source": {
+              "file": "rfp-26-118-janitorial.docx",
+              "page": null,
+              "excerpt": "Exhibit A Part 4: E-2 | Ground Transportation Plaza & Crosswalk Islands (Terminal to Parking Garage) | 9,650 | Wkly | Litter removal; empty receptacles; ..."
+            },
+            "confidence": 0.9,
+            "notes": "Janitorial policing and monthly pressure washing (Apr–Oct) only; snow and ice removal not included (Sec. 2.10)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Kinnick & Vail Building Services, Inc.",
+        "contract_number": "ACRAA-C-22-009",
+        "contract_type": null,
+        "total_value": 13750000,
+        "period_months": 60,
+        "annual_value": 2846520,
+        "spend_to_date": 12174880.42,
+        "spend_period_months": 54,
+        "award_year": 2022,
+        "source": {
+          "file": "rfp-26-118-janitorial.docx",
+          "page": null,
+          "excerpt": "Addendum No. 1, A4: Compensation paid for calendar year 2025 was $2,846,520.00. ... not-to-exceed $13,750,000.00 for the full 60-month term ... paid $12,174,880.42"
+        },
+        "confidence": 0.9,
+        "notes": "Sec. 1.4 and Addendum No. 1 A4: awarded by Board Feb 2022; 3-yr initial term from Apr 1, 2022 + two 1-yr renewals (both exercised), expires Mar 31, 2027. Total value is the Board-authorized NTE for the 60-month term. Annual value = compensation paid for CY2025. Spend to date through Sep 30, 2026 (54 months). Contract type not stated. Current scope excludes Bldgs 230 and 510 and the curbside sidewalks, so not directly comparable. Incumbent reports 41 full-time and 9 part-time employees on the account (A5)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Ashbury County Regional Airport, RFP No. 26-118 janitorial. Passenger Terminal (Bldg 1) registered as 23 Service Area lines from Tables A-1/A-2 (Total SF serviced, floor area by finish) plus CB-04 added by Addendum No. 1; T2-03 revised to 11,250 SF; F-03 is Option Item 1 (option_only). 15 support buildings from Table A-3 (gross bldg SF + Contract Cleaning Area); Bldg 450 deleted by Addendum No. 1, Bldg 420 changed to Tu/Th, Bldg 800 vacant/to be demolished. Bldgs 310, 700, 710 (Part 3, not included) registered as excluded. Restroom fixtures from Exhibit C. Exterior areas E-1/E-2 (38,050 SF) as sidewalks. Incumbent Kinnick & Vail, ACRAA-C-22-009, NTE $13.75M/60 mo, CY2025 paid $2,846,520.",
+        "unresolved": [
+          "Terminal Bldg 1 gross building area (~486,000 SF, Sec. 1.2) is not registered as such; only the Exhibit A Service Areas (337,690 SF after Addendum No. 1) are serviced, registered as line items.",
+          "Exhibit A Part 3 (Areas Not Included, Information Only) terminal spaces (airline offices 31,840; concession leaseholds 26,410; TSA 14,960; rental car counters 2,150; airline club 3,600; baggage make-up 38,700 SF) and mechanical rooms (not measured) are not registered: they are parts of Bldg 1 / all buildings cleaned by others. Only the separate Bldgs 310, 700, 710 are registered as excluded.",
+          "Building 100 Board Room is also cleaned after evening Board meetings about twice per month (note g); recorded in notes, not as additional service days.",
+          "FIS Areas F-01/F-02 priced per arrival day: 148 estimated arrival days/year (Exhibit B Line 7, A6) used as events_per_year.",
+          "Table A-3 prints a total only for the Contract Cleaning Area column (100,270 SF; 99,650 SF after Addendum No. 1), not for Gross Bldg. SF; Bldg 200 has no gross building area (note b) and its Contract Cleaning Area 14,600 SF is used as gross."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

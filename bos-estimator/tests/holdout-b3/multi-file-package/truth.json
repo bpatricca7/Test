@@ -1,0 +1,395 @@
+{
+  "id": "multi-file-package",
+  "title": "County janitorial ITB as a three-file package: base ITB (PDF) with group summary only, Attachment A facility list as a separate two-tab Excel workbook (gross + cleanable SF, merged two-row header, group banners/subtotals, option facilities, notes), and Addendum No. 1 (PDF) that re-measures two buildings, deletes one, adds one, changes two service frequencies and answers questions",
+  "theme": "municipal-custodial",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://jeffersoncountytx.gov/blobs/purchasing/nfb/ADD/236.pdf",
+        "note": "Jefferson County, TX RFP 23-052/MR Janitorial Services, Addendum No. 1: cost proposal form listing each location with its square feet (historic courthouse \"Square feet: 115,490\"), floors (7), elevators and days serviced (five days a week), a per-visit price x 52 weeks, and a Q&A answer that the price per square foot is based on the monthly rate. Model for Attachment A's per-facility FLOORS / SQUARE FEET / SERVICE DAYS / SERVICE WINDOW columns and for the monthly-price Bid Form. Seen through WebSearch excerpts only."
+      },
+      {
+        "url": "https://jeffersoncountytx.gov/blobs/purchasing/nfb/ADD/239.pdf",
+        "note": "Jefferson County, TX RFP 23-052/MR Addendum No. 2: vendor questions answered with references to the RFP section numbers (\"Section 4.2 Organization of Proposal Contents ...\"). Model for the Addendum No. 1 Q&A that cites ITB sections and Attachment A notes."
+      },
+      {
+        "url": "https://jeffersoncountytx.gov/purchasing/Bid_Notices/20100413_IFB%2010-001KJS_Janitorial-Specs.pdf",
+        "note": "Jefferson County, TX IFB 10-001/KJS janitorial specifications: same courthouse listed at 115,490 SF and 7 floors, serviced 5 days a week, hours Monday to Friday 5:30 pm to midnight. Model for the SERVICE WINDOW wording (\"6:00 PM - 2:30 AM\", \"After 5:30 PM\")."
+      },
+      {
+        "url": "https://www.loudoun.gov/DocumentCenter/View/131408/RFQ-4752",
+        "note": "Loudoun County, VA IFB (RFQ 4752) Janitorial Services: Exhibit A schedule by facility; \"The gross square footage currently occupied of the Facility is 23,945 sq. ft.\"; common-area restrooms cleaned nightly. Model for stating gross area for information and a separate serviced area."
+      },
+      {
+        "url": "https://loudoun.gov/DocumentCenter/View/131897/RFQ-4753?bidId=",
+        "note": "Loudoun County, VA IFB (RFQ 4753): Douglass Community Center total gross square footage approximately 44,256 SF with a separate cleanable figure. Model for the paired GROSS / CLEANABLE columns under one SQUARE FEET header."
+      },
+      {
+        "url": "https://baycountyfl.gov/DocumentCenter/View/6654/21-13-Janitorial-Services",
+        "note": "Bay County Board of County Commissioners, FL, ITB 21-13 Janitorial Services: Florida county ITB with bid checklist, Attachment 1 required forms, Attachment 2 Scope of Services, and a bid form listing facility, address, cleaning schedule (e.g. \"Monday thru Friday, after 5:00 PM\"), building size in square feet and monthly price. Model for the ITB structure (Sections 1-5, Attachment B Bid Form, Attachment C Required Forms) and the after-hours service-window wording."
+      },
+      {
+        "url": "https://www.polkfl.gov/wp-content/uploads/2024/08/Bid-24-610-Bid-Package.pdf",
+        "note": "Polk County, FL Bid 24-610 Janitorial Services, Groups A, B and C: the County \"reserves the right to make award(s) by individual item, group of items\". Model for the four award Groups and award by Group (ITB 1.6)."
+      },
+      {
+        "url": "https://www.polkfl.gov/wp-content/uploads/2024/08/Bid-24-610-Addendum-6.pdf",
+        "note": "Polk County Bid 24-610 Addendum 6 (site-visit schedule by facility) and the Day 2 mandatory site-visit attendance sheet (https://www.polkfl.gov/wp-content/uploads/2024/08/Bid-24-610-Day-2-Site-Visits-Attendance.pdf). Model for the site-visit days by Group and for listing attending firms in the addendum (Item 5)."
+      },
+      {
+        "url": "https://lauderdalecounty.org/wp-content/uploads/2024/03/BID-3975-BID-ADDENDUM-NO.-1_-Additional-Building-Added.pdf",
+        "note": "Lauderdale County, MS Bid 3975 Janitorial/Cleaning Services, Addendum No. 1 (March 2, 2024): \"The addition of another building to be serviced\"; \"The number of buildings for bid increased from three (3) to four (4)\"; service property block with address; Tuesday & Thursday schedules on the bid tabulation. Model for Addendum Item 1.6 adding a facility with its full row."
+      },
+      {
+        "url": "https://events.ogdencity.com/DocumentCenter/View/35730/ADDENDUM-1-RFP---JANITORIAL-AND-WINDOW-CLEANING-SERVICES_FINAL-10-23-2025",
+        "note": "Ogden City, UT Janitorial and Window Cleaning Services RFP, Addendum 1 (October 23, 2025): \"This addendum is issued to modify the previously released solicitation documents and/or given for informational purposes\"; revised proposal sheets after the pre-proposal meeting with one proposal schedule removed; schedules with Monday-Friday or seven-day service. Source of the addendum's opening statement and model for deleting a facility by addendum."
+      },
+      {
+        "url": "https://archive.oa.mo.gov/fmdc/facilitiesoperations/rfq/FMDC20-0013_rfq.pdf",
+        "note": "State of Missouri Office of Administration, FMDC janitorial RFQ: \"The contractor shall provide the janitorial services for the cleanable square feet of the buildings as indicated in the Background Information section\"; the state may add or delete areas, changing the cleanable footage. Related RFQs (JLBP0113, JLLB0213) tier liquidated damages by cleanable SF. Model for ITB 2.3 (cleanable SF as pricing basis; additions and deletions)."
+      },
+      {
+        "url": "https://www.buncombecounty.org/common/purchasing/Addendum%201%20Janitorial%20Services.pdf",
+        "note": "Buncombe County, NC Janitorial Services Addendum 1: bidders asked for square footage of two buildings; the County answered that square footage was not relevant for the animal shelter because only specific areas are cleaned. Model for the Animal Services Center row (cleanable 5,180 of 26,500 gross; kennels cleaned by shelter staff) and the other partially serviced buildings."
+      },
+      {
+        "url": "https://aws.state.ak.us/OnlinePublicNotices/Notices/Attachment.aspx?id=141274",
+        "note": "State of Alaska janitorial RFP amendment Q&A: \"Gross Sq. foot of the building is 287,850, the 'Usable' Sq. foot of the building is 169,800\". Model for the gross-vs-cleanable question (Addendum Q1)."
+      },
+      {
+        "url": "https://www.cityofmelissa.com/DocumentCenter/View/1838/RFP-Janitorial-Services---City-of-Melissa?bidId=",
+        "note": "City of Melissa, TX janitorial RFP Appendix A: facilities with frequencies such as five days per week and two days per week, with two-days-per-week cleaning to have at least one day in between. Source of the Tue & Thu definition in ITB 2.4."
+      },
+      {
+        "url": "https://www.highergov.com/sl/contract-opportunity/md-janitorial-services-for-the-annapolis-co-65557431/",
+        "note": "Maryland Department of General Services IFB, Janitorial Services for the Annapolis Complex and Crownsville: 16 State facilities, State provides certain supplies, three-year base period with two one-year renewal options. Model for the 3 + 1 + 1 term (ITB 1.3) and owner-furnished paper products (ITB 2.8)."
+      },
+      {
+        "url": "https://www.michigan.gov/documents/dtmb/Statewide_Janitorial_Standards_OVER_500_square_feet-_Lease_715017_7.pdf",
+        "note": "State of Michigan DTMB Statewide Janitorial Standards: task-by-frequency grid (restrooms five days a week, offices twice weekly, recycling weekly) and building forms with square footage by floor type and number of restrooms. Model for the ITB 2.5 routine task table and the Periodic Services tab (carpet / hard floor SF)."
+      }
+    ],
+    "notes": "Every name, address, area, frequency, the county (Coquina County, Florida, a fictional Gulf-coast county), the solicitation (ITB 27-014), the incumbent (Gulfview Facility Services, Inc., Contract No. C21-0457) and its expenditures are illustrative; no rows were copied. Package structure and wording follow real county / municipal / state janitorial solicitations found with web search: per-location square feet, floors, days and hours (Jefferson County TX RFP 23-052/MR and IFB 10-001), gross vs cleanable area (Loudoun County VA IFBs, Missouri OA FMDC RFQs, Alaska amendment Q&A), Florida county ITB structure with a facility bid form and award by Group (Bay County ITB 21-13, Polk County Bid 24-610), addenda that add a building or remove a schedule and revise the proposal sheets (Lauderdale County MS Bid 3975, Ogden City), Q&A on partially cleaned buildings (Buncombe County NC), two-days-per-week spacing (Melissa TX) and 3-year base + two 1-year renewals with owner-furnished supplies (Maryland DGS Annapolis/Crownsville IFB). WebFetch could not resolve any host and direct downloads were refused by the network proxy during authoring, so the format details were taken from the WebSearch result excerpts of these documents, not from reading the full files. The Florida statutory references (ss. 287.133, 287.135, 448.095, 787.06(13), 119.0701 and the Local Government Prompt Payment Act) are from the author's knowledge and were not re-verified; none affects an expected value."
+  },
+  "inputs": [
+    {
+      "src": "itb-27-014-janitorial.html",
+      "as": "pdf",
+      "out": "ITB 27-014 Janitorial Services - County Facilities.pdf"
+    },
+    {
+      "src": "attachment-a-facility-list.json",
+      "as": "xlsx",
+      "out": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx"
+    },
+    {
+      "src": "addendum-01.html",
+      "as": "pdf",
+      "out": "ITB 27-014 Addendum No. 1.pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "101",
+        "name": "County Administration Building",
+        "grossSqft": 88880,
+        "cleanableSqft": 73635,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "102",
+        "name": "Coquina County Judicial Center",
+        "grossSqft": 168900,
+        "cleanableSqft": 128640,
+        "floors": 5,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "103",
+        "name": "Historic Courthouse (History Museum / Clerk Archives)",
+        "grossSqft": 22760,
+        "cleanableSqft": 18420,
+        "floors": 3,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "104",
+        "name": "Tax Collector / Property Appraiser Building",
+        "grossSqft": 31580,
+        "cleanableSqft": 26940,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "105",
+        "name": "Supervisor of Elections Office and Warehouse",
+        "grossSqft": 38200,
+        "cleanableSqft": 9860,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "106",
+        "name": "Emergency Operations Center",
+        "grossSqft": 24600,
+        "cleanableSqft": 19850,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "201",
+        "name": "Marlow Springs Main Library",
+        "grossSqft": 48300,
+        "cleanableSqft": 42180,
+        "floors": 2,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "202",
+        "name": "Westshore Branch Library",
+        "grossSqft": 15870,
+        "cleanableSqft": 14410,
+        "floors": 1,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "203",
+        "name": "Palm Hollow Branch Library",
+        "grossSqft": 11800,
+        "cleanableSqft": 10740,
+        "floors": 1,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "204",
+        "name": "Cypress Point Branch Library",
+        "grossSqft": 9640,
+        "cleanableSqft": 8820,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "205",
+        "name": "North County Branch Library",
+        "grossSqft": 12400,
+        "cleanableSqft": 11260,
+        "floors": 1,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "206",
+        "name": "Marlow Springs Senior Center",
+        "grossSqft": 16900,
+        "cleanableSqft": 14320,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "207",
+        "name": "Westshore Community Center",
+        "grossSqft": 21480,
+        "cleanableSqft": 18900,
+        "floors": 1,
+        "serviceLevel": "daily_6",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "208",
+        "name": "UF/IFAS Extension Office and Auditorium",
+        "grossSqft": 13260,
+        "cleanableSqft": 11480,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "209",
+        "name": "Florida Department of Health in Coquina County – Marlow Springs Clinic",
+        "grossSqft": 34700,
+        "cleanableSqft": 29980,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "210",
+        "name": "Veterans and Human Services Office",
+        "grossSqft": 7920,
+        "cleanableSqft": 7140,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "301",
+        "name": "Sheriff's Office Administration Building",
+        "grossSqft": 52900,
+        "cleanableSqft": 44100,
+        "floors": 3,
+        "serviceLevel": "daily_7",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "302",
+        "name": "Sheriff's District 2 Substation",
+        "grossSqft": 7840,
+        "cleanableSqft": 6920,
+        "floors": 1,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "303",
+        "name": "Public Safety Communications (911) Center",
+        "grossSqft": 12600,
+        "cleanableSqft": 10240,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "304",
+        "name": "Animal Services Center",
+        "grossSqft": 26500,
+        "cleanableSqft": 5180,
+        "floors": 1,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "305",
+        "name": "Public Works Operations Complex – Administration Building",
+        "grossSqft": 18450,
+        "cleanableSqft": 15600,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "306",
+        "name": "Public Works Fleet Maintenance Shop",
+        "grossSqft": 32800,
+        "cleanableSqft": 4950,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "307",
+        "name": "Solid Waste Transfer Station – Scale House",
+        "grossSqft": 2140,
+        "cleanableSqft": 1980,
+        "floors": 1,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "308",
+        "name": "Utilities Administration and Customer Service",
+        "grossSqft": 15700,
+        "cleanableSqft": 13420,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "310",
+        "name": "Fire Rescue Administration and Training Center",
+        "grossSqft": 22300,
+        "cleanableSqft": 18760,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "401",
+        "name": "North County Government Annex",
+        "grossSqft": 27400,
+        "cleanableSqft": 23560,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "402",
+        "name": "Pine Ridge Community Center",
+        "grossSqft": 9950,
+        "cleanableSqft": 8700,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "403",
+        "name": "Clerk of Court Records Center",
+        "grossSqft": 19800,
+        "cleanableSqft": 3450,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "404",
+        "name": "Gulf Breeze Beach Park – Restroom/Concession Building",
+        "grossSqft": 1280,
+        "cleanableSqft": 1280,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "405",
+        "name": "Cypress Lake Regional Park – Restroom Building",
+        "grossSqft": 860,
+        "cleanableSqft": 860,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "406",
+        "name": "Bayside Sports Complex – Concession/Restroom Building",
+        "grossSqft": 2240,
+        "cleanableSqft": 2240,
+        "floors": 1,
+        "serviceLevel": "2x_week"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "hot_humid",
+      "installationName": "Coquina County",
+      "solicitation": "ITB 27-014"
+    },
+    "priorAward": {
+      "annualValue": 1146820,
+      "spendToDate": 4968515.4,
+      "spendPeriodMonths": 56,
+      "incumbent": "Gulfview Facility Services, Inc.",
+      "contractNumber": "C21-0457",
+      "awardYear": 2021
+    }
+  },
+  "traps": [
+    "Three separate files, read together. The base ITB PDF has only a Group summary (Section 3: 4 Groups, 31 facilities, 812,790 gross / 600,760 cleanable). The facility rows are only in the Excel workbook (Attachment A). The corrections are only in the Addendum No. 1 PDF, which says \"A revised Excel workbook will not be posted.\" Neither the ITB nor the workbook mentions what the addendum changes.",
+    "Addendum Item 1.1 re-measures Facility 101 County Administration Building: gross 86,400 -> 88,880, cleanable 71,250 -> 73,635. Truth uses the addendum values.",
+    "Addendum Item 1.2 corrects Facility 202 Westshore Branch Library: gross 14,250 -> 15,870, cleanable 12,960 -> 14,410.",
+    "Addendum Item 1.5 deletes Facility 309 Mosquito Control Office (4,860 / 3,920, Weekly (Wed)). It is still in the workbook and in the ITB Group C description, and it is NOT expected. Q5 repeats the deletion. Its staff move into Facility 305, whose areas do not change.",
+    "Addendum Item 1.6 adds Facility 210 Veterans and Human Services Office to Group B (1 floor, 7,920 gross / 7,140 cleanable, Mon-Fri). The row exists only in the addendum PDF, as a one-row table with the workbook's column headers.",
+    "Addendum Items 1.3 and 1.4 change service frequencies. Facility 208 UF/IFAS Extension goes from M/W/F to Mon-Fri (3x_week -> daily_5). Facility 403 Clerk of Court Records Center goes from Bi-weekly (Wed) to Weekly (Wed) (biweekly -> weekly).",
+    "Gross vs cleanable. Every row has both columns under one merged SQUARE FEET header. Truth grossSqft = GROSS and cleanableSqft = CLEANABLE. The ITB (2.3), Note 1 and Addendum Q1 say pricing is on cleanable. Four buildings are serviced only in part, so cleanable is far below gross: 105 Supervisor of Elections 38,200 / 9,860 (ballot warehouse 28,340 SF excluded); 304 Animal Services 26,500 / 5,180 (kennels by shelter staff); 306 Fleet Maintenance 32,800 / 4,950 (shop bays excluded); 403 Records Center 19,800 / 3,450 (stacks excluded).",
+    "Workbook layout. Four title/source rows sit above a two-row header: SQUARE FEET is merged over GROSS / CLEANABLE and the other header cells are merged vertically. Group banner rows (\"GROUP A – GOVERNMENT CENTER CAMPUS, MARLOW SPRINGS\" ...) are merged across the sheet. Each Group has a subtotal row (\"GROUP A SUBTOTAL (6 FACILITIES)\" 372,440 / 274,960 ...) and there is a grand total row (\"TOTAL – GROUPS A THROUGH D (31 FACILITIES)\" 812,790 / 600,760). Six merged NOTES rows follow. Facility numbers are numeric cells and areas are numbers formatted #,##0.",
+    "Option facilities sit below the grand total on the same sheet: O-1 Coquina County Fairgrounds – Exhibition Hall (24,000 / 21,600, Per event) and O-2 Bayside Branch Library (under construction) (16,500 / 15,000, Mon-Sat). The banner reads \"NOT PART OF ANY GROUP AND NOT INCLUDED IN THE TOTALS ABOVE\". They are option-only (ITB 2.10, Section 3 'Option' row 40,500 / 36,600, Addendum Item 4 and Q6) and are NOT expected. Addendum Item 4 changes O-2's occupancy date but does not add it.",
+    "The second workbook tab, \"Periodic Services\", repeats every base facility (including deleted 309) with CARPET SF, HARD FLOOR SF and WOOD GYM SF that add up to the cleanable SF, plus times-per-year frequencies and a TOTAL row (289,000 / 304,560 / 7,200). These are floor-care quantities, not facilities or extra area. Addendum Item 2 revises the floor-care rows for 101, 202, 210 and 309.",
+    "Service-day wording maps to levels as follows. Mon-Fri -> daily_5. Mon-Sat (four libraries 201, 202, 203 and 205, the Westshore Community Center 207 and Animal Services 304) -> daily_6. Tue-Sat (204 Cypress Point Branch Library, closed Sun/Mon, confirmed by Addendum Q7) -> daily_5, not daily_6. 7 days (301 Sheriff, 303 911 Center, 404/405 park restrooms) -> daily_7. M/W/F -> 3x_week. Tue & Thu (307) -> 2x_week. Sat & Sun (406 Bayside Sports Complex) -> 2x_week. Weekly (Wed) -> weekly. The 'Services per year' column in ITB 2.4 (250 / 300 / 365 / 156 / 104 / 52 / 26) gives definitions, not facility data.",
+    "Extras that are not a different service level: two day porters at 102, written into the SERVICE WINDOW cell ('6:00 PM - 2:30 AM; 2 day porters 7:30 AM - 4:00 PM'); a second summer service at 404; cleaning after BOCC Chambers meetings at 101; and EOC activations and the elections warehouse ordered as Additional Services.",
+    "The RESTROOMS column counts restroom rooms, not fixtures (Note 3; Addendum Q3: fixture counts not inventoried). No restroomFixtures are expected.",
+    "Excluded facilities appear only in narrative (ITB 2.2, Note 6): Detention Facility, fourteen Fire Rescue stations, Civic Center, Airport terminal. They have no rows and must not be invented.",
+    "Areas inside remarks are distractors: 'Ballot warehouse (28,340 SF) excluded', 'Gymnasium wood floor (7,200 SF)'. The wood floor is part of 207's 18,900 cleanable SF (Addendum Q9), not added to it.",
+    "Numbers that are not facility data: ITB prose 'approximately 813,000 gross square feet' and '100,000 cleanable square feet' (reference-contract threshold); statute numbers (287.133, 448.095, 787.06(13), 29 CFR 1910.1030); insurance limits ($1,000,000 / $2,000,000 / $500,000 / $100,000); deductions ($150 / $300); 10 holidays, 36 months, 5 percent, 60 / 30 / 10 days and 24 hours; Bid Form line items (Option 1, Option 2, AS-1..AS-3).",
+    "Prior award is split across files. ITB 1.2 gives the incumbent (Gulfview Facility Services, Inc.), Contract No. C21-0457 under ITB 21-031, awarded December 14, 2021, with a term of 3 years plus two exercised 1-year renewals (Feb 2022 - Jan 2027). Addendum Q2 gives FY 2025-26 expenditures of $1,146,820.00 (annualValue) and $4,968,515.40 from February 1, 2022 through September 30, 2026 (spendToDate, 56 months). No total contract value is stated, so totalValue and periodMonths are intentionally absent.",
+    "In the ITB text layer the contract number wraps at its hyphen ('Contract No. C21-' / '0457 (ITB 21-031)'), and 'O-' / '2' wraps in the Section 3 Option row. Addendum Q2 prints 'Contract No. C21-0457' on one line. Expected contractNumber: C21-0457. Do not remove the hyphen and do not read 0457 as a separate number.",
+    "Contract term: initial 3 years (February 1, 2027 - January 31, 2030) plus two optional 1-year renewals = 5 contract years. The incumbent's own 3 + 1 + 1 term in ITB 1.2 is a distractor.",
+    "Long names include en dashes and parentheses ('Florida Department of Health in Coquina County – Marlow Springs Clinic', 'Public Works Operations Complex – Administration Building', 'Historic Courthouse (History Museum / Clerk Archives)'). Remarks and service-window cells hold long text next to the numbers.",
+    "Climate: Coquina County is on Florida's Gulf coast (ITB 1.2, hurricane clauses 2.11 and Q12), so climateZone is hot_humid."
+  ]
+}

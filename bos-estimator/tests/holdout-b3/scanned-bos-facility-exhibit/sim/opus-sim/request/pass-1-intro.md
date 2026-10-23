@@ -1,0 +1,11 @@
+Solicitation package: 1 document(s).
+
+Documents from lowest to highest precedence (each one supersedes those listed above it):
+1. 70Z08427QTCPA0019_Amd0001_TE5_Bldg_List_Conformed_SCAN.pdf (amendment 0001)
+Where documents disagree, the one listed later wins. When an amendment or Q&A changes a building, register it again with the new values and cite that document in source.file. When it deletes, excludes or demolishes a building, register the building with status deleted_by_amendment (or excluded, demolished, vacant) and a status_reason. Do not just omit it. When an amendment or Q&A changes a grounds area, register it again with the same name, campus and kind and the new quantity; the tool replaces the earlier quantity (the base table keeps its printed figure). To remove a grounds area, register it again with status deleted_by_amendment; an area the amendment adds is a new area, named as added or new. Rows of an amendment's own change list or of a Q&A answer (item / was / is) are revision rows: tag them with the table_id of a table you declared for that document, or null - never with the base table's id: the base table is reconciled against its rows as printed. A conformed or reissued table (revised rows marked in place) is a table like any other: tag every printed row with its id. In a file that holds a base document followed by its amendment, rows of the base part's tables get the table's id and rows of the amendment part are revision rows (table_id null).
+
+Reader notes:
+- 70Z08427QTCPA0019_Amd0001_TE5_Bldg_List_Conformed_SCAN.pdf pages 1-5 are scanned images; read them visually. If a table there is unreadable, list it in unresolved.
+- 70Z08427QTCPA0019_Amd0001_TE5_Bldg_List_Conformed_SCAN.pdf: 5 of 5 pages are scanned images (pages 1-5): sent to Claude as page images; the rule-based reader cannot read them
+
+Build the complete facility and grounds inventory using the tools: set_site_info if the installation is identifiable, declare_tables, then register facilities table by table, then grounds, set_previous_award, and finish.

@@ -1,0 +1,3645 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "ITB 27-014 Janitorial Services - County Facilities.pdf",
+      "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+      "ITB 27-014 Addendum No. 1.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Coquina County",
+        "location": "Marlow Springs, Florida",
+        "solicitation": "ITB 27-014",
+        "contract_name": "Janitorial Services – County Facilities (Groups A, B, C and D)",
+        "climate_zone": "hot_humid",
+        "growing_season_weeks": null,
+        "snow_events_per_year": null,
+        "walk_clearing_events_per_year": null,
+        "contract_years": 5,
+        "notes": "Coquina County Board of County Commissioners, Florida Gulf coast. Facilities at the Government Center campus (Marlow Springs) and branch sites in Westshore, Palm Hollow, Cypress Point and Pine Ridge; one county-wide facility numbering. Initial term 3 years (Feb 1, 2027 - Jan 31, 2030) plus two 1-year renewals, max 5 years (ITB 1.3). Award by Group (A-D), monthly price x 36. Janitorial only; no grounds. Climate inferred from location (Florida Gulf coast)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "ATT-A-FL",
+            "title": "Attachment A – Facility List and Service Schedule, sheet \"Facility List\" (Groups A-D)",
+            "kind": "facilities",
+            "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+            "pages": null,
+            "row_count": 31,
+            "printed_total_gross_area": 812790,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "ATT-A-OPT",
+            "title": "Attachment A – sheet \"Facility List\", Optional Facilities block (O-1, O-2; not included in totals)",
+            "kind": "facilities",
+            "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+            "pages": null,
+            "row_count": 2,
+            "printed_total_gross_area": null,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "title": "Attachment A – sheet \"Periodic Services\" (floor care and glass)",
+            "kind": "facilities",
+            "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+            "pages": null,
+            "row_count": 31,
+            "printed_total_gross_area": null,
+            "area_unit": "sf",
+            "printed_totals": []
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "101",
+            "line_item": null,
+            "name": "County Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 86400,
+            "added_areas": null,
+            "cleanable_area": 71250,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 4,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 16,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 101 | County Administration Building | 4 | 86400 | 71250 | 16 | Mon-Fri | 6:00 PM - 2:30 AM | BOCC Chambers (3rd fl.) cleaned after evening meetings, see ITB 2.5"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 6:00 PM - 2:30 AM. Remarks: BOCC Chambers (3rd fl.) cleaned after evening meetings, see ITB 2.5."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "102",
+            "line_item": null,
+            "name": "Coquina County Judicial Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 168900,
+            "added_areas": null,
+            "cleanable_area": 128640,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 5,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 34,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "102 | Coquina County Judicial Center | 5 | 168900 | 128640 | 34 | Mon-Fri | 6:00 PM - 2:30 AM; 2 day porters 7:30 AM - 4:00 PM | Floors include basement. Holding cells, sally port and secure prison..."
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 6:00 PM - 2:30 AM; 2 day porters 7:30 AM - 4:00 PM. Remarks: Floors include basement. Holding cells, sally port and secure prisoner corridors excluded (Sheriff). Two day porters Mon-Fri 7:30 AM-4:00 PM included in Group A monthly price (ITB 4.2). 5 floors = 4 above grade plus basement (Addendum 1 A4). Level 2 FDLE/CJIS screening (ITB 4.3)."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "103",
+            "line_item": null,
+            "name": "Historic Courthouse (History Museum / Clerk Archives)",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 22760,
+            "added_areas": null,
+            "cleanable_area": 18420,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 103 | Historic Courthouse (History Museum / Clerk Archives) | 3 | 22760 | 18420 | 4 | M/W/F | After 5:00 PM | Museum galleries: dust only; do not wet-clean exhibit cases"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:00 PM. Remarks: Museum galleries: dust only; do not wet-clean exhibit cases."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "104",
+            "line_item": null,
+            "name": "Tax Collector / Property Appraiser Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 31580,
+            "added_areas": null,
+            "cleanable_area": 26940,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 6,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 104 | Tax Collector / Property Appraiser Building | 2 | 31580 | 26940 | 6 | Mon-Fri | After 5:30 PM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:30 PM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "105",
+            "line_item": null,
+            "name": "Supervisor of Elections Office and Warehouse",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 38200,
+            "added_areas": null,
+            "cleanable_area": 9860,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "105 | Supervisor of Elections Office and Warehouse | 1 | 38200 | 9860 | 4 | Mon-Fri | After 5:00 PM | Office, lobby, training room and restrooms only. Ballot warehouse (28,340 SF) excluded, see Note 4"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:00 PM. Remarks: Office, lobby, training room and restrooms only. Ballot warehouse (28,340 SF) excluded, see Note 4. Ballot warehouse (28,340 SF) cleaned only when ordered as Additional Services before/after elections (Note 4, ITB 2.9); not in cleanable SF."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "106",
+            "line_item": null,
+            "name": "Emergency Operations Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 24600,
+            "added_areas": null,
+            "cleanable_area": 19850,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 6,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 106 | Emergency Operations Center | 2 | 24600 | 19850 | 6 | Mon-Fri | After 5:00 PM | Cleaning during EOC activations (24/7) ordered as Additional Services, ITB 2.9"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:00 PM. Remarks: Cleaning during EOC activations (24/7) ordered as Additional Services, ITB 2.9."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "201",
+            "line_item": null,
+            "name": "Marlow Springs Main Library",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 48300,
+            "added_areas": null,
+            "cleanable_area": 42180,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 8,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Sat",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 201 | Marlow Springs Main Library | 2 | 48300 | 42180 | 8 | Mon-Sat | 5:00 AM - 9:30 AM | Library opens 10:00 AM; work must be complete before opening"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 5:00 AM - 9:30 AM. Remarks: Library opens 10:00 AM; work must be complete before opening."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "202",
+            "line_item": null,
+            "name": "Westshore Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 14250,
+            "added_areas": null,
+            "cleanable_area": 12960,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 3,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Sat",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 202 | Westshore Branch Library | 1 | 14250 | 12960 | 3 | Mon-Sat | 5:00 AM - 9:30 AM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 5:00 AM - 9:30 AM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "203",
+            "line_item": null,
+            "name": "Palm Hollow Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 11800,
+            "added_areas": null,
+            "cleanable_area": 10740,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Sat",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 203 | Palm Hollow Branch Library | 1 | 11800 | 10740 | 2 | Mon-Sat | 5:00 AM - 9:30 AM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 5:00 AM - 9:30 AM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "204",
+            "line_item": null,
+            "name": "Cypress Point Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 9640,
+            "added_areas": null,
+            "cleanable_area": 8820,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Tue-Sat",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 204 | Cypress Point Branch Library | 1 | 9640 | 8820 | 2 | Tue-Sat | 5:00 AM - 9:30 AM | Branch closed Sunday and Monday"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 5:00 AM - 9:30 AM. Remarks: Branch closed Sunday and Monday."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "205",
+            "line_item": null,
+            "name": "North County Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 12400,
+            "added_areas": null,
+            "cleanable_area": 11260,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 3,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Sat",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 205 | North County Branch Library | 1 | 12400 | 11260 | 3 | Mon-Sat | 5:00 AM - 9:30 AM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 5:00 AM - 9:30 AM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "206",
+            "line_item": null,
+            "name": "Marlow Springs Senior Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 16900,
+            "added_areas": null,
+            "cleanable_area": 14320,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 206 | Marlow Springs Senior Center | 1 | 16900 | 14320 | 4 | Mon-Fri | After 4:00 PM | Kitchen cleaned by meal-site vendor; dining room floor by Contractor"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 4:00 PM. Remarks: Kitchen cleaned by meal-site vendor; dining room floor by Contractor."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "207",
+            "line_item": null,
+            "name": "Westshore Community Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 21480,
+            "added_areas": null,
+            "cleanable_area": 18900,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 6,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Sat",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 207 | Westshore Community Center | 1 | 21480 | 18900 | 6 | Mon-Sat | After 9:30 PM (after rentals) | Gymnasium wood floor (7,200 SF) dust-mopped each service"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 9:30 PM (after rentals). Remarks: Gymnasium wood floor (7,200 SF) dust-mopped each service. Wood gym floor 7,200 SF is part of the 18,900 cleanable SF (Addendum 1 A9)."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "208",
+            "line_item": null,
+            "name": "UF/IFAS Extension Office and Auditorium",
+            "status": null,
+            "status_reason": null,
+            "category": "education",
+            "gross_area": 13260,
+            "added_areas": null,
+            "cleanable_area": 11480,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 208 | UF/IFAS Extension Office and Auditorium | 1 | 13260 | 11480 | 4 | M/W/F | After 5:00 PM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:00 PM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "209",
+            "line_item": null,
+            "name": "Florida Department of Health in Coquina County – Marlow Springs Clinic",
+            "status": null,
+            "status_reason": null,
+            "category": "medical",
+            "gross_area": 34700,
+            "added_areas": null,
+            "cleanable_area": 29980,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 12,
+              "cleaning_standard": "Clinical areas per ITB 2.7: EPA-registered hospital-grade disinfectant, OSHA Bloodborne Pathogens Standard",
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "209 | Florida Department of Health in Coquina County – Marlow Springs Clinic | 2 | 34700 | 29980 | 12 | Mon-Fri | After 5:30 PM | Clinical areas per ITB 2.7. Pharmacy and laboratory excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:30 PM. Remarks: Clinical areas per ITB 2.7. Pharmacy and laboratory excluded."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "301",
+            "line_item": null,
+            "name": "Sheriff's Office Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 52900,
+            "added_areas": null,
+            "cleanable_area": 44100,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 3,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 10,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "7 days",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 301 | Sheriff's Office Administration Building | 3 | 52900 | 44100 | 10 | 7 days | 6:00 PM - 2:30 AM | 24-hour facility; CJIS/FDLE screening, ITB 4.3. Evidence and armory excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 6:00 PM - 2:30 AM. Remarks: 24-hour facility; CJIS/FDLE screening, ITB 4.3. Evidence and armory excluded. Level 2 FDLE/CJIS screening required (ITB 4.3)."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "302",
+            "line_item": null,
+            "name": "Sheriff's District 2 Substation",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 7840,
+            "added_areas": null,
+            "cleanable_area": 6920,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 3,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 302 | Sheriff's District 2 Substation | 1 | 7840 | 6920 | 3 | M/W/F | After 6:00 PM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 6:00 PM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "303",
+            "line_item": null,
+            "name": "Public Safety Communications (911) Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 12600,
+            "added_areas": null,
+            "cleanable_area": 10240,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "7 days",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 303 | Public Safety Communications (911) Center | 1 | 12600 | 10240 | 4 | 7 days | 10:00 AM - 2:00 PM | Dispatch floor occupied 24/7: quiet work only, escort required"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 10:00 AM - 2:00 PM. Remarks: Dispatch floor occupied 24/7: quiet work only, escort required."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "304",
+            "line_item": null,
+            "name": "Animal Services Center",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 26500,
+            "added_areas": null,
+            "cleanable_area": 5180,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Sat",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "304 | Animal Services Center | 1 | 26500 | 5180 | 4 | Mon-Sat | 6:00 AM - 9:00 AM | Lobby, adoption rooms, offices and restrooms only. Kennels, clinic and isolation cleaned by shelter staff"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 6:00 AM - 9:00 AM. Remarks: Lobby, adoption rooms, offices and restrooms only. Kennels, clinic and isolation cleaned by shelter staff."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "305",
+            "line_item": null,
+            "name": "Public Works Operations Complex – Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 18450,
+            "added_areas": null,
+            "cleanable_area": 15600,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 6,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 305 | Public Works Operations Complex – Administration Building | 2 | 18450 | 15600 | 6 | Mon-Fri | After 4:30 PM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 4:30 PM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "306",
+            "line_item": null,
+            "name": "Public Works Fleet Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 32800,
+            "added_areas": null,
+            "cleanable_area": 4950,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 306 | Public Works Fleet Maintenance Shop | 1 | 32800 | 4950 | 4 | M/W/F | After 4:30 PM | Offices, parts counter, break room, restrooms and locker rooms only; shop bays excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 4:30 PM. Remarks: Offices, parts counter, break room, restrooms and locker rooms only; shop bays excluded."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "307",
+            "line_item": null,
+            "name": "Solid Waste Transfer Station – Scale House",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 2140,
+            "added_areas": null,
+            "cleanable_area": 1980,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 1,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Tue & Thu",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 307 | Solid Waste Transfer Station – Scale House | 1 | 2140 | 1980 | 1 | Tue & Thu | After 5:00 PM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:00 PM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "308",
+            "line_item": null,
+            "name": "Utilities Administration and Customer Service",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 15700,
+            "added_areas": null,
+            "cleanable_area": 13420,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 308 | Utilities Administration and Customer Service | 1 | 15700 | 13420 | 4 | Mon-Fri | After 5:30 PM | Includes drive-thru teller area"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:30 PM. Remarks: Includes drive-thru teller area."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "309",
+            "line_item": null,
+            "name": "Mosquito Control Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 4860,
+            "added_areas": null,
+            "cleanable_area": 3920,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Weekly (Wed)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 309 | Mosquito Control Office | 1 | 4860 | 3920 | 2 | Weekly (Wed) | After 4:30 PM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 4:30 PM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "310",
+            "line_item": null,
+            "name": "Fire Rescue Administration and Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 22300,
+            "added_areas": null,
+            "cleanable_area": 18760,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 8,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 310 | Fire Rescue Administration and Training Center | 2 | 22300 | 18760 | 8 | Mon-Fri | After 5:00 PM | Fire Rescue stations are not part of this ITB (ITB 2.2)"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:00 PM. Remarks: Fire Rescue stations are not part of this ITB (ITB 2.2)."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "401",
+            "line_item": null,
+            "name": "North County Government Annex",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 27400,
+            "added_areas": null,
+            "cleanable_area": 23560,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 8,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 401 | North County Government Annex | 2 | 27400 | 23560 | 8 | Mon-Fri | After 5:30 PM | Includes Tax Collector branch office and County Court hearing room"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 5:30 PM. Remarks: Includes Tax Collector branch office and County Court hearing room."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "402",
+            "line_item": null,
+            "name": "Pine Ridge Community Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 9950,
+            "added_areas": null,
+            "cleanable_area": 8700,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 4,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "M/W/F",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 402 | Pine Ridge Community Center | 1 | 9950 | 8700 | 4 | M/W/F | After 9:00 PM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 9:00 PM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "403",
+            "line_item": null,
+            "name": "Clerk of Court Records Center",
+            "status": null,
+            "status_reason": null,
+            "category": "warehouse",
+            "gross_area": 19800,
+            "added_areas": null,
+            "cleanable_area": 3450,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "biweekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Bi-weekly (Wed)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 403 | Clerk of Court Records Center | 1 | 19800 | 3450 | 2 | Bi-weekly (Wed) | After 4:30 PM | Office, research room and restrooms only; records stacks excluded"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: After 4:30 PM. Remarks: Office, research room and restrooms only; records stacks excluded."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "404",
+            "line_item": null,
+            "name": "Gulf Breeze Beach Park – Restroom/Concession Building",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1280,
+            "added_areas": null,
+            "cleanable_area": 1280,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 99,
+              "label": "Second daily service 2:00-3:00 PM Memorial Day through Labor Day (included in monthly price)"
+            },
+            "service_frequency_text": "7 days",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "404 | Gulf Breeze Beach Park – Restroom/Concession Building | 1 | 1280 | 1280 | 2 | 7 days | 6:00 AM - 8:00 AM | Second service 2:00 PM - 3:00 PM Memorial Day through Labor Day (included in monthly..."
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 6:00 AM - 8:00 AM. Remarks: Second service 2:00 PM - 3:00 PM Memorial Day through Labor Day (included in monthly price). Additional days estimated: Memorial Day through Labor Day = 99 days (2027 calendar); seasonal second service confirmed year-round 7-day base service by Addendum 1 A11."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "405",
+            "line_item": null,
+            "name": "Cypress Lake Regional Park – Restroom Building",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 860,
+            "added_areas": null,
+            "cleanable_area": 860,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "7 days",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 405 | Cypress Lake Regional Park – Restroom Building | 1 | 860 | 860 | 2 | 7 days | 6:00 AM - 8:00 AM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 6:00 AM - 8:00 AM."
+          },
+          {
+            "table_id": "ATT-A-FL",
+            "campus": null,
+            "building_number": "406",
+            "line_item": null,
+            "name": "Bayside Sports Complex – Concession/Restroom Building",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 2240,
+            "added_areas": null,
+            "cleanable_area": 2240,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 2,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Sat & Sun",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet: 406 | Bayside Sports Complex – Concession/Restroom Building | 1 | 2240 | 2240 | 2 | Sat & Sun | 7:00 AM - 9:00 AM | Year-round"
+            },
+            "confidence": 0.95,
+            "notes": "Service window: 7:00 AM - 9:00 AM. Remarks: Year-round. Serviced Saturday and Sunday year-round (Addendum 1 A11)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "ATT-A-OPT",
+            "campus": null,
+            "building_number": "O-1",
+            "line_item": null,
+            "name": "Coquina County Fairgrounds – Exhibition Hall",
+            "status": "option_only",
+            "status_reason": "OPTION ITEM 1 – event cleaning priced per event on Bid Form Part 3; optional facilities not part of any Group and not included in the totals",
+            "category": "community",
+            "gross_area": 24000,
+            "added_areas": null,
+            "cleanable_area": 21600,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 6,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Per event",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet, Optional Facilities: O-1 | Coquina County Fairgrounds – Exhibition Hall | 1 | 24000 | 21600 | 6 | Per event | As scheduled | OPTION ITEM 1"
+            },
+            "confidence": 0.95,
+            "notes": "Per-event cleaning before and/or after scheduled events when ordered (Option Item 1, Bid Form Part 3: per event, up to 2 days). No number of events per year stated."
+          },
+          {
+            "table_id": "ATT-A-OPT",
+            "campus": null,
+            "building_number": "O-2",
+            "line_item": null,
+            "name": "Bayside Branch Library (under construction)",
+            "status": "option_only",
+            "status_reason": "OPTION ITEM 2 – anticipated occupancy August 2027; added only by written change order (Addendum 1 Item 4: October 2027, remains an Option Item, not part of the award)",
+            "category": "community",
+            "gross_area": 16500,
+            "added_areas": null,
+            "cleanable_area": 15000,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 3,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_6",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Sat",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Facility List sheet, Optional Facilities: O-2 | Bayside Branch Library (under construction) | 1 | 16500 | 15000 | 3 | Mon-Sat | 5:00 AM - 9:30 AM | OPTION ITEM 2"
+            },
+            "confidence": 0.85,
+            "notes": "Service window 5:00 AM - 9:30 AM. SF are design estimates. Priced per month on Bid Form Part 3 (routine and periodic services, Mon-Sat)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "101",
+            "line_item": null,
+            "name": "County Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 44180,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 27070,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 101 | County Administration Building | 44180 | 27070 | - | 2 | 1 | 2 | 4"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 4."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "102",
+            "line_item": null,
+            "name": "Coquina County Judicial Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 61750,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 66890,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 102 | Coquina County Judicial Center | 61750 | 66890 | - | 2 | 1 | 3 | 4"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 3, interior glass 4."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "103",
+            "line_item": null,
+            "name": "Historic Courthouse (History Museum / Clerk Archives)",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 3680,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 14740,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 103 | Historic Courthouse (History Museum / Clerk Archives) | 3680 | 14740 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "104",
+            "line_item": null,
+            "name": "Tax Collector / Property Appraiser Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 15630,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 11310,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 104 | Tax Collector / Property Appraiser Building | 15630 | 11310 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "105",
+            "line_item": null,
+            "name": "Supervisor of Elections Office and Warehouse",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 5420,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 4440,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 105 | Supervisor of Elections Office and Warehouse | 5420 | 4440 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "106",
+            "line_item": null,
+            "name": "Emergency Operations Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 9930,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 9920,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 106 | Emergency Operations Center | 9930 | 9920 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "201",
+            "line_item": null,
+            "name": "Marlow Springs Main Library",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 29530,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 12650,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 201 | Marlow Springs Main Library | 29530 | 12650 | - | 4 | 1 | 3 | 4"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 4, strip & refinish 1, scrub & recoat 3, interior glass 4."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "202",
+            "line_item": null,
+            "name": "Westshore Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 9330,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 3630,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 202 | Westshore Branch Library | 9330 | 3630 | - | 4 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 4, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "203",
+            "line_item": null,
+            "name": "Palm Hollow Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 7730,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 3010,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 203 | Palm Hollow Branch Library | 7730 | 3010 | - | 4 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 4, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "204",
+            "line_item": null,
+            "name": "Cypress Point Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 6170,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 2650,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 204 | Cypress Point Branch Library | 6170 | 2650 | - | 4 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 4, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "205",
+            "line_item": null,
+            "name": "North County Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 8110,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 3150,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 205 | North County Branch Library | 8110 | 3150 | - | 4 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 4, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "206",
+            "line_item": null,
+            "name": "Marlow Springs Senior Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 3580,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 10740,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 206 | Marlow Springs Senior Center | 3580 | 10740 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "207",
+            "line_item": null,
+            "name": "Westshore Community Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 1170,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 10530,
+                "included_in": null
+              },
+              {
+                "finish": "Wood gym floor",
+                "area": 7200,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 207 | Westshore Community Center | 1170 | 10530 | 7200 | 2 | 1 | 2 | 2 | Wood gym floor screen & recoat 1/yr (July)"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2. Remarks: Wood gym floor screen & recoat 1/yr (July)."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "208",
+            "line_item": null,
+            "name": "UF/IFAS Extension Office and Auditorium",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 3440,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 8040,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 208 | UF/IFAS Extension Office and Auditorium | 3440 | 8040 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "209",
+            "line_item": null,
+            "name": "Florida Department of Health in Coquina County – Marlow Springs Clinic",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 6000,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 23980,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 209 | Florida Department of Health in Coquina County – Marlow Springs Clinic | 6000 | 23980 | - | 2 | 1 | 3 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 3, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "301",
+            "line_item": null,
+            "name": "Sheriff's Office Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 22050,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 22050,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 301 | Sheriff's Office Administration Building | 22050 | 22050 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "302",
+            "line_item": null,
+            "name": "Sheriff's District 2 Substation",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 2770,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 4150,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 302 | Sheriff's District 2 Substation | 2770 | 4150 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "303",
+            "line_item": null,
+            "name": "Public Safety Communications (911) Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 6660,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 3580,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 303 | Public Safety Communications (911) Center | 6660 | 3580 | - | 4 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 4, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "304",
+            "line_item": null,
+            "name": "Animal Services Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 520,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 4660,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 304 | Animal Services Center | 520 | 4660 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "305",
+            "line_item": null,
+            "name": "Public Works Operations Complex – Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 8580,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 7020,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 305 | Public Works Operations Complex – Administration Building | 8580 | 7020 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "306",
+            "line_item": null,
+            "name": "Public Works Fleet Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 740,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 4210,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 306 | Public Works Fleet Maintenance Shop | 740 | 4210 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "307",
+            "line_item": null,
+            "name": "Solid Waste Transfer Station – Scale House",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Sealed concrete",
+                "area": 1980,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 307 | Solid Waste Transfer Station – Scale House | 0 | 1980 | - | 0 | 0 | 0 | 2 | Sealed concrete; scrub monthly (12)"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 0, strip & refinish 0, scrub & recoat 0, interior glass 2. Remarks: Sealed concrete; scrub monthly (12)."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "308",
+            "line_item": null,
+            "name": "Utilities Administration and Customer Service",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 6710,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 6710,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 308 | Utilities Administration and Customer Service | 6710 | 6710 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "309",
+            "line_item": null,
+            "name": "Mosquito Control Office",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 1570,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 2350,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 309 | Mosquito Control Office | 1570 | 2350 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "310",
+            "line_item": null,
+            "name": "Fire Rescue Administration and Training Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 8440,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 10320,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 310 | Fire Rescue Administration and Training Center | 8440 | 10320 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "401",
+            "line_item": null,
+            "name": "North County Government Annex",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 12960,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 10600,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 401 | North County Government Annex | 12960 | 10600 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "402",
+            "line_item": null,
+            "name": "Pine Ridge Community Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 1310,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 7390,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 402 | Pine Ridge Community Center | 1310 | 7390 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "403",
+            "line_item": null,
+            "name": "Clerk of Court Records Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 1040,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 2410,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 403 | Clerk of Court Records Center | 1040 | 2410 | - | 2 | 1 | 2 | 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "404",
+            "line_item": null,
+            "name": "Gulf Breeze Beach Park – Restroom/Concession Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Hard floor",
+                "area": 1280,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 404 | Gulf Breeze Beach Park – Restroom/Concession Building | 0 | 1280 | - | 0 | 0 | 0 | 2 | Pressure-wash restroom floors and walls monthly (12)"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 0, strip & refinish 0, scrub & recoat 0, interior glass 2. Remarks: Pressure-wash restroom floors and walls monthly (12)."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "405",
+            "line_item": null,
+            "name": "Cypress Lake Regional Park – Restroom Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Hard floor",
+                "area": 860,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 405 | Cypress Lake Regional Park – Restroom Building | 0 | 860 | - | 0 | 0 | 0 | 2 | Pressure-wash restroom floors and walls monthly (12)"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 0, strip & refinish 0, scrub & recoat 0, interior glass 2. Remarks: Pressure-wash restroom floors and walls monthly (12)."
+          },
+          {
+            "table_id": "ATT-A-PS",
+            "campus": null,
+            "building_number": "406",
+            "line_item": null,
+            "name": "Bayside Sports Complex – Concession/Restroom Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Hard floor",
+                "area": 2240,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Attachment A - Facility List and Service Schedule.xlsx",
+              "page": null,
+              "excerpt": "Periodic Services sheet: 406 | Bayside Sports Complex – Concession/Restroom Building | 0 | 2240 | - | 0 | 0 | 0 | 2 | Pressure-wash restroom floors and walls monthly (12)"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 0, strip & refinish 0, scrub & recoat 0, interior glass 2. Remarks: Pressure-wash restroom floors and walls monthly (12)."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "101",
+            "line_item": null,
+            "name": "County Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": 88880,
+            "added_areas": null,
+            "cleanable_area": 73635,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Addendum No. 1.pdf",
+              "page": 1,
+              "excerpt": "1.1 | 101 | County Administration Building | Gross SF / Cleanable SF | 86,400 / 71,250 | 88,880 / 73,635 | Re-measured after the 4th-floor renovation"
+            },
+            "confidence": 0.95,
+            "notes": "Addendum No. 1 Item 1.1: re-measured after the 4th-floor renovation (former roof terrace enclosed as offices, completed August 2026)."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "202",
+            "line_item": null,
+            "name": "Westshore Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": 15870,
+            "added_areas": null,
+            "cleanable_area": 14410,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Addendum No. 1.pdf",
+              "page": 1,
+              "excerpt": "1.2 | 202 | Westshore Branch Library | Gross SF / Cleanable SF | 14,250 / 12,960 | 15,870 / 14,410 | 2025 meeting-room addition was omitted"
+            },
+            "confidence": 0.95,
+            "notes": "Addendum No. 1 Item 1.2: 2025 meeting-room addition was omitted from the real property inventory."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "208",
+            "line_item": null,
+            "name": "UF/IFAS Extension Office and Auditorium",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Addendum No. 1.pdf",
+              "page": 1,
+              "excerpt": "1.3 | 208 | UF/IFAS Extension Office and Auditorium | Service Days | M/W/F | Mon-Fri | Auditorium is now booked daily"
+            },
+            "confidence": 0.95,
+            "notes": "Addendum No. 1 Item 1.3: service days changed from M/W/F to Mon-Fri (auditorium now booked daily for classes and community meetings)."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "403",
+            "line_item": null,
+            "name": "Clerk of Court Records Center",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Weekly (Wed)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Addendum No. 1.pdf",
+              "page": 1,
+              "excerpt": "1.4 | 403 | Clerk of Court Records Center | Service Days | Bi-weekly (Wed) | Weekly (Wed) | Public research room opened to walk-in customers"
+            },
+            "confidence": 0.95,
+            "notes": "Addendum No. 1 Item 1.4: service days changed from Bi-weekly (Wed) to Weekly (Wed)."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "309",
+            "line_item": null,
+            "name": "Mosquito Control Office",
+            "status": "deleted_by_amendment",
+            "status_reason": "Addendum No. 1 Item 1.5: \"Facility 309 is deleted from the ITB in its entirety\" (staff relocate to Facility 305; building to be surplused)",
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Addendum No. 1.pdf",
+              "page": 1,
+              "excerpt": "1.5 | 309 | Mosquito Control Office | Entire row | Listed in Group C | DELETED | Facility 309 is deleted from the ITB in its entirety."
+            },
+            "confidence": 0.95,
+            "notes": "Facility 305 areas are unchanged. A5: will not be serviced under the new contract. Periodic Services row also deleted (Item 2)."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "210",
+            "line_item": null,
+            "name": "Veterans and Human Services Office",
+            "status": "in_scope",
+            "status_reason": "Addendum No. 1 Item 1.6: New row – ADDED to Group B (new leased location)",
+            "category": "admin",
+            "gross_area": 7920,
+            "added_areas": null,
+            "cleanable_area": 7140,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": {
+              "restroom_rooms": 3,
+              "cleaning_standard": null,
+              "area_by_class": null
+            },
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Mon-Fri",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Addendum No. 1.pdf",
+              "page": 1,
+              "excerpt": "New Group B row (Item 1.6): 210 | Veterans and Human Services Office | 4400 Commerce Blvd., Suite 100, Marlow Springs | 1 | 7,920 | 7,140 | 3 | Mon-Fri | After 5:30 PM"
+            },
+            "confidence": 0.95,
+            "notes": "Service window After 5:30 PM. Remarks: Leased suite; building common areas cleaned by landlord."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "101",
+            "line_item": null,
+            "name": "County Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 45650,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 27985,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Addendum No. 1.pdf",
+              "page": 2,
+              "excerpt": "Item 2 Periodic Services: 101 | County Administration Building | 44,180 → 45,650 | 27,070 → 27,985 | Unchanged"
+            },
+            "confidence": 0.95,
+            "notes": "Addendum No. 1 Item 2: carpet and hard floor SF revised; periodic frequencies unchanged."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "202",
+            "line_item": null,
+            "name": "Westshore Branch Library",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 10380,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 4030,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Addendum No. 1.pdf",
+              "page": 2,
+              "excerpt": "Item 2 Periodic Services: 202 | Westshore Branch Library | 9,330 → 10,380 | 3,630 → 4,030 | Unchanged"
+            },
+            "confidence": 0.95,
+            "notes": "Addendum No. 1 Item 2: carpet and hard floor SF revised; periodic frequencies unchanged."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "210",
+            "line_item": null,
+            "name": "Veterans and Human Services Office",
+            "status": null,
+            "status_reason": null,
+            "category": null,
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": null,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": [
+              {
+                "finish": "Carpet",
+                "area": 4280,
+                "included_in": null
+              },
+              {
+                "finish": "Hard floor",
+                "area": 2860,
+                "included_in": null
+              }
+            ],
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "ITB 27-014 Addendum No. 1.pdf",
+              "page": 2,
+              "excerpt": "Item 2 Periodic Services: 210 | Veterans and Human Services Office (added) | – → 4,280 | – → 2,860 | Carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2"
+            },
+            "confidence": 0.95,
+            "notes": "Periodic services (times/yr): carpet extraction 2, strip & refinish 1, scrub & recoat 2, interior glass 2."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "Gulfview Facility Services, Inc.",
+        "contract_number": "C21-0457",
+        "contract_type": null,
+        "total_value": null,
+        "period_months": null,
+        "annual_value": 1146820,
+        "spend_to_date": 4968515.4,
+        "spend_period_months": 56,
+        "award_year": 2021,
+        "source": {
+          "file": "ITB 27-014 Addendum No. 1.pdf",
+          "page": 2,
+          "excerpt": "A2. ... Contract No. C21-0457, awarded December 14, 2021 ... FY 2025-26 ... were $1,146,820.00. Total expenditures from February 1, 2022 through September 30, 2026 were $4,968,515.40."
+        },
+        "confidence": 0.85,
+        "notes": "Awarded by the Board Dec 14, 2021 under ITB 21-031; initial 3-year term from Feb 1, 2022 with two 1-year renewals, both exercised; expires Jan 31, 2027 (60 months total, ITB 1.2). annual_value = FY 2025-26 expenditures (Oct 1, 2025 - Sep 30, 2026). spend_to_date covers Feb 1, 2022 - Sep 30, 2026 (56 months). Award/ceiling value not stated. Caveat (A2): current contract covers 28 of the facilities in this ITB, excludes Judicial Center day porters, and includes Additional Services work orders; County says not a basis for pricing."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Coquina County ITB 27-014 Janitorial Services (Groups A-D). Registered all 31 Attachment A Facility List rows (ATT-A-FL, 812,790 gross SF as printed), the 2 optional facilities O-1/O-2 as option_only (ATT-A-OPT), and the 31 Periodic Services rows (ATT-A-PS: carpet / hard floor / wood gym SF and periodic frequencies in notes). Addendum No. 1 applied: 101 and 202 re-measured (gross/cleanable and floor SF), 208 to Mon-Fri, 403 to Weekly (Wed), 309 deleted, 210 Veterans and Human Services Office added to Group B (7,920 gross / 7,140 cleanable). In scope: 31 facilities, 819,950 gross / 607,815 cleanable SF per Addendum Item 3. No grounds scope. Incumbent Gulfview Facility Services, Inc., C21-0457, FY2025-26 spend $1,146,820.",
+        "unresolved": [
+          "Out-of-scope facilities named only in narrative (ITB 2.2, Attachment A Note 6), not registered: Coquina County Detention Facility, fourteen (14) Fire Rescue stations, Coquina County Civic Center, Marlow Springs Airport terminal.",
+          "Facility 105 ballot warehouse (28,340 SF) is cleaned only as ordered Additional Services (before/after elections); EOC (106) activation cleaning, post-storm cleanup and special events are also Additional Services at hourly rates - no quantities stated.",
+          "O-1 Fairgrounds Exhibition Hall is per-event cleaning (Option Item 1) with no number of events per year stated.",
+          "Facility 404 second summer service (Memorial Day through Labor Day): additional service days estimated at 99/yr; the document gives the window, not a day count.",
+          "Restroom fixture counts are not available (Attachment A Note 3, Addendum A3); only restroom room counts were registered.",
+          "Judicial Center (102) two day porters Mon-Fri 7:30 AM - 4:00 PM are included in the Group A price; recorded in notes only.",
+          "Incumbent spend covers 28 of the facilities, excludes day porters and includes Additional Services (Addendum A2); no award or ceiling value stated."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}

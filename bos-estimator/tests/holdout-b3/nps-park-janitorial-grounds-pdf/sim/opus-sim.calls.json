@@ -1,0 +1,2399 @@
+{
+  "model": "opus-sim",
+  "passes": [
+    [
+      "tala-140P6127Q0018-pws.pdf"
+    ]
+  ],
+  "calls": [
+    {
+      "name": "set_site_info",
+      "input": {
+        "installation_name": "Tamarack Lakes National Recreation Area",
+        "location": "Tamarack, Minnesota (Aitkin and Itasca Counties)",
+        "solicitation": "140P6127Q0018",
+        "contract_name": "Janitorial and Grounds Maintenance Services",
+        "climate_zone": "cold",
+        "growing_season_weeks": 24,
+        "snow_events_per_year": null,
+        "walk_clearing_events_per_year": null,
+        "contract_years": 5,
+        "notes": "National Park Service. Base year April 1, 2027 – March 31, 2028 plus four option years (to March 31, 2032); FAR 52.217-8 extension up to 6 months possible. Three cleaning seasons (PWS 1.5): Peak = Friday before Memorial Day through Labor Day (May 28 – Sept 6, 2027, 102 days); Shoulder = May 1 to start of Peak and day after Labor Day through Oct 15; Winter = Oct 16 – Apr 30. Mowing season May 1 – Oct 15 (approx. 24 weeks); price 24 cycles Type I, 8 cycles Type II, 1 cycle Type III (A6). Snow and ice removal by NPS, not part of contract (PWS 3.2). Each seasonal facility gets one opening and one closing clean (PWS 2.4). Table 3-C campsite and site policing (counts, not areas): Birch Point Loops A/B/C 34/32/30 sites and fire rings (7X/WK Peak, 3X/WK Shoulder); Pine Island 6 boat-in sites, 6 fire rings (1X/WK with VT-58); picnic areas 18 grills (with shelter service); 46 bear-resistant trash/recycling containers. Wage Determination 2015-5013 Rev 27 (Janitor 11150; Laborer, Grounds Maintenance 11030)."
+      },
+      "pass": 0
+    },
+    {
+      "name": "declare_tables",
+      "input": {
+        "tables": [
+          {
+            "table_id": "TE-1",
+            "title": "Technical Exhibit 1 – Facility Schedule (Janitorial), Areas A–E",
+            "kind": "facilities",
+            "file": "tala-140P6127Q0018-pws.pdf",
+            "pages": "5-7",
+            "row_count": 34,
+            "printed_total_gross_area": 46274,
+            "area_unit": "sf",
+            "printed_totals": []
+          },
+          {
+            "table_id": "TE-3A",
+            "title": "Technical Exhibit 3, Table 3-A – Mowing and Trimming (season May 1 – October 15)",
+            "kind": "grounds",
+            "file": "tala-140P6127Q0018-pws.pdf",
+            "pages": "9",
+            "row_count": 8,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": [
+              {
+                "value": 27.3,
+                "unit": "acres",
+                "kinds": [
+                  "improved_turf"
+                ]
+              },
+              {
+                "value": 25.8,
+                "unit": "acres",
+                "kinds": [
+                  "semi_improved"
+                ]
+              },
+              {
+                "value": 14,
+                "unit": "acres",
+                "kinds": [
+                  "unimproved"
+                ]
+              },
+              {
+                "value": 67.1,
+                "unit": "acres",
+                "kinds": []
+              }
+            ]
+          },
+          {
+            "table_id": "TE-3B",
+            "title": "Technical Exhibit 3, Table 3-B – Parking Lots, Walks and Paved Trail",
+            "kind": "grounds",
+            "file": "tala-140P6127Q0018-pws.pdf",
+            "pages": "9",
+            "row_count": 7,
+            "printed_total_gross_area": null,
+            "area_unit": null,
+            "printed_totals": [
+              {
+                "value": 223500,
+                "unit": "sqft",
+                "kinds": [
+                  "parking"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "101",
+            "line_item": null,
+            "name": "Lakeview Visitor Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 11860,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 8,
+              "urinals": 3,
+              "lavatories": 8,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Peak 7X/WK; Shoulder 7X/WK; Winter 5X/WK (W–Su)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "1 | 108214 | 101 | Lakeview Visitor Center | VC | 11,860 | 8 | 3 | 8 | — | Year-round | 7X/WK | 7X/WK | 5X/WK (W–Su)"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108214. Two levels, elevator. Main-level public restrooms serviced 2X/DAY in Peak (PWS 2.3.3); rest of building 7X/WK. Winter 5X/WK (W–Su). Work 06:00–09:00 or after 16:30 (PWS 1.6)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "102",
+            "line_item": null,
+            "name": "Park Headquarters / Administration Building",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 6420,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 4,
+              "urinals": 1,
+              "lavatories": 4,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "5X/WK (M–F) (Peak, Shoulder and Winter)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "2 | 108215 | 102 | Park Headquarters / Administration Building | ADM | 6,420 | 4 | 1 | 4 | — | Year-round | 5X/WK (M–F) x3"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108215. Two stories, no elevator. Service after 16:30. No service on Federal holidays (PWS 1.7)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "104",
+            "line_item": null,
+            "name": "Ranger Station / Law Enforcement Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 2180,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 0,
+              "lavatories": 2,
+              "showers": 1
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "3X/WK (M/W/F) (Peak, Shoulder and Winter)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "3 | 108219 | 104 | Ranger Station / Law Enforcement Office | ADM | 2,180 | 2 | — | 2 | 1 | Year-round | 3X/WK (M/W/F) x3"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108219. Escort required in evidence room."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "105",
+            "line_item": null,
+            "name": "Main Entrance Station (Fee Booth)",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 168,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 1,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "Memorial Day wknd",
+              "end": "Labor Day",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder —; Winter —",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "4 | 108230 | 105 | Main Entrance Station (Fee Booth) | FEE | 168 | 1 | — | 1 | — | Memorial Day wknd – Labor Day | 7X/WK | — | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108230. Staff restroom only."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "120",
+            "line_item": null,
+            "name": "Maintenance Shop",
+            "status": null,
+            "status_reason": null,
+            "category": "maintenance",
+            "gross_area": 8960,
+            "added_areas": null,
+            "cleanable_area": 1240,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 1
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "1X/WK (Peak, Shoulder and Winter)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "5 | 108241 | 120 | Maintenance Shop | MS | 8,960 | 2 | 1 | 2 | 1 | Year-round | 1X/WK | 1X/WK | 1X/WK | Note (b): office, break room and locker/restrooms only."
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108241. Note (b) (p.7): service limited to the office, break room and locker/restroom area, approx. 1,240 SF; shop bays, wash bay, welding area and parts storage excluded (PWS 2.5(b); Amendment 0001 A2). Government-furnished supplies stored here."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "121",
+            "line_item": null,
+            "name": "Fire Cache / Cold Storage",
+            "status": "excluded",
+            "status_reason": "N/S – \"Listed for reference only. No janitorial service.\" (PWS 2.5(b))",
+            "category": "warehouse",
+            "gross_area": 3200,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "N/S",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "6 | 108243 | 121 | Fire Cache / Cold Storage | STG | 3,200 | — | Year-round | N/S | N/S | N/S | Listed for reference only. No janitorial service."
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108243. Not in the Area A serviced subtotal."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "210",
+            "line_item": null,
+            "name": "Birch Point Shower House A (Loop A, sites A1–A34)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1420,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 4,
+              "urinals": 1,
+              "lavatories": 4,
+              "showers": 6
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/14",
+              "end": "10/15",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder 7X/WK; Winter —",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "7 | 108310 | 210 | Birch Point Shower House A (Loop A, sites A1–A34) | SH | 1,420 | 4 | 1 | 4 | 6 | 05/14 – 10/15 | 7X/WK | 7X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108310. Coin-op showers; 1 family/ADA room."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "211",
+            "line_item": null,
+            "name": "Birch Point Shower House B (Loop B, sites B1–B32)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1420,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 4,
+              "urinals": 1,
+              "lavatories": 4,
+              "showers": 6
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/14",
+              "end": "10/15",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder 7X/WK; Winter —",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "8 | 108311 | 211 | Birch Point Shower House B (Loop B, sites B1–B32) | SH | 1,420 | 4 | 1 | 4 | 6 | 05/14 – 10/15 | 7X/WK | 7X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108311."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "212",
+            "line_item": null,
+            "name": "Birch Point Comfort Station (Loop C, sites C1–C30)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 640,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 4,
+              "urinals": 1,
+              "lavatories": 4,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/14",
+              "end": "10/15",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder 7X/WK; Winter —",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "9 | 108312 | 212 | Birch Point Comfort Station (Loop C, sites C1–C30) | CS | 640 | 4 | 1 | 4 | — | 05/14 – 10/15 | 7X/WK | 7X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108312. Flush; no showers."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "213",
+            "line_item": null,
+            "name": "Birch Point Campground Registration Office",
+            "status": null,
+            "status_reason": null,
+            "category": "admin",
+            "gross_area": 320,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 1,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/14",
+              "end": "10/15",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder 5X/WK (Th–M); Winter —",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "10 | 108315 | 213 | Birch Point Campground Registration Office | FEE | 320 | 1 | — | 1 | — | 05/14 – 10/15 | 7X/WK | 5X/WK (Th–M) | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108315. Host/registration; staff restroom. Shoulder season 5X/WK (Th–M)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "214",
+            "line_item": null,
+            "name": "Birch Point Group Camp Shower House",
+            "status": "option_only",
+            "status_reason": "OPT – \"Note (c): Optional CLIN 0004 only.\" Group Camp closed pending water system replacement; priced as Optional CLIN 0004 only (PWS 2.5(d); A3: not expected before Option Year 2).",
+            "category": "other",
+            "gross_area": 980,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 4
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Closed; OPT / OPT / OPT",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "11 | 108318 | 214 | Birch Point Group Camp Shower House | SH | 980 | 2 | 1 | 2 | 4 | Closed | OPT | OPT | OPT | Note (c): Optional CLIN 0004 only."
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108318. Frequency under the option not printed."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-21",
+            "line_item": null,
+            "name": "Birch Point Boat Launch Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 144,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/01",
+              "end": "10/31",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder 3X/WK; Winter 1X/WK (d)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "12 | 108320 | VT-21 | Birch Point Boat Launch Vault Toilet | VT-D | 144 | 2 | — | — | — | 05/01 – 10/31 | 7X/WK | 3X/WK | 1X/WK (d)"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108320. Double-riser vault toilet (Toilets = risers). Shoulder 3X/WK; Winter 1X/WK only while open (to 10/31). Pumping not included."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "PS-22",
+            "line_item": null,
+            "name": "Birch Point Picnic Shelter",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1200,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/14",
+              "end": "10/15",
+              "days_per_week": 2
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 2X/WK; Shoulder 1X/WK; Winter —",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "13 | 108322 | PS-22 | Birch Point Picnic Shelter | PS | 1,200 | — | 05/14 – 10/15 | 2X/WK | 1X/WK | — | 8 tables, 2 grills."
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108322. 8 tables, 2 grills. Roofed area at drip line."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "FC-23",
+            "line_item": null,
+            "name": "Birch Point Fish Cleaning Station",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 288,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/08",
+              "end": "10/15",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder 3X/WK; Winter —",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 5,
+              "excerpt": "14 | 108325 | FC-23 | Birch Point Fish Cleaning Station | FCS | 288 | — | 05/08 – 10/15 | 7X/WK | 3X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108325. Open-sided; 2 cleaning sinks and grinder (not restroom fixtures). Shoulder 3X/WK."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "310",
+            "line_item": null,
+            "name": "Sandy Bay Beach House (Changing Rooms and Restrooms)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 2240,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 6,
+              "urinals": 2,
+              "lavatories": 6,
+              "showers": 2
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/28",
+              "end": "09/06",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 2X/DAY; Shoulder —; Winter —",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "15 | 108410 | 310 | Sandy Bay Beach House (Changing Rooms and Restrooms) | CS | 2,240 | 6 | 2 | 6 | 2 | 05/28 – 09/06 | 2X/DAY | — | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108410. 2X/DAY = twice daily, 7 days per week incl. holidays, whole Peak season (TE-2 Table 2-A; A5): two services per day. Interior rinse showers counted; 4 exterior foot showers are not. Cleaned by NPS seasonal staff until 2026 (A1)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "311",
+            "line_item": null,
+            "name": "Sandy Bay Comfort Station (Picnic Area)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 560,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 3,
+              "urinals": 1,
+              "lavatories": 3,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/15",
+              "end": "09/30",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder 3X/WK (M/W/F); Winter —",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "16 | 108412 | 311 | Sandy Bay Comfort Station (Picnic Area) | CS | 560 | 3 | 1 | 3 | — | 05/15 – 09/30 | 7X/WK | 3X/WK (M/W/F) | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108412. Shoulder 3X/WK (M/W/F)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "312",
+            "line_item": null,
+            "name": "Sandy Bay Concession Stand and Beach Store",
+            "status": "excluded",
+            "status_reason": "CONC – \"Cleaned by concessioner.\" (PWS 2.5(a))",
+            "category": "other",
+            "gross_area": 1860,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "CONC",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "17 | 108415 | 312 | Sandy Bay Concession Stand and Beach Store | CON | 1,860 | 2 | 1 | 2 | — | 05/28 – 09/06 | CONC | CONC | CONC | Cleaned by concessioner."
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108415. Not in the Area C serviced subtotal."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "PS-31",
+            "line_item": null,
+            "name": "Sandy Bay Picnic Shelter No. 1 (Group, reservable)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 2400,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/15",
+              "end": "09/30",
+              "days_per_week": 2
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 42,
+              "label": "opening and closing cleans (PWS 2.4) plus one clean after each reservation, approx. 40 per season (Note e)"
+            },
+            "service_frequency_text": "Peak 2X/WK (e); Shoulder 1X/WK; Winter —",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "18 | 108420 | PS-31 | Sandy Bay Picnic Shelter No. 1 (Group, reservable) | PS | 2,400 | — | 05/15 – 09/30 | 2X/WK (e) | 1X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108420. 24 tables; electrical outlets. Note (e): plus one clean after each reservation (approx. 40 per season), included in price."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "PS-32",
+            "line_item": null,
+            "name": "Sandy Bay Picnic Shelter No. 2",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 960,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/15",
+              "end": "09/30",
+              "days_per_week": 1
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 1X/WK; Shoulder 1X/WK; Winter —",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "19 | 108421 | PS-32 | Sandy Bay Picnic Shelter No. 2 | PS | 960 | — | 05/15 – 09/30 | 1X/WK | 1X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108421."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "410",
+            "line_item": null,
+            "name": "North Arm Comfort Station",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 720,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 4,
+              "urinals": 1,
+              "lavatories": 3,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/01",
+              "end": "10/15",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder 3X/WK; Winter —",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "20 | 108510 | 410 | North Arm Comfort Station | CS | 720 | 4 | 1 | 3 | — | 05/01 – 10/15 | 7X/WK | 3X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108510. Shoulder 3X/WK."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "411",
+            "line_item": null,
+            "name": "North Arm Contact Station (Seasonal Visitor Contact)",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 1350,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 0,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_5",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/28",
+              "end": "09/06",
+              "days_per_week": 5
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 5X/WK (Th–M); Shoulder —; Winter —",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "21 | 108512 | 411 | North Arm Contact Station (Seasonal Visitor Contact) | VC | 1,350 | 2 | — | 2 | — | 05/28 – 09/06 | 5X/WK (Th–M) | — | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108512. Staffed by NPS interpreters Thu–Mon."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "412",
+            "line_item": null,
+            "name": "North Arm Marina Store and Restrooms",
+            "status": "excluded",
+            "status_reason": "CONC – \"Cleaned by marina concessioner.\" (PWS 2.5(a))",
+            "category": "other",
+            "gross_area": 2080,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "CONC",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "22 | 108515 | 412 | North Arm Marina Store and Restrooms | CON | 2,080 | 2 | 1 | 2 | — | 05/01 – 10/15 | CONC | CONC | CONC | Cleaned by marina concessioner."
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108515. Not in the Area D serviced subtotal."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "413",
+            "line_item": null,
+            "name": "Pelican Point Comfort Station",
+            "status": "demolished",
+            "status_reason": "N/S – \"Closed 2025; scheduled for demolition FY 2027.\" (PWS 2.5(c))",
+            "category": "other",
+            "gross_area": 480,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 1,
+              "lavatories": 2,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Closed; N/S",
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "23 | 108517 | 413 | Pelican Point Comfort Station | CS | 480 | 2 | 1 | 2 | — | Closed | N/S | N/S | N/S | Closed 2025; scheduled for demolition FY 2027."
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108517. Closed and scheduled for demolition; not in the Area D serviced subtotal."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-41",
+            "line_item": null,
+            "name": "North Arm Boat Launch Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 156,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "04/15",
+              "end": "11/15",
+              "days_per_week": 7
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 7X/WK; Shoulder 2X/WK; Winter 1X/WK (d)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "24 | 108520 | VT-41 | North Arm Boat Launch Vault Toilet | VT-D | 156 | 2 | — | — | — | 04/15 – 11/15 | 7X/WK | 2X/WK | 1X/WK (d)"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108520. Open through ice-fishing access closure (to Nov 15, PWS 2.3.2). Shoulder 2X/WK; Winter 1X/WK while open."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "PS-42",
+            "line_item": null,
+            "name": "North Arm Picnic Shelter",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 1200,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/01",
+              "end": "10/15",
+              "days_per_week": 2
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 2X/WK; Shoulder 1X/WK; Winter —",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 6,
+              "excerpt": "25 | 108522 | PS-42 | North Arm Picnic Shelter | PS | 1,200 | — | 05/01 – 10/15 | 2X/WK | 1X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108522. Shoulder 1X/WK."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-51",
+            "line_item": null,
+            "name": "Eagle Bluff Overlook Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 72,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Peak 3X/WK; Shoulder 1X/WK; Winter 1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 7,
+              "excerpt": "26 | 108610 | VT-51 | Eagle Bluff Overlook Vault Toilet | VT-S | 72 | 1 | — | — | — | Year-round | 3X/WK | 1X/WK | 1X/WK"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108610. Year-round; 3X/WK in Peak only, 1X/WK Shoulder and Winter. Winter access by Park Road (plowed)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-52",
+            "line_item": null,
+            "name": "Cedar Creek Trailhead Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 156,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Peak 3X/WK; Shoulder 1X/WK; Winter 1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 7,
+              "excerpt": "27 | 108612 | VT-52 | Cedar Creek Trailhead Vault Toilet | VT-D | 156 | 2 | — | — | — | Year-round | 3X/WK | 1X/WK | 1X/WK"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108612. Year-round; 3X/WK in Peak only, 1X/WK Shoulder and Winter."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-53",
+            "line_item": null,
+            "name": "Tamarack Ski Trail Trailhead Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 64,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "1X/WK (Peak, Shoulder and Winter)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 7,
+              "excerpt": "28 | 108614 | VT-53 | Tamarack Ski Trail Trailhead Vault Toilet | VT-S | 64 | 1 | — | — | — | Year-round | 1X/WK | 1X/WK | 1X/WK"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108614. Heaviest use Dec–Mar (ski trail)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-54",
+            "line_item": null,
+            "name": "Mud Lake Boat Access Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 72,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/01",
+              "end": "10/31",
+              "days_per_week": 1
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 1X/WK; Shoulder 1X/WK; Winter 1X/WK (d)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 7,
+              "excerpt": "29 | 108616 | VT-54 | Mud Lake Boat Access Vault Toilet | VT-S | 72 | 1 | — | — | — | 05/01 – 10/31 | 1X/WK | 1X/WK | 1X/WK (d)"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108616. Gravel access road, 2.3 mi."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-55",
+            "line_item": null,
+            "name": "Hidden Falls Trailhead Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 144,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/01",
+              "end": "10/31",
+              "days_per_week": 2
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 2X/WK; Shoulder 2X/WK; Winter 2X/WK (d)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 7,
+              "excerpt": "30 | 108618 | VT-55 | Hidden Falls Trailhead Vault Toilet | VT-D | 144 | 2 | — | — | — | 05/01 – 10/31 | 2X/WK | 2X/WK | 2X/WK (d)"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108618."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-56",
+            "line_item": null,
+            "name": "Loon Narrows Boat Access Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 72,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/01",
+              "end": "10/31",
+              "days_per_week": 1
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 1X/WK; Shoulder 1X/WK; Winter 1X/WK (d)",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 7,
+              "excerpt": "31 | 108620 | VT-56 | Loon Narrows Boat Access Vault Toilet | VT-S | 72 | 1 | — | — | — | 05/01 – 10/31 | 1X/WK | 1X/WK | 1X/WK (d)"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108620. Deleted by Amendment 0001 Change 2 (registered separately)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-57",
+            "line_item": null,
+            "name": "Old Mill Picnic Area Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 144,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/15",
+              "end": "10/15",
+              "days_per_week": 2
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 2X/WK; Shoulder 1X/WK; Winter —",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 7,
+              "excerpt": "32 | 108622 | VT-57 | Old Mill Picnic Area Vault Toilet | VT-D | 144 | 2 | — | — | — | 05/15 – 10/15 | 2X/WK | 1X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108622. Shoulder 1X/WK."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "VT-58",
+            "line_item": null,
+            "name": "Pine Island Boat-in Campsites Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 64,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 1,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/28",
+              "end": "09/06",
+              "days_per_week": 1
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 1X/WK (f); Shoulder —; Winter —",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 7,
+              "excerpt": "33 | 108624 | VT-58 | Pine Island Boat-in Campsites Vault Toilet | VT-S | 64 | 1 | — | — | — | 05/28 – 09/06 | 1X/WK (f) | — | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108624. Boat access only; 6 campsites. Note (f): Contractor-furnished boat; service on Thursday (PWS 1.8: boat with operator)."
+          },
+          {
+            "table_id": "TE-1",
+            "campus": null,
+            "building_number": "PS-59",
+            "line_item": null,
+            "name": "Old Mill Picnic Shelter (CCC-era, historic)",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 880,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "weekly",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/15",
+              "end": "10/15",
+              "days_per_week": 1
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 1X/WK; Shoulder 1X/WK; Winter —",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 7,
+              "excerpt": "34 | 108626 | PS-59 | Old Mill Picnic Shelter (CCC-era, historic) | PS | 880 | — | 05/15 – 10/15 | 1X/WK | 1X/WK | —"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 108626. Note (g): historic structure, hand-clean only; no pressure washing of log walls."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_facilities",
+      "input": {
+        "facilities": [
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "101",
+            "line_item": null,
+            "name": "Lakeview Visitor Center",
+            "status": null,
+            "status_reason": null,
+            "category": "community",
+            "gross_area": 12940,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 2,
+            "fixtures": {
+              "total": null,
+              "water_closets": 10,
+              "urinals": 3,
+              "lavatories": 10,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "daily_7",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Peak 7X/WK; Shoulder 7X/WK; Winter 5X/WK (W–Su)",
+            "scope": [
+              "custodial",
+              "floor_care"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 10,
+              "excerpt": "Change 1. TE-1, Item 1, Bldg. 101: Column (6) Gross SF is changed from 11,860 to 12,940, and Columns (7)–(10) from 8/3/8/— to 10/3/10/—."
+            },
+            "confidence": 0.95,
+            "notes": "Amendment 0001 Change 1: FMSS record omitted the lower-level classroom and staff restrooms (1,080 SF), to be serviced at the frequencies already shown for Bldg. 101."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "VT-56",
+            "line_item": null,
+            "name": "Loon Narrows Boat Access Vault Toilet",
+            "status": "deleted_by_amendment",
+            "status_reason": "Amendment 0001 Change 2: \"Item 31, VT-56 Loon Narrows Boat Access Vault Toilet, is DELETED. The building was removed in October 2026 because of shoreline erosion.\"",
+            "category": "other",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": null,
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": null,
+            "scope": [],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 10,
+              "excerpt": "Change 2. Technical Exhibit 1, Item 31, VT-56 Loon Narrows Boat Access Vault Toilet, is DELETED."
+            },
+            "confidence": 0.95,
+            "notes": "A portable toilet will be provided at the site under a separate contract; no service required under this contract."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "PS-22",
+            "line_item": null,
+            "name": "Birch Point Picnic Shelter",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": null,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": null,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": null,
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "2x_week",
+            "service_days_per_year": null,
+            "service_season": {
+              "start": "05/14",
+              "end": "10/15",
+              "days_per_week": 2
+            },
+            "events_per_year": null,
+            "additional_service_days": {
+              "days_per_year": 2,
+              "label": "opening and closing cleans (PWS 2.4)"
+            },
+            "service_frequency_text": "Peak 2X/WK; Shoulder 2X/WK (Amendment 0001 Change 3); Winter —",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 10,
+              "excerpt": "Change 3. Technical Exhibit 1, Item 13, PS-22 Birch Point Picnic Shelter: Column (13) Shoulder frequency is changed from 1X/WK to 2X/WK. Peak remains 2X/WK."
+            },
+            "confidence": 0.95,
+            "notes": "Shoulder frequency revised 1X/WK -> 2X/WK by Amendment 0001."
+          },
+          {
+            "table_id": null,
+            "campus": null,
+            "building_number": "VT-60",
+            "line_item": null,
+            "name": "Lost Creek Trailhead Vault Toilet",
+            "status": null,
+            "status_reason": null,
+            "category": "other",
+            "gross_area": 144,
+            "added_areas": null,
+            "cleanable_area": null,
+            "cleanable_equals_gross": true,
+            "area_unit": "sf",
+            "area_missing": false,
+            "estimated_gross_area": null,
+            "floors": 1,
+            "fixtures": {
+              "total": null,
+              "water_closets": 2,
+              "urinals": 0,
+              "lavatories": 0,
+              "showers": 0
+            },
+            "cleaning_detail": null,
+            "occupancy": null,
+            "service_level": "3x_week",
+            "service_days_per_year": null,
+            "service_season": null,
+            "events_per_year": null,
+            "additional_service_days": null,
+            "service_frequency_text": "Peak 3X/WK; Shoulder 1X/WK; Winter 1X/WK",
+            "scope": [
+              "custodial"
+            ],
+            "floor_areas": null,
+            "floor_mix": null,
+            "dining": null,
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 10,
+              "excerpt": "Change 4. TE-1, Area E: ADD Item 35 | 118734 | VT-60 | Lost Creek Trailhead Vault Toilet | VT-D | 144 | 2 | — | — | — | Year-round | 3X/WK | 1X/WK | 1X/WK"
+            },
+            "confidence": 0.95,
+            "notes": "FMSS 118734. Item 35 added to Area E by Amendment 0001 Change 4; new building, completed Sept. 2026. Year-round; 3X/WK in Peak only."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "G-1 Lakeview Visitor Center, Headquarters and Ranger Station grounds – Bldg. 101",
+            "campus": null,
+            "facility_building_number": "101",
+            "table_id": "TE-3A",
+            "kind": "improved_turf",
+            "document_label": "Type I – Improved",
+            "mowing_frequency_text": "1X/WK",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.1333,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-1 | Lakeview Visitor Center, Headquarters and Ranger Station grounds (Bldgs. 101, 102, 104) | I | 6.4 | 1X/WK | Includes VC entry lawn and flagpole circle."
+            },
+            "confidence": 0.95,
+            "notes": "Split from a shared quantity: 6.4 acres printed for Bldgs. 101, 102, 104, divided evenly (6.4 / 3). Includes VC entry lawn and flagpole circle."
+          },
+          {
+            "name": "G-1 Lakeview Visitor Center, Headquarters and Ranger Station grounds – Bldg. 102",
+            "campus": null,
+            "facility_building_number": "102",
+            "table_id": "TE-3A",
+            "kind": "improved_turf",
+            "document_label": "Type I – Improved",
+            "mowing_frequency_text": "1X/WK",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.1333,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-1 | Lakeview Visitor Center, Headquarters and Ranger Station grounds (Bldgs. 101, 102, 104) | I | 6.4 | 1X/WK | Includes VC entry lawn and flagpole circle."
+            },
+            "confidence": 0.95,
+            "notes": "Split from a shared quantity: 6.4 acres printed for Bldgs. 101, 102, 104, divided evenly (6.4 / 3). Includes VC entry lawn and flagpole circle."
+          },
+          {
+            "name": "G-1 Lakeview Visitor Center, Headquarters and Ranger Station grounds – Bldg. 104",
+            "campus": null,
+            "facility_building_number": "104",
+            "table_id": "TE-3A",
+            "kind": "improved_turf",
+            "document_label": "Type I – Improved",
+            "mowing_frequency_text": "1X/WK",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.1333,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-1 | Lakeview Visitor Center, Headquarters and Ranger Station grounds (Bldgs. 101, 102, 104) | I | 6.4 | 1X/WK | Includes VC entry lawn and flagpole circle."
+            },
+            "confidence": 0.95,
+            "notes": "Split from a shared quantity: 6.4 acres printed for Bldgs. 101, 102, 104, divided evenly (6.4 / 3). Includes VC entry lawn and flagpole circle."
+          },
+          {
+            "name": "G-2 Maintenance compound perimeter (Bldg. 120)",
+            "campus": null,
+            "facility_building_number": "120",
+            "table_id": "TE-3A",
+            "kind": "semi_improved",
+            "document_label": "Type II – Semi-improved",
+            "mowing_frequency_text": "1X/3 WKS",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 2.2,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-2 | Maintenance compound perimeter (Bldg. 120) | II | 2.2 | 1X/3 WKS | Inside security fence only."
+            },
+            "confidence": 0.95,
+            "notes": "Inside security fence only."
+          },
+          {
+            "name": "G-3 Birch Point Campground, Loops A–C (campsite pads and loop interiors)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3A",
+            "kind": "improved_turf",
+            "document_label": "Type I – Improved",
+            "mowing_frequency_text": "1X/WK",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 9.8,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-3 | Birch Point Campground, Loops A–C (campsite pads and loop interiors) | I | 9.8 | 1X/WK | Mow Mon–Thu only (campers)."
+            },
+            "confidence": 0.95,
+            "notes": "Mow Mon–Thu only (campers)."
+          },
+          {
+            "name": "G-4 Sandy Bay Day Use Area lawns (excludes sand beach)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3A",
+            "kind": "improved_turf",
+            "document_label": "Type I – Improved",
+            "mowing_frequency_text": "1X/WK",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 7.5,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-4 | Sandy Bay Day Use Area lawns (excludes sand beach) | I | 7.5 | 1X/WK | Complete before 10:00 in Peak."
+            },
+            "confidence": 0.95,
+            "notes": "Complete before 10:00 in Peak."
+          },
+          {
+            "name": "G-5 North Arm Day Use Area",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3A",
+            "kind": "improved_turf",
+            "document_label": "Type I – Improved",
+            "mowing_frequency_text": "1X/WK",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 3.6,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-5 | North Arm Day Use Area | I | 3.6 | 1X/WK"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "G-6 Park Road shoulders, 8-ft swath both sides (11.2 mi)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3A",
+            "kind": "semi_improved",
+            "document_label": "Type II – Semi-improved",
+            "mowing_frequency_text": "1X/3 WKS",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 21.7,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-6 | Park Road shoulders, 8-ft swath both sides (11.2 mi) | II | 21.7 | 1X/3 WKS | Tractor/flail; flaggers per MUTCD."
+            },
+            "confidence": 0.95,
+            "notes": "Acreage printed (21.7 ac); strip is 11.2 mi x 8 ft x 2 sides. Tractor/flail; flaggers per MUTCD. ROW beyond the 8-ft swath maintained by NPS (PWS 3.4)."
+          },
+          {
+            "name": "G-7 Old Mill historic meadow and picnic area margins",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3A",
+            "kind": "unimproved",
+            "document_label": "Type III – Unimproved",
+            "mowing_frequency_text": "1X/YR",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 14,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-7 | Old Mill historic meadow and picnic area margins | III | 14.0 | 1X/YR | Not before August 1 (grassland bird nesting)."
+            },
+            "confidence": 0.95,
+            "notes": "Not before August 1 (grassland bird nesting). Mowed under Type III only; no trimming of the stone foundations."
+          },
+          {
+            "name": "G-8 Trailhead and boat-access parking islands (8 sites, Area E)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3A",
+            "kind": "semi_improved",
+            "document_label": "Type II – Semi-improved",
+            "mowing_frequency_text": "1X/3 WKS",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 1.9,
+            "unit": "acres",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "G-8 | Trailhead and boat-access parking islands (8 sites, Area E) | II | 1.9 | 1X/3 WKS"
+            },
+            "confidence": 0.95,
+            "notes": null
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "register_grounds",
+      "input": {
+        "areas": [
+          {
+            "name": "P-1 Lakeview Visitor Center parking lot (incl. bus/RV row)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3B",
+            "kind": "parking",
+            "document_label": "Asphalt",
+            "mowing_frequency_text": "Litter 3X/WK; sweep 1X/MO (May–Oct)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 52800,
+            "unit": "sqft",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "P-1 | Lakeview Visitor Center parking lot (incl. bus/RV row) | Asphalt | 52,800 | SF | Litter 3X/WK; sweep 1X/MO (May–Oct)"
+            },
+            "confidence": 0.95,
+            "notes": "Litter pickup continues 1X/WK in Winter when lot is open."
+          },
+          {
+            "name": "P-2 Headquarters / Ranger Station employee lot",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3B",
+            "kind": "parking",
+            "document_label": "Asphalt",
+            "mowing_frequency_text": "Litter 1X/WK; sweep 1X/MO (May–Oct)",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 14600,
+            "unit": "sqft",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "P-2 | Headquarters / Ranger Station employee lot | Asphalt | 14,600 | SF | Litter 1X/WK; sweep 1X/MO (May–Oct)"
+            },
+            "confidence": 0.95,
+            "notes": "Litter pickup continues 1X/WK in Winter when lot is open."
+          },
+          {
+            "name": "P-3 Birch Point day-use and boat launch trailer lot",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3B",
+            "kind": "parking",
+            "document_label": "Asphalt",
+            "mowing_frequency_text": "Litter 7X/WK Peak, 2X/WK Shoulder",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 38400,
+            "unit": "sqft",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "P-3 | Birch Point day-use and boat launch trailer lot | Asphalt | 38,400 | SF | Litter 7X/WK Peak, 2X/WK Shoulder"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "P-4 Sandy Bay Beach Lots 1 and 2",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3B",
+            "kind": "parking",
+            "document_label": "Asphalt",
+            "mowing_frequency_text": "Litter 7X/WK Peak; sweep 2X/MO Peak",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 71500,
+            "unit": "sqft",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "P-4 | Sandy Bay Beach Lots 1 and 2 | Asphalt | 71,500 | SF | Litter 7X/WK Peak; sweep 2X/MO Peak"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "P-5 North Arm boat launch and trailer parking",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3B",
+            "kind": "parking",
+            "document_label": "Asphalt",
+            "mowing_frequency_text": "Litter 3X/WK Peak, 1X/WK Shoulder",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 46200,
+            "unit": "sqft",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "P-5 | North Arm boat launch and trailer parking | Asphalt | 46,200 | SF | Litter 3X/WK Peak, 1X/WK Shoulder"
+            },
+            "confidence": 0.95,
+            "notes": null
+          },
+          {
+            "name": "W-1 Visitor Center plaza and sidewalks",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3B",
+            "kind": "sidewalk",
+            "document_label": "Concrete",
+            "mowing_frequency_text": "Blow/sweep 3X/WK; edge 1X/MO",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 9850,
+            "unit": "sqft",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "W-1 | Visitor Center plaza and sidewalks | Concrete | 9,850 | SF | Blow/sweep 3X/WK; edge 1X/MO"
+            },
+            "confidence": 0.95,
+            "notes": "Litter pickup continues 1X/WK in Winter."
+          },
+          {
+            "name": "W-2 Lakeshore Paved Trail, VC to Sandy Bay",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": "TE-3B",
+            "kind": "sidewalk",
+            "document_label": "Asphalt",
+            "mowing_frequency_text": "Blow 1X/WK; litter 1X/WK",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 76032,
+            "unit": "sqft",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 9,
+              "excerpt": "W-2 | Lakeshore Paved Trail, VC to Sandy Bay, 8 ft wide (1.8 mi) | Asphalt | 9,504 | LF | Blow 1X/WK; litter 1X/WK"
+            },
+            "confidence": 0.95,
+            "notes": "Printed as 9,504 LF, 8 ft wide: 9,504 LF x 8 ft x 1 side = 76,032 sqft."
+          },
+          {
+            "name": "P-6 Lost Creek Trailhead parking lot (added by Amendment 0001)",
+            "campus": null,
+            "facility_building_number": null,
+            "table_id": null,
+            "kind": "parking",
+            "document_label": "Aggregate surface",
+            "mowing_frequency_text": "Litter 1X/WK Peak and Shoulder; no sweeping",
+            "status": "in_scope",
+            "status_reason": null,
+            "quantity": 12400,
+            "unit": "sqft",
+            "source": {
+              "file": "tala-140P6127Q0018-pws.pdf",
+              "page": 10,
+              "excerpt": "Change 5. Technical Exhibit 3, Table 3-B: ADD Item P-6, Lost Creek Trailhead parking lot, aggregate surface, 12,400 SF; service: Litter 1X/WK Peak and Shoulder; no sweeping."
+            },
+            "confidence": 0.95,
+            "notes": "New area added by Amendment 0001 Change 5; Table 3-B total revised to 235,900 SF (Items P-1 – P-6). Aggregate, litter pickup only. No mowing at Lost Creek Trailhead."
+          }
+        ]
+      },
+      "pass": 0
+    },
+    {
+      "name": "set_previous_award",
+      "input": {
+        "incumbent": "North Country Facility Services, LLC",
+        "contract_number": "140P6122C0009",
+        "contract_type": null,
+        "total_value": 2731460,
+        "period_months": 60,
+        "annual_value": 574920,
+        "spend_to_date": null,
+        "spend_period_months": null,
+        "award_year": 2022,
+        "source": {
+          "file": "tala-140P6127Q0018-pws.pdf",
+          "page": 11,
+          "excerpt": "A1. ... North Country Facility Services, LLC under contract 140P6122C0009, awarded in March 2022 ... total value ... $2,731,460 over 60 months; the Option Year 4 price (April 1, 2026 – March 31, 2027) is $574,920."
+        },
+        "confidence": 0.9,
+        "notes": "Amendment 0001, Q&A A1. Base year April 1, 2022 – March 31, 2023 plus four option years ending March 31, 2027. annual_value is the Option Year 4 price. Current contract covers janitorial services only; grounds maintenance is currently performed by NPS staff and is added to this requirement, and the Sandy Bay Beach House (Bldg. 310) was cleaned by NPS seasonal staff until 2026. Contract type not stated."
+      },
+      "pass": 0
+    },
+    {
+      "name": "finish",
+      "input": {
+        "summary": "Tamarack Lakes NRA (NPS) janitorial and grounds PWS 140P6127Q0018 with Amendment 0001. TE-1: 34 rows registered (29 serviced, 46,274 SF as printed; 121 excluded N/S, 312 and 412 excluded CONC, 413 demolished, 214 option-only CLIN 0004). Amendment 0001: Bldg. 101 revised to 12,940 SF and 10/3/10 fixtures, VT-56 deleted, PS-22 Shoulder 2X/WK, VT-60 Lost Creek vault toilet (144 SF) added -> 29 serviced, 47,426 SF. Bldg. 120 cleanable 1,240 SF of 8,960 SF gross. Grounds: Table 3-A 67.1 ac (27.3 Type I, 25.8 Type II, 14.0 Type III; G-1 split across Bldgs. 101/102/104), Table 3-B 223,500 SF parking + W-1 9,850 SF walks + W-2 trail 76,032 SF (9,504 LF x 8 ft), plus Amendment P-6 12,400 SF aggregate lot. Incumbent North Country Facility Services, LLC, 140P6122C0009, $2,731,460 / 60 months, OY4 $574,920 (janitorial only).",
+        "unresolved": [
+          "TE-1 frequencies vary by season (Peak / Shoulder / Winter); service_level carries the Peak-season frequency and service_season the open–close window, with Shoulder and Winter frequencies in service_frequency_text and notes only — shoulder/winter visits are lower than the Peak rate (e.g. VT-41 7X/WK Peak, 2X/WK Shoulder, 1X/WK Winter; VT-51/VT-52 3X/WK Peak, 1X/WK rest of year; Bldg. 101 Winter 5X/WK).",
+          "Bldg. 310 Sandy Bay Beach House is 2X/DAY (twice daily, 7 days) for the Peak season and Bldg. 101 main-level public restrooms are 2X/DAY in Peak; no service level expresses two services per day (recorded as daily_7 with notes).",
+          "Table 3-C Campsite and Site Policing (102 campsites incl. 6 Pine Island sites, 102 fire rings, 18 grills, 46 bear-resistant containers) is counts only, with no grounds kind to register; recorded in site notes.",
+          "W-2 Lakeshore Paved Trail printed as 9,504 LF, 8 ft wide; registered as 76,032 sqft (length x width).",
+          "Narrative-only items out of scope: composting toilets at the 14 backcountry campsites and 3 portable toilets at the North Arm ice-fishing access (PWS 2.5(e)); portable toilet at Loon Narrows replacing VT-56 (separate contract); vault/septic pumping (PWS 2.5(f)); natural-surface trails, beach grooming and snow removal (PWS 3.2, 3.4).",
+          "TE-1 printed total 46,274 SF is the as-issued serviced total; Amendment 0001 Change 6 revises it to 47,426 SF (Area A 30,668 SF, Area E 1,740 SF)."
+        ]
+      },
+      "pass": 0
+    }
+  ]
+}
