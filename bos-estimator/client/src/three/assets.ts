@@ -1,0 +1,306 @@
+// Shared GPU assets (UI spec §9.5): module-level, lazily created singletons, disposed only when the Canvas unmounts.
+// Nothing here is created per building: 3 facade styles × (diffuse + emissive), 8 grounds-kind patterns,
+// one AO blob, and materials shared by key.
+import * as THREE from 'three';
+import type { FacilityCategory, GroundsKind } from '@shared/types';
+
+export type FacadeStyle = 'office' | 'barracks' | 'industrial';
+export const STYLES: FacadeStyle[] = ['office', 'barracks', 'industrial'];
+const INDUSTRIAL: FacilityCategory[] = ['warehouse', 'maintenance', 'hangar'];
+export const styleOf = (c: FacilityCategory): FacadeStyle => (INDUSTRIAL.includes(c) ? 'industrial' : c === 'barracks' ? 'barracks' : 'office');
+/** bay width (scene units) and bays per texture tile, per style */
+export const BAYS: Record<FacadeStyle, { bayW: number; bays: number }> = { office: { bayW: 1.6, bays: 8 }, barracks: { bayW: 1.2, bays: 10 }, industrial: { bayW: 2.4, bays: 8 } };
+
+export const seeded = (seed: string) => { let h = 2166136261; for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); } return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; };
+
+const disposables = new Set<{ dispose(): void }>();
+const track = <T extends { dispose(): void }>(x: T): T => { disposables.add(x); return x; };
+
+function canvasTex(c: HTMLCanvasElement, srgb = true): THREE.CanvasTexture {
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 1;
+  return track(t);
+}
+
+/** Facade tile on a neutral white base (the wall tint comes from instance colour): 4 floors × N bays. */
+function makeFacade(style: FacadeStyle) {
+  const W = 256, H = 256, { bays } = BAYS[style], floors = 4;
+  const diffuse = document.createElement('canvas'); diffuse.width = W; diffuse.height = H;
+  const emis = document.createElement('canvas'); emis.width = W; emis.height = H;
+  const d = diffuse.getContext('2d')!; const e = emis.getContext('2d')!;
+  const rnd = seeded(`facade-${style}`);
+  d.fillStyle = '#ffffff'; d.fillRect(0, 0, W, H);
+  d.strokeStyle = 'rgba(15,23,42,0.16)'; d.lineWidth = 2;
+  for (let f = 0; f <= floors; f++) { d.beginPath(); d.moveTo(0, (H / floors) * f); d.lineTo(W, (H / floors) * f); d.stroke(); }
+  e.fillStyle = '#000'; e.fillRect(0, 0, W, H);
+  const fh = H / floors, bw = W / bays;
+  const glass = (x: number, y: number, w: number, h: number) => {
+    const g = d.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, '#1f2c40'); g.addColorStop(1, '#34496a');
+    d.fillStyle = g; d.fillRect(x, y, w, h);
+    d.fillStyle = 'rgba(255,255,255,0.14)'; d.fillRect(x, y, w, 2);
+    if (rnd() < 0.6) {
+      const warm = rnd();
+      e.fillStyle = warm < 0.72 ? `rgba(255,${205 + Math.floor(rnd() * 40)},${120 + Math.floor(rnd() * 60)},${0.8 + rnd() * 0.2})` : `rgba(${200 + Math.floor(rnd() * 55)},${225 + Math.floor(rnd() * 30)},255,${0.75 + rnd() * 0.25})`;
+      e.fillRect(x + 1, y + 1, w - 2, h - 2);
+    }
+  };
+  for (let f = 0; f < floors; f++) {
+    for (let b = 0; b < bays; b++) {
+      const x = b * bw, y = f * fh;
+      if (style === 'industrial') {
+        glass(x + 3, y + fh * 0.12, bw - 6, fh * 0.16); // clerestory strip
+        if (b % 4 === 1) { // roll-up bay door at grade of each floor row
+          const wx = x + 3, wy = y + fh * 0.42, ww = bw * 2 - 6, wh = fh * 0.58;
+          d.fillStyle = '#8d96a3'; d.fillRect(wx, wy, ww, wh);
+          d.strokeStyle = 'rgba(0,0,0,.28)'; d.lineWidth = 1;
+          for (let k = 1; k < 6; k++) { d.beginPath(); d.moveTo(wx, wy + (wh / 6) * k); d.lineTo(wx + ww, wy + (wh / 6) * k); d.stroke(); }
+        }
+      } else if (style === 'barracks') glass(x + bw * 0.27, y + fh * 0.24, bw * 0.46, fh * 0.48);
+      else glass(x + bw * 0.12, y + fh * 0.2, bw * 0.76, fh * 0.56);
+    }
+  }
+  return { map: canvasTex(diffuse), emis: canvasTex(emis) };
+}
+
+let facades: Record<FacadeStyle, { map: THREE.Texture; emis: THREE.Texture }> | null = null;
+export function facadeTextures() {
+  if (!facades) facades = { office: makeFacade('office'), barracks: makeFacade('barracks'), industrial: makeFacade('industrial') };
+  return facades;
+}
+
+/** 128² white-based pattern per grounds kind; tinted by the material colour, tiled per zone via UV scale. */
+function patternTexture(kind: GroundsKind): THREE.CanvasTexture {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 128, 128);
+  const rnd = seeded(`pattern-${kind}`);
+  if (kind === 'improved_turf' || kind === 'athletic_field') {
+    ctx.fillStyle = 'rgba(0,0,0,0.09)'; for (let i = 0; i < 128; i += 32) ctx.fillRect(0, i, 128, 16);
+    if (kind === 'athletic_field') { ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 3; ctx.strokeRect(10, 10, 108, 108); ctx.beginPath(); ctx.moveTo(64, 10); ctx.lineTo(64, 118); ctx.stroke(); ctx.beginPath(); ctx.arc(64, 64, 14, 0, Math.PI * 2); ctx.stroke(); }
+  } else if (kind === 'parking') {
+    ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(0, 56, 128, 16);
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2;
+    for (let x = 8; x < 128; x += 16) { ctx.beginPath(); ctx.moveTo(x, 6); ctx.lineTo(x, 50); ctx.moveTo(x, 78); ctx.lineTo(x, 122); ctx.stroke(); }
+  } else if (kind === 'shrub_bed') {
+    for (let i = 0; i < 46; i++) { ctx.fillStyle = `rgba(${90 + rnd() * 80},${170 + rnd() * 60},90,0.9)`; ctx.beginPath(); ctx.arc(rnd() * 128, rnd() * 128, 5 + rnd() * 7, 0, Math.PI * 2); ctx.fill(); }
+  } else if (kind === 'tree_canopy') {
+    ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 20; i++) { ctx.fillStyle = `rgba(${40 + rnd() * 40},${140 + rnd() * 80},60,0.95)`; ctx.beginPath(); ctx.arc(rnd() * 128, rnd() * 128, 10 + rnd() * 9, 0, Math.PI * 2); ctx.fill(); }
+  } else if (kind === 'semi_improved' || kind === 'unimproved') {
+    for (let i = 0; i < 260; i++) { ctx.fillStyle = `rgba(0,0,0,${0.06 + rnd() * 0.16})`; ctx.fillRect(rnd() * 128, rnd() * 128, 2, 5); }
+  } else if (kind === 'sidewalk') {
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2; for (let x = 0; x < 128; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 128); ctx.stroke(); }
+  }
+  return canvasTex(c);
+}
+const patterns = new Map<GroundsKind, THREE.Texture>();
+export function kindTexture(kind: GroundsKind): THREE.Texture {
+  let t = patterns.get(kind);
+  if (!t) { t = patternTexture(kind); patterns.set(kind, t); }
+  return t;
+}
+
+let aoBlob: THREE.Texture | null = null;
+/** Soft contact-shadow blob (alpha in the red channel is fine: used as alphaMap). */
+export function aoTexture(): THREE.Texture {
+  if (aoBlob) return aoBlob;
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 64, 64);
+  // rounded-rectangle falloff: draw blurred rect
+  ctx.filter = 'blur(7px)'; ctx.fillStyle = '#fff'; ctx.fillRect(14, 14, 36, 36); ctx.filter = 'none';
+  aoBlob = canvasTex(c, false);
+  aoBlob.wrapS = aoBlob.wrapT = THREE.ClampToEdgeWrapping;
+  return aoBlob;
+}
+
+// ---------------------------------------------------------------- materials (shared by key)
+const mats = new Map<string, THREE.Material>();
+export function mat<T extends THREE.Material>(key: string, make: () => T): T {
+  let m = mats.get(key) as T | undefined;
+  if (!m) { m = make(); mats.set(key, m); }
+  return m;
+}
+/** Shaded material shared by key. Lambert: the scene has no glossy surfaces, and it is far cheaper per pixel. */
+export const std = (key: string, p: THREE.MeshLambertMaterialParameters & { roughness?: number; metalness?: number }) => mat(key, () => {
+  const { roughness: _r, metalness: _m, ...rest } = p; void _r; void _m;
+  return new THREE.MeshLambertMaterial(rest);
+});
+
+/**
+ * Irradiance / π for a horizontal surface (normal +y) under the current lights, written by Lighting every frame.
+ * Flat surfaces in the Fast tier use unlit materials multiplied by it: identical to Lambert without shadows,
+ * at a fraction of the per-pixel cost.
+ */
+export const flatLight = { value: new THREE.Color(1, 1, 1) };
+
+type Patch = (sh: THREE.WebGLProgramParametersWithUniforms) => void;
+/** Flat-surface material: Lambert (receives shadows) in High, unlit × flatLight in Fast. */
+export function surfaceMat(key: string, fast: boolean, p: { color: THREE.ColorRepresentation; map?: THREE.Texture | null; transparent?: boolean; opacity?: number; depthWrite?: boolean; polygonOffset?: boolean; polygonOffsetFactor?: number; polygonOffsetUnits?: number }, patch?: Patch, cacheKey?: string) {
+  return mat(`${key}-${fast ? 'fast' : 'lit'}`, () => {
+    const m: THREE.MeshBasicMaterial | THREE.MeshLambertMaterial = fast ? new THREE.MeshBasicMaterial(p) : new THREE.MeshLambertMaterial(p);
+    m.onBeforeCompile = (sh) => {
+      patch?.(sh);
+      if (fast) {
+        sh.uniforms.uFlatLight = flatLight;
+        sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform vec3 uFlatLight;')
+          .replace('#include <alphamap_fragment>', 'diffuseColor.rgb *= uFlatLight;\n#include <alphamap_fragment>');
+      }
+    };
+    if (cacheKey) m.customProgramCacheKey = () => `${cacheKey}-${fast ? 'fast' : 'lit'}`;
+    else if (fast) m.customProgramCacheKey = () => 'flat-unlit';
+    return m;
+  });
+}
+export const basic = (key: string, p: THREE.MeshBasicMaterialParameters) => mat(key, () => new THREE.MeshBasicMaterial(p));
+
+/** Uniforms shared by every field material: night factor, time, ground colour. */
+export const fieldUniforms = {
+  uNight: { value: 0 },
+  uTime: { value: 0 },
+  uGround: { value: new THREE.Color('#67715f') },
+  uEdge: { value: new THREE.Color('#0f172a') },
+  uRecent: { value: new THREE.Color('#22d3ee') },
+  uGhost: { value: new THREE.Color('#9aa3ae') },
+  uOk: { value: new THREE.Color('#22c55e') },
+};
+
+/**
+ * Building field material (one per facade style): face-local world-unit UVs so windows keep their size on every
+ * building, roof from `aRoof`, fwidth edge darkening (replaces per-building <Edges>), lit windows scaled by
+ * uNight, and per-instance state: 1 hover, 2 hidden (hero), 3 dimmed, 4 superseded, 5 recent.
+ */
+export function fieldMaterial(style: FacadeStyle): THREE.MeshLambertMaterial {
+  return mat(`field-${style}`, () => {
+    const tex = facadeTextures()[style];
+    const { bayW, bays } = BAYS[style];
+    const m = new THREE.MeshLambertMaterial({ color: '#ffffff' });
+    m.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, fieldUniforms, { uFacade: { value: tex.map }, uFacadeEmis: { value: tex.emis }, uTileW: { value: bayW * bays } });
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', `#include <common>
+          attribute vec3 aRoof; attribute vec3 aDims; attribute float aFloors; attribute float aState; attribute float aSeed; attribute float aBorn;
+          uniform float uTileW; uniform float uTime;
+          varying vec3 vRoof; varying vec2 vFacUv; varying vec2 vFace; varying float vTop; varying float vState;`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          {
+            vec3 pp = position + 0.5;
+            vec3 an = abs(normal);
+            vec2 f; vec2 fs;
+            if (an.x > 0.5) { f = vec2(pp.z, pp.y); fs = vec2(aDims.z, aDims.y); }
+            else if (an.z > 0.5) { f = vec2(pp.x, pp.y); fs = vec2(aDims.x, aDims.y); }
+            else { f = vec2(pp.x, pp.z); fs = vec2(aDims.x, aDims.z); }
+            vFace = f;
+            vTop = step(0.5, normal.y);
+            vFacUv = vec2(f.x * fs.x / uTileW + aSeed, f.y * aFloors / 4.0);
+            vRoof = aRoof; vState = aState;
+            float rise = clamp((uTime - aBorn) / 0.6, 0.0, 1.0);
+            rise = 1.0 - pow(1.0 - rise, 3.0);
+            transformed.y = (transformed.y + 0.5) * max(rise, 0.001) - 0.5;
+          }`);
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', `#include <common>
+          uniform sampler2D uFacade; uniform sampler2D uFacadeEmis; uniform float uNight; uniform float uTime;
+          uniform vec3 uGround; uniform vec3 uEdge; uniform vec3 uRecent; uniform vec3 uGhost; uniform vec3 uOk;
+          varying vec3 vRoof; varying vec2 vFacUv; varying vec2 vFace; varying float vTop; varying float vState;
+          float bayer4(vec2 p) { ivec2 i = ivec2(mod(p, 4.0)); int k = i.x + i.y * 4;
+            float m[16] = float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.); return (m[k] + 0.5) / 16.0; }`)
+        .replace('#include <map_fragment>', `
+          if (vState > 3.5 && vState < 4.5 && bayer4(gl_FragCoord.xy) > 0.4) discard;
+          vec3 facade = texture2D(uFacade, vFacUv).rgb;`)
+        .replace('#include <color_fragment>', `#include <color_fragment>
+          if (vTop > 0.5) diffuseColor.rgb = vRoof; else diffuseColor.rgb *= facade;
+          vec2 fw = max(fwidth(vFace), vec2(1e-5));
+          vec2 dpx = min(vFace, 1.0 - vFace) / fw;
+          float edge = 1.0 - smoothstep(0.6, 1.9, min(dpx.x, dpx.y));
+          diffuseColor.rgb = mix(diffuseColor.rgb, uEdge, edge * 0.35);
+          if (vState > 0.5 && vState < 1.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), 0.08) * 1.06;
+          else if (vState > 2.5 && vState < 3.5) diffuseColor.rgb = mix(diffuseColor.rgb, uGround, 0.7);
+          else if (vState > 3.5 && vState < 4.5) diffuseColor.rgb = mix(diffuseColor.rgb, uGhost, 0.6);
+          else if (vState > 4.5 && vState < 5.5) diffuseColor.rgb = mix(diffuseColor.rgb, uRecent, edge * 0.9);
+          else if (vState > 5.5) diffuseColor.rgb = mix(diffuseColor.rgb, uOk, edge * 0.95);`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+          {
+            vec3 win = texture2D(uFacadeEmis, vFacUv).rgb * (1.0 - vTop);
+            float dimK = (vState > 2.5 && vState < 4.5) ? 0.2 : 1.0;
+            totalEmissiveRadiance += win * uNight * 1.7 * dimK;
+            if (vState > 4.5 && vState < 5.5) totalEmissiveRadiance += uRecent * edge * (0.75 + 0.25 * sin(uTime * 6.0)) * 1.4;
+            if (vState > 5.5) totalEmissiveRadiance += uOk * edge * 1.2;
+          }`);
+    };
+    m.customProgramCacheKey = () => `field-${style}`;
+    return m;
+  });
+}
+
+/** Ground: base colour plus a 100-ft (10 unit) / 500-ft grid that fades with distance and density. */
+export const groundUniforms = {
+  uGrid1: { value: new THREE.Color('#727c69') },
+  uGrid2: { value: new THREE.Color('#7b8571') },
+  uGridAmt: { value: 1 },
+  uFadeFar: { value: 1500 },
+};
+export const groundColor = new THREE.Color('#67715f');
+export function groundMaterial(fast: boolean): THREE.MeshBasicMaterial | THREE.MeshLambertMaterial {
+  const m = surfaceMat('ground', fast, { color: '#67715f' }, (sh) => {
+    Object.assign(sh.uniforms, groundUniforms);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vGWorld;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        uniform vec3 uGrid1; uniform vec3 uGrid2; uniform float uGridAmt; uniform float uFadeFar; varying vec3 vGWorld;`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        {
+          float fade = (1.0 - smoothstep(uFadeFar * 0.35, uFadeFar, distance(cameraPosition.xz, vGWorld.xz))) * uGridAmt;
+          if (fade > 0.001) {
+            vec2 q1 = vGWorld.xz * 0.1; vec2 w1 = fwidth(q1);
+            vec2 c1 = abs(fract(q1 - 0.5) - 0.5) / max(w1, vec2(1e-5));
+            float l1 = (1.0 - min(min(c1.x, c1.y), 1.0)) * (1.0 - smoothstep(0.12, 0.35, max(w1.x, w1.y)));
+            vec2 q2 = q1 * 0.2; vec2 w2 = w1 * 0.2;
+            vec2 c2 = abs(fract(q2 - 0.5) - 0.5) / max(w2, vec2(1e-5));
+            float l2 = (1.0 - min(min(c2.x, c2.y), 1.0)) * (1.0 - smoothstep(0.12, 0.35, max(w2.x, w2.y)));
+            diffuseColor.rgb = mix(diffuseColor.rgb, uGrid1, l1 * fade);
+            diffuseColor.rgb = mix(diffuseColor.rgb, uGrid2, l2 * fade);
+          }
+        }`);
+  }, 'ground-grid');
+  m.color.copy(groundColor);
+  return m;
+}
+
+/** Grounds pad material per kind: shared pattern, per-instance UV scale and highlight state. */
+export function padMaterial(kind: GroundsKind, color: string, fast: boolean, border = color): THREE.MeshBasicMaterial | THREE.MeshLambertMaterial {
+  return surfaceMat(`pad-${kind}`, fast, { color, map: kindTexture(kind), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }, (sh) => {
+    sh.uniforms.uZone = { value: new THREE.Color(border) };
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec2 aUvScale; attribute float aPadState; varying float vPadState; varying vec2 vPadUv;')
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvPadState = aPadState; vPadUv = uv;\n#ifdef USE_MAP\nvMapUv = uv * aUvScale;\n#endif');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec3 uZone; varying float vPadState; varying vec2 vPadUv;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        {
+          vec2 fw = max(fwidth(vPadUv), vec2(1e-5));
+          vec2 dpx = min(vPadUv, 1.0 - vPadUv) / fw;
+          float edge = 1.0 - smoothstep(0.5, 1.5, min(dpx.x, dpx.y));
+          vec3 base = diffuseColor.rgb;
+          if (vPadState > 0.5 && vPadState < 1.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), 0.1);
+          else if (vPadState > 1.5 && vPadState < 2.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.1, 0.4, 0.9), 0.18);
+          else if (vPadState > 2.5 && vPadState < 3.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.29, 0.31, 0.27), 0.6);
+          // 1 px border: the zone colour at 60% (accent when selected, cyan when just found)
+          vec3 border = vPadState > 1.5 && vPadState < 2.5 ? vec3(0.1, 0.4, 0.9) : (vPadState > 3.5 ? vec3(0.02, 0.65, 0.8) : uZone);
+          diffuseColor.rgb = mix(diffuseColor.rgb, border, edge * (vPadState > 1.5 ? 0.9 : 0.6));
+        }`);
+  }, 'pad-instanced');
+}
+
+export function disposeAssets() {
+  for (const m of mats.values()) m.dispose();
+  mats.clear();
+  for (const d of disposables) d.dispose();
+  disposables.clear();
+  facades = null; patterns.clear(); aoBlob = null;
+}

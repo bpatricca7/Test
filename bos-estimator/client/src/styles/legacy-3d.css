@@ -1,0 +1,13 @@
+/* Styles for the 3D scene's current drei <Html> labels and worker card, kept until three/labels.css lands
+   (UI spec §2.8: THREE owns .lbl/.tip3d/.worker-card there). Zero specificity (:where) so labels.css always wins.
+   Text over 3D always sits on a solid backing (alpha ≥ 0.9). */
+:where(.label3d){display:block;background:var(--overlay-bg);border:1px solid var(--border-2);border-radius:var(--r-1);padding:2px 6px;font:500 var(--fs-xs)/16px var(--font-sans);
+  white-space:nowrap;pointer-events:none;transform:translate(-50%,-100%);color:var(--text-1);box-shadow:var(--sh-overlay)}
+:where(.label3d .n){font-family:var(--font-mono);color:var(--text-2);margin-right:4px}
+:where(.label3d.ai){border-color:var(--new)}
+:where(.label3d.sel){border-color:var(--accent);box-shadow:0 0 0 1px var(--focus)}
+:where(.label3d .sf){color:var(--text-2);font-family:var(--font-mono);margin-left:5px}
+:where(.worker-card){position:absolute;transform:translate(-50%,-120%);background:var(--overlay-bg);border:1px solid var(--border-2);border-radius:var(--r-3);padding:6px 10px;
+  font:400 var(--fs-xs)/16px var(--font-sans);white-space:nowrap;box-shadow:var(--sh-overlay);pointer-events:none;color:var(--text-1)}
+:where(.worker-card b){display:block;font-size:var(--fs-sm)}
+:where(.worker-card .c){color:var(--text-2)}

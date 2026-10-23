@@ -1,0 +1,87 @@
+/* Viewport overlays (UI spec §5.10, §8): inside .vp-area (container "vp"), 12 px margin, --overlay-bg, radius 8,
+   --sh-overlay, all data-occluder. Text over the 3D view always sits on a solid backing. */
+.vo-toolbar{position:absolute;top:12px;z-index:var(--z-vp-overlay);display:flex;align-items:center;gap:2px;height:36px;padding:0 4px;border-radius:var(--r-3);
+  background:var(--overlay-bg);box-shadow:var(--sh-overlay);pointer-events:auto;max-width:calc(100% - 24px);min-width:0}
+.vo-toolbar--left{left:12px;gap:6px;max-width:calc(100% - 300px)}
+.vo-toolbar--right{right:12px}
+.vo-toolbar .seg{flex-shrink:0}
+.vo-sel{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 2px 0 8px;border-radius:var(--r-1);background:var(--surface-sel);font-size:var(--fs-sm);color:var(--text-1);min-width:0;max-width:260px}
+.vo-sel__txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.vo-sel__txt b{font-weight:600}
+.vo-sel button{display:grid;place-items:center;width:22px;height:22px;border:0;border-radius:3px;background:transparent;color:var(--text-2);cursor:pointer;flex-shrink:0}
+.vo-sel button:hover{background:var(--surface-3);color:var(--text-1)}
+.vo-crumbs{gap:4px;padding-left:2px}
+.vo-crumbs__sep{color:var(--text-3)}
+.vo-crumbs__here{display:inline-flex;align-items:baseline;gap:6px;min-width:0;max-width:240px;font-size:var(--fs-sm);color:var(--text-1);margin-right:6px}
+.vo-crumbs__here b{font-weight:600;flex-shrink:0}
+.vo-crumbs__here .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--text-2)}
+
+/* top-centre chips (P1): off-shift callout, relayout */
+.vo-center{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:var(--z-vp-overlay);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;max-width:calc(100% - 24px)}
+.vo-chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 4px 0 10px;border-radius:var(--r-3);background:var(--overlay-bg);box-shadow:var(--sh-overlay);font-size:var(--fs-sm);color:var(--text-1);
+  pointer-events:auto;white-space:nowrap;max-width:100%}
+.vo-chip svg{color:var(--warn);flex-shrink:0}
+.vo-chip span{overflow:hidden;text-overflow:ellipsis}
+.vo-chip button{height:24px;padding:0 8px;border:0;border-radius:var(--r-1);background:var(--accent-soft);color:var(--accent);font:600 var(--fs-xs)/1 var(--font-sans);cursor:pointer;flex-shrink:0}
+.vo-chip button:hover{background:rgba(90,169,245,.24)}
+
+/* legend chip (bottom-left) and popover */
+.vo-legend{position:absolute;left:12px;bottom:12px;z-index:var(--z-vp-overlay);display:flex;align-items:center;gap:10px;max-width:calc(100% - 24px);height:28px;padding:0 10px;border:0;border-radius:var(--r-3);
+  background:var(--overlay-bg);box-shadow:var(--sh-overlay);font:400 var(--fs-xs)/1 var(--font-sans);color:var(--text-2);overflow:hidden;white-space:nowrap;pointer-events:auto;cursor:pointer}
+.vo-legend:hover{color:var(--text-1);box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 1px var(--border-2)}
+.vo-legend__item{display:inline-flex;align-items:center;gap:5px}
+.vo-legend .sw,.vo-legend-pop .sw{display:inline-grid;place-items:center;width:12px;height:12px;border-radius:3px;font-size:8px;line-height:1;color:#0b0f17;flex-shrink:0}
+.vo-legend__more{color:var(--text-3);font-weight:600}
+.vo-legend-pop{padding:10px 12px;width:240px}
+.vo-legend-pop__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.vo-legend-pop__title{font:600 var(--fs-sm)/var(--lh-sm) var(--font-sans);color:var(--text-1)}
+.vo-legend-pop__list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:3px}
+.vo-legend-pop__list li{display:flex;align-items:center;gap:8px;font-size:var(--fs-sm);line-height:var(--lh-sm);color:var(--text-1)}
+.vo-legend-pop__note{margin:8px 0 0;font-size:var(--fs-xs);line-height:var(--lh-xs);color:var(--text-3)}
+
+/* hint chip (bottom-centre; raised one row when the legend would touch it) */
+.vo-hint-row{position:absolute;left:12px;right:12px;bottom:12px;z-index:var(--z-vp-overlay);display:flex;justify-content:center;pointer-events:none}
+.vo-hint{display:inline-flex;align-items:center;gap:6px;max-width:100%;min-height:28px;padding:4px 4px 4px 10px;border-radius:var(--r-3);background:var(--overlay-bg);box-shadow:var(--sh-overlay);
+  font-size:var(--fs-xs);line-height:var(--lh-xs);color:var(--text-2);pointer-events:auto;transform:translateY(0);transition:transform var(--dur-2) var(--ease)}
+.vo-hint.is-raised{transform:translateY(-36px)}
+.vo-hint button{display:grid;place-items:center;width:20px;height:20px;border:0;border-radius:3px;background:transparent;color:var(--text-3);cursor:pointer;flex-shrink:0}
+.vo-hint button:hover{background:var(--surface-3);color:var(--text-1)}
+
+/* §8 empty card: centred in the free rect */
+.vo-empty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:var(--z-vp-overlay);width:min(520px,calc(100% - 48px));max-height:calc(100% - 24px);overflow:auto;
+  padding:24px;border-radius:var(--r-4);background:var(--overlay-bg);box-shadow:var(--sh-overlay);pointer-events:auto}
+.vo-empty__eyebrow{font:600 var(--fs-sm)/var(--lh-sm) var(--font-sans);color:var(--accent)}
+.vo-empty__title{margin:4px 0 8px;font:600 var(--fs-kpi)/var(--lh-kpi) var(--font-sans);color:var(--text-1)}
+.vo-empty__body{margin:0 0 16px;font-size:var(--fs-md);line-height:var(--lh-md);color:var(--text-2)}
+.vo-empty__drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:140px;padding:12px;border:1.5px dashed var(--border-ctl);border-radius:var(--r-4);
+  color:var(--text-2);font-size:var(--fs-md);text-align:center;transition:border-color var(--dur-1),background-color var(--dur-1)}
+.vo-empty__drop.is-drag{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.vo-empty__drop.has-files{align-items:stretch;justify-content:flex-start;border-style:solid;border-color:var(--border-2)}
+.vo-empty__up{color:var(--text-3)}
+.vo-empty__drop.is-drag .vo-empty__up{color:var(--accent)}
+.vo-empty__drop-t{font-weight:500;color:var(--text-1)}
+.vo-empty__types{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-size:var(--fs-xs);color:var(--text-3)}
+.vo-empty__types span{display:inline-flex;align-items:center;gap:4px}
+.vo-empty__files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;text-align:left}
+.vo-empty__files li{display:flex;align-items:center;gap:8px;height:28px;padding:0 2px 0 8px;border-radius:var(--r-1);background:var(--surface-2);font-size:var(--fs-sm);color:var(--text-1);min-width:0}
+.vo-empty__files li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vo-empty__files li button{display:grid;place-items:center;width:22px;height:22px;border:0;border-radius:var(--r-1);background:transparent;color:var(--text-3);cursor:pointer}
+.vo-empty__files li.more{background:transparent;color:var(--text-3);font-size:var(--fs-xs)}
+.vo-empty__actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.vo-empty__actions .btn--primary{max-width:100%}
+.vo-empty__reader{margin:12px 0 0;font-size:var(--fs-sm);color:var(--text-3)}
+.vo-empty__reader button,.vo-why-pop .link{border:0;background:transparent;padding:0;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.vo-why-pop{padding:10px 12px;max-width:340px;font-size:var(--fs-sm);line-height:var(--lh-sm);color:var(--text-2)}
+.vo-why-pop p{margin:0 0 8px}.vo-why-pop p:last-child{margin:0}
+
+/* narrow free rect: icon-only toolbar, shorter selection chip */
+@container vp (max-width:639px){
+  .vo-toolbar--right .vo-tb-label .btn__label,.vo-toolbar--right .vo-tb-label .btn__end{display:none}
+  .vo-toolbar--right .vo-tb-label{width:var(--ctl-h-sm);padding:0}
+  .vo-toolbar--left{max-width:calc(100% - 240px)}
+  .vo-sel{max-width:130px}
+  .vo-crumbs__here{max-width:120px}
+}
+@container vp (max-width:479px){.vo-crumbs__here .nm{display:none}}
+.vo-seg .seg__opt.is-blocked{color:var(--text-off);cursor:not-allowed;background:transparent}
+.vo-seg .seg__opt.is-blocked:hover{color:var(--text-off);background:transparent}

@@ -1,217 +1,157 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Edges, Html } from '@react-three/drei';
+// Hero building (UI spec §9.5): the detailed model is mounted only for the selected facility. Its massing uses
+// the shared field material (same windows and roof tint as the field), plus parapet, floor bands, rooftop units,
+// canopy, a cached EdgesGeometry outline in the accent colour, and the cut-away interior when focused.
+// When focused every shell mesh ignores raycasts, so clicks reach the crew inside.
+import { memo, useEffect, useMemo } from 'react';
+import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { FacilityEstimate } from '@shared/estimate';
-import type { Facility, FacilityCategory } from '@shared/types';
+import { FINISH_COLORS } from '../components/lib/theme';
 import { useStore } from '../store';
 import type { BuildingPlacement } from './layout';
-import { n0, pct } from '../fmt';
-import { clock } from './clock';
+import { BAYS, basic, fieldMaterial, mat, seeded, std, styleOf } from './assets';
+import { hoverFromScene } from './hover';
+import { explodeGap, floorY } from './InteriorCrew';
 
-const FINISH_COLORS: Record<string, string> = { carpet: '#7c6a52', resilient: '#aab1bb', hardTile: '#e5e7eb', concrete: '#5f6670', wood: '#b7793f' };
-const INDUSTRIAL: FacilityCategory[] = ['warehouse', 'maintenance', 'hangar'];
+const noRaycast = () => {};
+const m4 = new THREE.Matrix4();
+const q0 = new THREE.Quaternion();
+const v0 = new THREE.Vector3();
+const s0 = new THREE.Vector3();
 
-const seeded = (seed: string) => { let h = 2166136261; for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); } return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; };
-
-/** Facade textures: a diffuse map with window glass and an emissive map with the lit windows (seeded per building). */
-function makeFacade(baseColor: string, style: 'office' | 'barracks' | 'industrial', seed: string) {
-  const W = 256, H = 256, bays = style === 'barracks' ? 10 : 8, floors = 4;
-  const diffuse = document.createElement('canvas'); diffuse.width = W; diffuse.height = H;
-  const emis = document.createElement('canvas'); emis.width = W; emis.height = H;
-  const d = diffuse.getContext('2d')!; const e = emis.getContext('2d')!;
-  const rnd = seeded(seed);
-  d.fillStyle = baseColor; d.fillRect(0, 0, W, H);
-  // subtle panel joints
-  d.strokeStyle = 'rgba(0,0,0,0.12)'; d.lineWidth = 1;
-  for (let f = 0; f <= floors; f++) { d.beginPath(); d.moveTo(0, (H / floors) * f + 0.5); d.lineTo(W, (H / floors) * f + 0.5); d.stroke(); }
-  e.fillStyle = '#000'; e.fillRect(0, 0, W, H);
-  const fh = H / floors, bw = W / bays;
-  for (let f = 0; f < floors; f++) {
-    for (let b = 0; b < bays; b++) {
-      const x = b * bw, y = f * fh;
-      let wx: number, wy: number, ww: number, wh: number;
-      if (style === 'industrial') {
-        if (f !== floors - 1 && !(f === 0 && b % 4 === 1)) continue; // strip windows up top, a bay door at grade
-        if (f === 0) { wx = x + 2; wy = y + fh * 0.2; ww = bw * 2 - 4; wh = fh * 0.8; d.fillStyle = '#46505c'; d.fillRect(wx, wy, ww, wh); d.strokeStyle = 'rgba(0,0,0,.35)'; for (let k = 1; k < 5; k++) { d.beginPath(); d.moveTo(wx, wy + (wh / 5) * k); d.lineTo(wx + ww, wy + (wh / 5) * k); d.stroke(); } continue; }
-        wx = x + 3; wy = y + fh * 0.25; ww = bw - 6; wh = fh * 0.3;
-      } else if (style === 'barracks') { wx = x + bw * 0.28; wy = y + fh * 0.22; ww = bw * 0.44; wh = fh * 0.5; }
-      else { wx = x + bw * 0.14; wy = y + fh * 0.2; ww = bw * 0.72; wh = fh * 0.56; }
-      // glass
-      const g = d.createLinearGradient(wx, wy, wx + ww, wy + wh); g.addColorStop(0, '#1d2a44'); g.addColorStop(1, '#3b5a86');
-      d.fillStyle = g; d.fillRect(wx, wy, ww, wh);
-      d.fillStyle = 'rgba(255,255,255,0.12)'; d.fillRect(wx, wy, ww, 2);
-      // lit?
-      const lit = rnd() < 0.58;
-      if (lit) { const warm = rnd(); e.fillStyle = warm < 0.7 ? `rgba(255,${205 + Math.floor(rnd() * 40)},${120 + Math.floor(rnd() * 60)},${0.75 + rnd() * 0.25})` : `rgba(${200 + Math.floor(rnd() * 55)},${225 + Math.floor(rnd() * 30)},255,${0.7 + rnd() * 0.3})`; e.fillRect(wx + 1, wy + 1, ww - 2, wh - 2); }
-    }
-  }
-  const mk = (c: HTMLCanvasElement) => { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
-  return { diffuse, emis, mk };
+function instanced(geo: THREE.BufferGeometry, material: THREE.Material, items: { x: number; y: number; z: number; w: number; h: number; d: number; color?: string }[], name: string) {
+  const mesh = new THREE.InstancedMesh(geo, material, Math.max(1, items.length));
+  const col = items.some((i) => i.color) ? new THREE.InstancedBufferAttribute(new Float32Array(Math.max(1, items.length) * 3), 3) : null;
+  if (col) mesh.instanceColor = col;
+  const c = new THREE.Color();
+  items.forEach((it, i) => {
+    m4.compose(v0.set(it.x, it.y, it.z), q0, s0.set(it.w, it.h, it.d)); mesh.setMatrixAt(i, m4);
+    if (col) { c.set(it.color ?? '#ffffff'); col.setXYZ(i, c.r, c.g, c.b); }
+  });
+  mesh.count = items.length; mesh.computeBoundingSphere(); mesh.name = name;
+  return mesh;
 }
 
-export function Building({ placement: b, facility: f, estimate: e, total }: { placement: BuildingPlacement; facility: Facility; estimate: FacilityEstimate; total: number }) {
-  const selection = useStore((s) => s.selection);
-  const focusMode = useStore((s) => s.focusMode);
+export interface HeroProps { placement: BuildingPlacement; estimate?: FacilityEstimate; tint: string; focused: boolean; hovered: boolean }
+
+export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate: e, tint, focused, hovered }: HeroProps) {
+  const style = styleOf(b.category);
+  const h = Math.max(0.6, b.height);
   const select = useStore((s) => s.select);
   const setFocusMode = useStore((s) => s.setFocusMode);
-  const recentAt = useStore((s) => s.extraction.recent[f.id]);
-  const running = useStore((s) => s.extraction.running);
-  const [hover, setHover] = useState(false);
-  const selected = selection.kind === 'facility' && selection.id === f.id;
-  const focused = selected && focusMode === 'building';
-  const dimmed = focusMode === 'building' && !selected;
-  const group = useRef<THREE.Group>(null);
-  const spawnRing = useRef<THREE.Mesh>(null);
-  const born = useRef(performance.now());
-  const h = Math.max(0.6, b.height);
-  const isRecent = recentAt != null && Date.now() - recentAt < 8000;
-  const style: 'office' | 'barracks' | 'industrial' = INDUSTRIAL.includes(b.category) ? 'industrial' : b.category === 'barracks' ? 'barracks' : 'office';
 
-  // --- materials: two facade materials (x faces / z faces) so window bays keep their proportions, plus a roof
-  const mats = useMemo(() => {
-    const { diffuse, emis, mk } = makeFacade(b.color, style, f.id);
-    const bayW = style === 'barracks' ? 1.3 : style === 'industrial' ? 2.4 : 1.7;
-    const floorsPerTile = 4;
-    const make = (faceW: number) => {
-      const map = mk(diffuse), em = mk(emis);
-      const rx = Math.max(0.5, faceW / (bayW * (style === 'barracks' ? 10 : 8))), ry = Math.max(0.25, b.floors / floorsPerTile);
-      map.repeat.set(rx, ry); em.repeat.set(rx, ry);
-      return new THREE.MeshStandardMaterial({ map, emissiveMap: em, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0, roughness: 0.75, metalness: 0.05, transparent: true });
-    };
-    const sideX = make(b.box.d), sideZ = make(b.box.w);
-    const roof = new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color).multiplyScalar(0.55), roughness: 0.95, transparent: true });
-    return { sideX, sideZ, roof, all: [sideX, sideX, roof, roof, sideZ, sideZ] as THREE.Material[] };
-  }, [b.color, b.box.w, b.box.d, b.floors, style, f.id]);
-  useEffect(() => () => { for (const m of [mats.sideX, mats.sideZ, mats.roof]) { (m as THREE.MeshStandardMaterial).map?.dispose(); (m as THREE.MeshStandardMaterial).emissiveMap?.dispose(); m.dispose(); } }, [mats]);
+  // massing: one instance of the shared field material
+  const massing = useMemo(() => {
+    const geo = new THREE.BoxGeometry(1, 1, 1);
+    const one = (n: number, v: number[]) => new THREE.InstancedBufferAttribute(new Float32Array(v.length ? v : new Array(n).fill(0)), n);
+    const rnd = seeded(b.id);
+    geo.setAttribute('aRoof', one(3, [0, 0, 0]));
+    geo.setAttribute('aDims', one(3, [b.box.w, h, b.box.d]));
+    geo.setAttribute('aFloors', one(1, [Math.max(1, b.floors)]));
+    geo.setAttribute('aState', one(1, [0]));
+    geo.setAttribute('aSeed', one(1, [Math.floor(rnd() * BAYS[style].bays) / BAYS[style].bays]));
+    geo.setAttribute('aBorn', one(1, [-1e6]));
+    const mesh = new THREE.InstancedMesh(geo, fieldMaterial(style), 1);
+    mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(3), 3);
+    m4.compose(v0.set(0, h / 2, 0), q0, s0.set(b.box.w, h, b.box.d)); mesh.setMatrixAt(0, m4);
+    mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = 'hero-massing';
+    mesh.computeBoundingSphere();
+    return mesh;
+  }, [b.id, b.box.w, b.box.d, h, b.floors, style]);
+  useEffect(() => () => massing.geometry.dispose(), [massing]);
+  useEffect(() => {
+    const c = new THREE.Color(tint);
+    (massing.geometry.getAttribute('aRoof') as THREE.InstancedBufferAttribute).setXYZ(0, c.r, c.g, c.b);
+    massing.geometry.getAttribute('aRoof').needsUpdate = true;
+    const w = new THREE.Color('#e6e9ee').lerp(c, 0.25);
+    massing.instanceColor!.setXYZ(0, w.r, w.g, w.b); massing.instanceColor!.needsUpdate = true;
+    (massing.geometry.getAttribute('aState') as THREE.InstancedBufferAttribute).setX(0, hovered ? 1 : 0);
+    massing.geometry.getAttribute('aState').needsUpdate = true;
+  }, [massing, tint, hovered]);
 
-  const baseColor = useMemo(() => new THREE.Color('#ffffff'), []);
-  const tintSel = useMemo(() => new THREE.Color('#7dd3fc'), []);
-  const tintNew = useMemo(() => new THREE.Color('#fde68a'), []);
-  const tintHover = useMemo(() => new THREE.Color('#e2e8f0'), []);
-  const tmp = useMemo(() => new THREE.Color(), []);
+  // cached outline
 
-  useFrame(() => {
-    if (!group.current) return;
-    const age = (performance.now() - born.current) / 1000;
-    const rise = age < 0.9 ? 1 - Math.pow(1 - Math.min(1, age / 0.9), 3) : 1;
-    group.current.scale.y = Math.max(0.001, rise);
-    const night = (() => { const d = Math.max(0, Math.sin(((clock.time - 6) / 12) * Math.PI)); return d > 0.25 ? 0 : 1 - d / 0.25; })();
-    const pulse = isRecent ? 0.5 + 0.5 * Math.sin(performance.now() / 140) : 0;
-    const spawnGlow = age < 1.6 ? 1 - age / 1.6 : 0;
-    tmp.copy(baseColor);
-    if (selected) tmp.lerp(tintSel, 0.45); else if (isRecent) tmp.lerp(tintNew, 0.35 * pulse + 0.15); else if (hover) tmp.lerp(tintHover, 0.2);
-    const opacity = focused ? 0.1 : dimmed ? 0.35 : age < 1.2 ? 0.25 + 0.75 * Math.min(1, age / 1.2) : 1;
-    for (const m of [mats.sideX, mats.sideZ]) {
-      m.color.copy(tmp);
-      m.emissiveIntensity = focused ? 0 : night * 1.35 + (isRecent ? pulse * 0.6 : 0) + spawnGlow * 0.8;
-      m.opacity = opacity; m.depthWrite = !focused;
+  const details = useMemo(() => {
+    const unit = new THREE.BoxGeometry(1, 1, 1);
+    const roofC = new THREE.Color(tint).multiplyScalar(0.72).getStyle();
+    const parapet = instanced(unit, std('hero-parapet', { color: '#ffffff', roughness: 0.9 }), [{ x: 0, y: h + 0.12, z: 0, w: b.box.w + 0.16, h: 0.24, d: b.box.d + 0.16, color: roofC }], 'hero-parapet');
+    const floorsToDraw = Math.min(b.floors, 16);
+    const bands = instanced(unit, std('hero-band', { color: '#1b2433', roughness: 1 }), Array.from({ length: Math.max(0, floorsToDraw - 1) }, (_, i) => ({ x: 0, y: (i + 1) * b.floorHeight, z: 0, w: b.box.w + 0.06, h: 0.07, d: b.box.d + 0.06 })), 'hero-bands');
+    const units = instanced(unit, std('hero-rtu', { color: '#aab2bd' }), [], 'hero-rtu'); // rooftop units: shared field mesh
+    const extras: { x: number; y: number; z: number; w: number; h: number; d: number; color?: string }[] = [];
+    if (b.category === 'hangar') extras.push({ x: 0, y: h + 0.5, z: 0, w: b.box.w * 0.9, h: 0.9, d: b.box.d * 0.28, color: '#475569' });
+    if (style !== 'industrial') extras.push({ x: 0, y: 0.5, z: b.box.d / 2 + 0.02, w: Math.min(2.2, b.box.w * 0.3), h: 1.0, d: 0.04, color: '#22344d' }); // entrance glazing (canopy: field mesh)
+    const extra = instanced(unit, std('hero-extra', { color: '#ffffff', roughness: 0.5, metalness: 0.25 }), extras, 'hero-extra');
+    for (const m of [parapet, units, extra]) m.castShadow = true;
+    return { unit, parapet, bands, units, extra };
+  }, [b.id, b.box.w, b.box.d, b.floors, b.floorHeight, b.category, h, style, tint]);
+  useEffect(() => () => details.unit.dispose(), [details]);
+
+  // cut-away interior: finish patches, restroom cores, stair/elevator core and a faint floor cage, instanced
+  const interior = useMemo(() => {
+    if (!focused) return null;
+    const unit = new THREE.BoxGeometry(1, 1, 1);
+    const floors = Math.max(1, Math.min(b.floors, 24));
+    const mix = e?.resolved.floorMix ?? { carpet: 0.3, resilient: 0.4, hardTile: 0.2, concrete: 0.1, wood: 0 };
+    const entries = (Object.entries(mix) as [keyof typeof FINISH_COLORS, number][]).filter(([, v]) => v > 0.02).sort((p, q) => q[1] - p[1]);
+    const patches: { x: number; y: number; z: number; w: number; h: number; d: number; color: string }[] = [];
+    const rest: typeof patches = [];
+    const cores: typeof patches = [];
+    const cages: typeof patches = [];
+    const restroomsPerFloor = Math.max(1, Math.min(4, Math.round((e?.resolved.restroomFixtures ?? 4) / floors / 6)));
+    for (let f = 0; f < floors; f++) {
+      const y = floorY(b, f);
+      let x = -b.box.w / 2;
+      for (const [k, v] of entries) { const w = v * b.box.w; patches.push({ x: x + w / 2, y: y + 0.05, z: 0, w: Math.max(0.05, w - 0.02), h: 0.1, d: b.box.d - 0.02, color: FINISH_COLORS[k] ?? '#999' }); x += w; }
+      for (let r = 0; r < restroomsPerFloor; r++) rest.push({ x: -b.box.w / 2 + 0.9 + r * 1.6, y: y + 0.55, z: b.box.d / 2 - 0.8, w: 1.4, h: 0.9, d: 1.3, color: '#3b82f6' });
+      cores.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: Math.min(2.2, b.box.w * 0.18), h: b.floorHeight, d: Math.min(2.2, b.box.d * 0.18), color: '#1e293b' });
+      cages.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: b.box.w, h: b.floorHeight - 0.05, d: b.box.d, color: '#8cc8ff' });
     }
-    mats.roof.opacity = opacity; mats.roof.depthWrite = !focused;
-    (mats.roof.color as THREE.Color).copy(tmp).multiply(new THREE.Color(b.color)).multiplyScalar(0.6);
-    if (spawnRing.current) {
-      const p = Math.min(1, age / 1.4);
-      spawnRing.current.visible = p < 1;
-      spawnRing.current.scale.setScalar(Math.max(b.box.w, b.box.d) * (0.3 + p * 1.6));
-      (spawnRing.current.material as THREE.MeshBasicMaterial).opacity = (1 - p) * 0.8;
-    }
-  });
+    const pm = instanced(unit, std('int-floor', { color: '#ffffff', roughness: 0.9 }), patches, 'int-floors');
+    pm.receiveShadow = true;
+    const rm = instanced(unit, std('int-rest', { color: '#ffffff', emissive: '#1d4ed8', emissiveIntensity: 0.25, roughness: 0.6 }), rest, 'int-rest');
+    const cm = instanced(unit, std('int-core', { color: '#ffffff', roughness: 0.8 }), cores, 'int-core');
+    const wm = instanced(unit, basic('int-cage', { color: '#8cc8ff', wireframe: true, transparent: true, opacity: 0.16, depthWrite: false }), cages, 'int-cage');
+    for (const m of [pm, rm, cm, wm]) m.raycast = noRaycast;
+    return { unit, pm, rm, cm, wm };
+  }, [focused, b.id, b.box.w, b.box.d, b.floors, b.floorHeight, e]);
+  useEffect(() => () => interior?.unit.dispose(), [interior]);
+  const gap = explodeGap(b);
+  const hx = focused ? Math.max(h, Math.min(b.floors, 24) * (b.floorHeight + gap) - gap) : h;
 
-  const showLabel = selected || hover || isRecent || total <= 40;
-  const floorsToDraw = Math.min(b.floors, 12);
-  const floorBands = useMemo(() => Array.from({ length: Math.max(0, floorsToDraw - 1) }, (_, i) => (i + 1) * b.floorHeight), [floorsToDraw, b.floorHeight]);
-  const mix = e.resolved.floorMix;
-  const patches = useMemo(() => {
-    const entries = (Object.entries(mix) as [string, number][]).filter(([, v]) => v > 0.02).sort((p, q) => q[1] - p[1]);
-    let x = -b.box.w / 2; const out: { k: string; x: number; w: number }[] = [];
-    for (const [k, v] of entries) { const w = v * b.box.w; out.push({ k, x: x + w / 2, w }); x += w; }
-    return out;
-  }, [mix, b.box.w]);
-  const restroomsPerFloor = Math.max(1, Math.round(e.resolved.restroomFixtures / Math.max(1, b.floors) / 6));
-  const rooftop = useMemo(() => { const rnd = seeded(f.id + 'roof'); const n = b.box.w * b.box.d > 60 ? 1 + Math.floor(rnd() * 3) : 0; return Array.from({ length: n }, () => ({ x: (rnd() - 0.5) * b.box.w * 0.6, z: (rnd() - 0.5) * b.box.d * 0.6, w: 0.8 + rnd() * 1.4, d: 0.8 + rnd() * 1.2, h: 0.5 + rnd() * 0.6 })); }, [f.id, b.box.w, b.box.d]);
+  const outline = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(b.box.w + 0.04, hx + 0.04, b.box.d + 0.04)), [b.box.w, b.box.d, hx]);
+  useEffect(() => () => outline.dispose(), [outline]);
+  const ghostMat = mat('hero-ghost', () => new THREE.MeshStandardMaterial({ color: '#cfe3ff', transparent: true, opacity: 0.07, depthWrite: false, roughness: 0.4, side: THREE.DoubleSide }));
+  const outlineMat = mat('hero-outline', () => new THREE.LineBasicMaterial({ color: '#5aa9f5', transparent: true, opacity: 0.95 }));
+
+  const onDouble = (ev: ThreeEvent<MouseEvent>) => { ev.stopPropagation(); select({ kind: 'facility', id: b.id }); setFocusMode('building'); };
+  const onClick = (ev: ThreeEvent<MouseEvent>) => { if (ev.delta > 4) return; ev.stopPropagation(); };
+  const onMove = (ev: ThreeEvent<PointerEvent>) => { ev.stopPropagation(); hoverFromScene(b.id); };
+  const onOut = () => { if (useStore.getState().hoverId === b.id) hoverFromScene(null); };
 
   return (
     <group position={[b.box.x, 0, b.box.z]}>
-      <group ref={group}>
-        {/* main massing */}
-        <mesh position={[0, h / 2, 0]} castShadow receiveShadow material={mats.all}
-          onClick={(ev) => { ev.stopPropagation(); select({ kind: 'facility', id: f.id }); }}
-          onDoubleClick={(ev) => { ev.stopPropagation(); select({ kind: 'facility', id: f.id }); setFocusMode('building'); }}
-          onPointerOver={(ev) => { ev.stopPropagation(); setHover(true); document.body.style.cursor = 'pointer'; }}
-          onPointerOut={() => { setHover(false); document.body.style.cursor = 'auto'; }}>
-          <boxGeometry args={[b.box.w, h, b.box.d]} />
-          <Edges threshold={15} color={selected ? '#7dd3fc' : isRecent ? '#fde68a' : '#0f172a'} lineWidth={1} />
-        </mesh>
-        {/* parapet */}
-        {!focused && (
-          <mesh position={[0, h + 0.12, 0]}>
-            <boxGeometry args={[b.box.w + 0.14, 0.24, b.box.d + 0.14]} />
-            <meshStandardMaterial color={new THREE.Color(b.color).multiplyScalar(0.8)} roughness={0.9} transparent opacity={dimmed ? 0.35 : 1} />
-          </mesh>
-        )}
-        {/* floor separation bands */}
-        {!focused && floorBands.map((y) => (
-          <mesh key={y} position={[0, y, 0]}>
-            <boxGeometry args={[b.box.w + 0.06, 0.06, b.box.d + 0.06]} />
-            <meshStandardMaterial color="#0f172a" roughness={1} transparent opacity={dimmed ? 0.3 : 0.9} />
-          </mesh>
-        ))}
-        {/* rooftop units */}
-        {!focused && rooftop.map((u, i) => (
-          <mesh key={i} position={[u.x, h + 0.24 + u.h / 2, u.z]} castShadow>
-            <boxGeometry args={[u.w, u.h, u.d]} />
-            <meshStandardMaterial color="#aab2bd" roughness={0.6} metalness={0.3} transparent opacity={dimmed ? 0.35 : 1} />
-          </mesh>
-        ))}
-        {b.category === 'hangar' && !focused && <mesh position={[0, h + 0.5, 0]} castShadow><boxGeometry args={[b.box.w * 0.9, 0.9, b.box.d * 0.28]} /><meshStandardMaterial color="#475569" transparent opacity={dimmed ? 0.35 : 1} /></mesh>}
-        {/* entrance canopy on the south face */}
-        {!focused && style !== 'industrial' && (
-          <group position={[0, 0, b.box.d / 2]}>
-            <mesh position={[0, 1.15, 0.55]} castShadow><boxGeometry args={[Math.min(3.2, b.box.w * 0.4), 0.12, 1.1]} /><meshStandardMaterial color="#cbd5e1" metalness={0.4} roughness={0.4} transparent opacity={dimmed ? 0.35 : 1} /></mesh>
-            <mesh position={[0, 0.5, 0.02]}><planeGeometry args={[Math.min(2.2, b.box.w * 0.3), 1.0]} /><meshStandardMaterial color="#0b1220" emissive="#38bdf8" emissiveIntensity={0.25} transparent opacity={dimmed ? 0.35 : 1} /></mesh>
-          </group>
-        )}
-        {/* cut-away interior when focused */}
-        {focused && Array.from({ length: Math.max(1, b.floors) }, (_, i) => (
-          <group key={i} position={[0, i * b.floorHeight, 0]}>
-            {patches.map((p) => (
-              <mesh key={p.k} position={[p.x, 0.06, 0]} receiveShadow>
-                <boxGeometry args={[p.w, 0.1, b.box.d]} />
-                <meshStandardMaterial color={FINISH_COLORS[p.k] ?? '#999'} roughness={0.9} />
-              </mesh>
-            ))}
-            {Array.from({ length: restroomsPerFloor }, (_, r) => (
-              <mesh key={r} position={[-b.box.w / 2 + 0.9 + r * 1.6, 0.5, b.box.d / 2 - 0.8]} castShadow>
-                <boxGeometry args={[1.4, 0.9, 1.3]} />
-                <meshStandardMaterial color="#3b82f6" emissive="#1d4ed8" emissiveIntensity={0.3} transparent opacity={0.8} />
-              </mesh>
-            ))}
-            <mesh position={[0, b.floorHeight / 2, 0]}>
-              <boxGeometry args={[Math.min(2.2, b.box.w * 0.18), b.floorHeight, Math.min(2.2, b.box.d * 0.18)]} />
-              <meshStandardMaterial color="#1e293b" transparent opacity={0.7} />
-            </mesh>
-            <mesh position={[0, b.floorHeight / 2, 0]}>
-              <boxGeometry args={[b.box.w, b.floorHeight - 0.05, b.box.d]} />
-              <meshBasicMaterial color="#7dd3fc" wireframe transparent opacity={0.14} />
-            </mesh>
-          </group>
-        ))}
-      </group>
-      {/* spawn ripple when the reader registers the building */}
-      <mesh ref={spawnRing} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]} visible={false}>
-        <ringGeometry args={[0.9, 1, 64]} />
-        <meshBasicMaterial color="#fde68a" transparent opacity={0.8} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
-      {(total <= 60 || selected || hover || isRecent) && (
-        <Html position={[0, h + 1.4, 0]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none', display: showLabel && !dimmed ? 'block' : 'none' }}>
-          <div className={`label3d ${isRecent && running ? 'ai' : ''} ${selected ? 'sel' : ''}`}>
-            {f.buildingNumber && <span className="n">{f.buildingNumber}</span>}
-            {f.name.length > 34 ? f.name.slice(0, 32) + '…' : f.name}
-            <span className="sf">{n0(f.grossSqft)} SF</span>
-            {isRecent && <span className="sf" style={{ color: '#fde68a' }}>{pct(f.confidence)}</span>}
-          </div>
-        </Html>
+      {!focused && (
+        <>
+          <primitive object={massing} onClick={onClick} onDoubleClick={onDouble} onPointerMove={onMove} onPointerOut={onOut} />
+          <primitive object={details.parapet} raycast={noRaycast} />
+          {details.bands.count > 0 && <primitive object={details.bands} raycast={noRaycast} />}
+          {details.units.count > 0 && <primitive object={details.units} raycast={noRaycast} />}
+          {details.extra.count > 0 && <primitive object={details.extra} raycast={noRaycast} />}
+        </>
       )}
+      {focused && interior && (
+        <>
+          {gap === 0 && <mesh position={[0, hx / 2, 0]} material={ghostMat} raycast={noRaycast} renderOrder={5}>
+            <boxGeometry args={[b.box.w, hx, b.box.d]} />
+          </mesh>}
+          <primitive object={interior.pm} />
+          <primitive object={interior.rm} />
+          <primitive object={interior.cm} />
+          <primitive object={interior.wm} />
+        </>
+      )}
+      <lineSegments geometry={outline} material={outlineMat} position={[0, hx / 2, 0]} raycast={noRaycast} renderOrder={6} />
     </group>
   );
-}
+});

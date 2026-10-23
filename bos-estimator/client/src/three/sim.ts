@@ -33,6 +33,8 @@ export interface Agent {
   jobs: ScheduledJob[];
   shiftStart: number;
   shiftLen: number;
+  /** nearest of the 4 site depots (off-shift position) */
+  depot?: { x: number; z: number };
 }
 
 export interface AgentState {
@@ -46,8 +48,25 @@ export interface AgentState {
 }
 
 const WALK_SPEED = 110; // scene units per sim hour (visual pacing)
+const MAX_HOP_H = 0.25; // a travel hop never takes longer than 15 sim minutes
 
-function taskLabel(lines: { crew: Crew; name: string; annualHours: number }[], crew: Crew): string {
+/** k-means (k ≤ 4, deterministic seeds) over lot centres: crews start from and return to the nearest depot. */
+export function depots(layout: SiteLayout, k = 4): { x: number; z: number }[] {
+  const pts = layout.buildings.map((b) => ({ x: b.lot.x, z: b.lot.z }));
+  if (pts.length === 0) return [layout.depot];
+  const n = Math.min(k, pts.length);
+  const sorted = [...pts].sort((a, b) => a.x - b.x || a.z - b.z);
+  let cs = Array.from({ length: n }, (_, i) => ({ ...sorted[Math.floor(((i + 0.5) / n) * sorted.length)] }));
+  for (let it = 0; it < 8; it++) {
+    const acc = cs.map(() => ({ x: 0, z: 0, n: 0 }));
+    for (const p of pts) { let bi = 0, bd = Infinity; cs.forEach((c, i) => { const d = (c.x - p.x) ** 2 + (c.z - p.z) ** 2; if (d < bd) { bd = d; bi = i; } }); acc[bi].x += p.x; acc[bi].z += p.z; acc[bi].n++; }
+    cs = cs.map((c, i) => (acc[i].n ? { x: acc[i].x / acc[i].n, z: acc[i].z / acc[i].n } : c));
+  }
+  return cs;
+}
+const nearest = (ds: { x: number; z: number }[], p: { x: number; z: number }) => ds.reduce((m, d) => ((d.x - p.x) ** 2 + (d.z - p.z) ** 2 < (m.x - p.x) ** 2 + (m.z - p.z) ** 2 ? d : m), ds[0]);
+
+export function taskLabel(lines: { crew: Crew; name: string; annualHours: number }[], crew: Crew): string {
   const top = lines.filter((l) => l.crew === crew).sort((a, b) => b.annualHours - a.annualHours).slice(0, 2).map((l) => l.name.split(',')[0].split('(')[0].trim());
   return top.join(' · ') || crewMeta(crew).short;
 }
@@ -80,6 +99,7 @@ export function buildRoster(est: EstimateResult, layout: SiteLayout, maxAgents =
   const scale = totalHeads > maxAgents ? totalHeads / maxAgents : 1;
 
   const agents: Agent[] = [];
+  const sites = depots(layout);
   for (const meta of CREWS) {
     const crew = meta.id;
     const hc = heads.get(crew) ?? 0;
@@ -106,23 +126,26 @@ export function buildRoster(est: EstimateResult, layout: SiteLayout, maxAgents =
     const buckets: { load: number; jobs: Job[] }[] = Array.from({ length: n }, () => ({ load: 0, jobs: [] }));
     for (const c of chunks) { const b = buckets.reduce((m, x) => (x.load < m.load ? x : m), buckets[0]); b.jobs.push(c); b.load += c.hours; }
 
+    const speed = WALK_SPEED * (meta.domain === 'grounds' ? 3 : 1);
     buckets.forEach((b, i) => {
       // order jobs by location to reduce silly back-and-forth
       b.jobs.sort((p, q) => p.box.x - q.box.x || p.box.z - q.box.z);
       const scheduled: ScheduledJob[] = [];
-      let t = 0; let from = { x: layout.depot.x, z: layout.depot.z };
       const avail = shiftLen * 0.92;
       const total = b.jobs.reduce((s, j) => s + j.hours, 0);
       const squeeze = total > avail ? avail / total : 1;
+      // each agent starts its shift at its first job
+      let t = 0; let from = b.jobs.length ? { x: b.jobs[0].box.x, z: b.jobs[0].box.z } : { x: layout.depot.x, z: layout.depot.z };
       for (const j of b.jobs) {
         const dist = Math.hypot(j.box.x - from.x, j.box.z - from.z);
-        const travel = Math.max(0.05, dist / WALK_SPEED);
+        const travel = dist < 0.01 ? 0 : Math.min(MAX_HOP_H, Math.max(0.03, dist / speed));
         const start = t + travel;
         const dur = Math.max(0.1, j.hours * squeeze);
         scheduled.push({ ...j, travelStart: t, start, end: start + dur, from });
         t = start + dur; from = { x: j.box.x, z: j.box.z };
       }
-      agents.push({ id: `${crew}-${i + 1}`, crew, index: i, represents, jobs: scheduled, shiftStart, shiftLen });
+      const first = scheduled[0] ? { x: scheduled[0].box.x, z: scheduled[0].box.z } : layout.depot;
+      agents.push({ id: `${crew}-${i + 1}`, crew, index: i, represents, jobs: scheduled, shiftStart, shiftLen, depot: nearest(sites, first) });
     });
   }
   return agents;
@@ -147,7 +170,8 @@ export function serpentine(box: Box2, p: number, spacing: number, phase = 0): { 
 export function agentStates(agents: Agent[], time: number, depot: { x: number; z: number }): AgentState[] {
   return agents.map((agent) => {
     const r = relShift(agent, time);
-    const off: AgentState = { agent, status: 'off', x: depot.x, y: 0, z: depot.z, heading: 0, floor: 0, progress: 0 };
+    const home = agent.depot ?? depot;
+    const off: AgentState = { agent, status: 'off', x: home.x, y: 0, z: home.z, heading: 0, floor: 0, progress: 0 };
     if (r >= agent.shiftLen || agent.jobs.length === 0) return off;
     for (const job of agent.jobs) {
       if (r < job.travelStart) break;
@@ -190,6 +214,19 @@ export function summarize(states: AgentState[]): CrewNow[] {
   }
   for (const c of out.values()) c.where.sort((a, b) => b.n - a.n);
   return CREWS.map((m) => out.get(m.id)).filter((x): x is CrewNow => Boolean(x));
+}
+
+/** Hour (0–24, quarter-hour steps) with the most heads on shift; the crew dock's default clock time. */
+export function peakHour(roster: Agent[]): number {
+  if (!roster.length) return 18.25;
+  let best = 0, bestN = -1;
+  for (let q = 0; q < 96; q++) {
+    const h = q / 4;
+    let n = 0;
+    for (const a of roster) if (a.jobs.length && relShift(a, h) < a.shiftLen) n += a.represents;
+    if (n > bestN) { bestN = n; best = h; }
+  }
+  return best;
 }
 
 export const fmtTime = (h: number) => {

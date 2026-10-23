@@ -1,100 +1,118 @@
-import { useEffect, useMemo } from 'react';
+// App shell (UI spec §2.1): a full-bleed .stage holding the 3D Scene under an opaque, zoomable .chrome grid
+// (top bar, rail, left panel, center = run strip / free rect / bottom panel, right panel, #portal).
+// styles.css is imported first so tokens, primitives and the shell come before every feature stylesheet in the
+// bundle (feature CSS can then override primitives at equal specificity).
+import './styles.css';
+import { lazy, memo, Suspense, useEffect, useRef } from 'react';
 import { useStore } from './store';
-import { DerivedContext, EMPTY_DERIVED, type Derived, type RowMeta } from './derived';
-import { confBand, REVIEW_CONF_THRESHOLD } from './components/lib/theme';
-import { isInScope } from '@shared/types';
-import { estimateInventory } from '@shared/estimate';
-import { CREWS } from '@shared/factors';
-import { computeLayout, ZONE_COLORS, ZONE_LABELS } from './three/layout';
-import { buildRoster } from './three/sim';
+import { DerivedContext, useComputeDerived } from './derived';
 import { Scene } from './three/Scene';
-import { TopBar } from './components/TopBar';
-import { IngestPanel } from './components/IngestPanel';
-import { FacilityList } from './components/FacilityList';
-import { DetailPanel } from './components/DetailPanel';
-import { LiveBoard } from './components/LiveBoard';
-import { FactorsModal } from './components/FactorsModal';
+import { TopBar } from './components/shell/TopBar';
+import { Rail } from './components/shell/Rail';
+import { LeftPanel, RightEdgeHandle, RightPanel } from './components/shell/Panels';
+import { ShortcutsSheet } from './components/shell/ShortcutsSheet';
+import { usePanelAutoRules, useInsetsWriter, useReducedMotionAttr, useUiZoomWriter } from './components/shell/layout';
+import { chooseFiles } from './components/shell/fileChooser';
+import { RunStrip } from './components/run/RunStrip';
+import { TableView } from './components/table/TableView';
+import { BottomPanel } from './components/bottom/BottomPanel';
+import { ViewportOverlays } from './components/overlays/ViewportOverlays';
+import { ConfirmHost, ToastHost } from './components/ui';
+import { registerHotkey, pushEscape } from './components/lib/keys';
+
+const FactorsDialog = lazy(() => import('./components/dialogs/FactorsDialog').then((m) => ({ default: m.FactorsDialog })));
+
+// Test hook (spec §2.7): registered at module load so harnesses can reach the store before the first render.
+type BosWindow = Window & { __bos?: Record<string, unknown> };
+(window as BosWindow).__bos = Object.assign((window as BosWindow).__bos ?? {}, { store: useStore });
 
 export default function App() {
   const init = useStore((s) => s.init);
   const loading = useStore((s) => s.loading);
-  const project = useStore((s) => s.project);
-  const toast = useStore((s) => s.toast);
-  const focusMode = useStore((s) => s.focusMode);
-  const setFocusMode = useStore((s) => s.setFocusMode);
-  const buildingTab = useStore((s) => s.buildingTab);
-  const setBuildingTab = useStore((s) => s.setBuildingTab);
-  const selection = useStore((s) => s.selection);
-  const select = useStore((s) => s.select);
-  const autoOrbit = useStore((s) => s.autoOrbit);
-  const setAutoOrbit = useStore((s) => s.setAutoOrbit);
-  const quality = useStore((s) => s.quality);
-  const setQuality = useStore((s) => s.setQuality);
+  const loadError = useStore((s) => s.loadError);
   useEffect(() => { void init(); }, [init]);
+  useEffect(() => { (window as BosWindow).__bos = Object.assign((window as BosWindow).__bos ?? {}, { store: useStore }); }, []);
+  const derived = useComputeDerived();
 
-  const inventory = project?.inventory;
-  const assumptions = project?.assumptionOverrides;
-  const overrides = project?.factorOverrides;
-  const wages = project?.wages;
-  const review = project?.review;
-  const derived = useMemo<Derived>(() => {
-    if (!inventory) return EMPTY_DERIVED;
-    const est = estimateInventory(inventory, assumptions ?? {}, overrides, wages as never);
-    const layout = computeLayout(est.facilities.map((f) => f.resolved), inventory.grounds);
-    const roster = buildRoster(est, layout);
-    const estById = new Map(est.facilities.map((e) => [e.facilityId, e]));
-    const gestById = new Map(est.grounds.map((g) => [g.areaId, g]));
-    const rowMeta = new Map<string, RowMeta>();
-    for (const f of inventory.facilities) {
-      const r = review?.[f.id]?.status;
-      rowMeta.set(f.id, { conf: confBand(f.confidence), review: r ?? (f.confidence < REVIEW_CONF_THRESHOLD || !f.grossSqft ? 'needs' : 'ok'), issues: [], inScope: isInScope(f), edited: false });
-    }
-    for (const g of inventory.grounds) rowMeta.set(g.id, { conf: confBand(g.confidence), review: review?.[g.id]?.status ?? (g.confidence < REVIEW_CONF_THRESHOLD ? 'needs' : 'ok'), issues: [], inScope: true, edited: false });
-    const ftes = est.facilities.map((e) => e.fte).sort((a, b) => a - b);
-    const q = (p: number) => (ftes.length ? ftes[Math.min(ftes.length - 1, Math.floor(p * ftes.length))] : 0);
-    const fteBreaks: Derived['fteBreaks'] = ftes.length >= 5 ? [q(0.2), q(0.4), q(0.6), q(0.8)] : [0.5, 1, 2, 4];
-    return { est, estById, gestById, layout, layoutRev: 0, estRev: 0, roster, rowMeta, fteBreaks };
-  }, [inventory, assumptions, overrides, wages, review]);
-  useEffect(() => { (window as unknown as { __bos?: Record<string, unknown> }).__bos = Object.assign((window as unknown as { __bos?: Record<string, unknown> }).__bos ?? {}, { store: useStore }); }, []);
-
-  if (loading) return <div className="loading"><div><div className="logo">BOS</div><p>Loading estimate…</p></div></div>;
-
+  if (loading || loadError) {
+    return (
+      <div className="boot" role="status">
+        <div className="boot__card"><div className="boot__logo">BOS</div><p>{loadError ? `Could not load the project: ${loadError}` : 'Loading estimate…'}</p></div>
+      </div>
+    );
+  }
   return (
     <DerivedContext.Provider value={derived}>
-      <div className="app">
-        <main className="viewport"><Scene /></main>
-        <TopBar />
-        <aside className="panel left glass">
-          <IngestPanel />
-          <FacilityList />
-        </aside>
-        <div className="overlay view-toggle">
-          <button className={`btn ${focusMode === 'site' ? 'on' : ''}`} onClick={() => setFocusMode('site')}>Site</button>
-          <button className={`btn ${focusMode === 'building' ? 'on' : ''}`} disabled={selection.kind !== 'facility'} onClick={() => setFocusMode('building')} title={selection.kind === 'facility' ? 'Cut-away view of the selected building' : 'Select a building first'}>Inside building</button>
-          {focusMode === 'building' && (
-            <div className="pill-toggle">
-              <button className={buildingTab === 'interior' ? 'on' : ''} onClick={() => setBuildingTab('interior')}>Interior crews</button>
-              <button className={buildingTab === 'grounds' ? 'on' : ''} onClick={() => setBuildingTab('grounds')}>Grounds crews</button>
-            </div>
-          )}
-          {selection.kind !== null && <button className="btn" onClick={() => { select({ kind: null }); setFocusMode('site'); }}>Clear</button>}
-          <button className={`btn ${autoOrbit ? 'on' : ''}`} onClick={() => setAutoOrbit(!autoOrbit)} title="Slowly orbit the site when idle">◌ Orbit</button>
-          <button className="btn" onClick={() => setQuality(quality === 'high' ? 'fast' : 'high')} title="Toggle bloom and anti-aliasing">{quality === 'high' ? '✦ Cinematic' : '⚡ Fast'}</button>
-        </div>
-        <div className="hint">drag · orbit &nbsp;·&nbsp; wheel · zoom &nbsp;·&nbsp; click building or crew member &nbsp;·&nbsp; double-click · enter building</div>
-        <div className="overlay legend glass">
-          <div className="ttl">Crews</div>
-          {CREWS.map((c) => <div className="row" key={c.id}><span className="sw" style={{ background: c.color, color: c.color, borderRadius: '50%' }} />{c.short}</div>)}
-          <div className="ttl" style={{ marginTop: 6 }}>Grounds</div>
-          {(['improved_turf', 'semi_improved', 'unimproved', 'athletic_field', 'shrub_bed', 'parking', 'sidewalk'] as const).map((k) => <div className="row" key={k}><span className="sw" style={{ background: ZONE_COLORS[k], color: 'transparent' }} />{ZONE_LABELS[k]}</div>)}
-        </div>
-        <LiveBoard />
-        {toast && <div className="toast glass">{toast}</div>}
-        <aside className="panel right glass scroll">
-          <DetailPanel />
-        </aside>
-        <FactorsModal />
-      </div>
+      <Shell />
     </DerivedContext.Provider>
   );
+}
+
+const Stage = memo(function Stage() {
+  return <div className="stage"><Scene /></div>;
+});
+
+const Shell = memo(function Shell() {
+  const view = useStore((s) => s.view);
+  const phase = useStore((s) => s.extraction.phase);
+  const empty = useStore((s) => !s.project || s.project.inventory.facilities.length + s.project.inventory.grounds.length === 0);
+  const lighting = useStore((s) => s.lighting);
+  const leftOpen = useStore((s) => s.leftOpen);
+  const rightOpen = useStore((s) => s.rightOpen);
+  const factorsOpen = useStore((s) => s.factorsOpen);
+  const vpRef = useRef<HTMLDivElement>(null);
+  const chromeRef = useRef<HTMLDivElement>(null);
+  useUiZoomWriter();
+  useReducedMotionAttr();
+  useInsetsWriter(vpRef, chromeRef);
+  usePanelAutoRules();
+  useGlobalHotkeys();
+
+  return (
+    <div className="app" data-view={view} data-phase={phase} data-empty={empty ? 'true' : 'false'} data-lighting={lighting}>
+      <Stage />
+      <div ref={chromeRef} className="chrome" data-left={leftOpen ? 'open' : 'closed'} data-right={rightOpen ? 'open' : 'closed'}>
+        <TopBar />
+        <Rail />
+        <aside className="panel-left" aria-label="Inventory and documents" inert={!leftOpen}><LeftPanel /></aside>
+        <section className="center" aria-label="Site">
+          <RunStrip />
+          <div ref={vpRef} className="vp-area">
+            {view === 'table' && <TableView />}
+            <ViewportOverlays />
+            <RightEdgeHandle />
+            <ToastHost />
+          </div>
+          <BottomPanel />
+        </section>
+        <aside className="panel-right" aria-label="Inspector and estimate" inert={!rightOpen}><RightPanel /></aside>
+        <div id="portal" />
+      </div>
+      <ConfirmHost />
+      <ShortcutsSheet />
+      {factorsOpen && <Suspense fallback={null}><FactorsDialog /></Suspense>}
+    </div>
+  );
+});
+
+/** Global keys (UI spec §11). Feature-scoped keys are registered by their components. */
+function useGlobalHotkeys() {
+  useEffect(() => {
+    const s = useStore.getState;
+    const offs = [
+      registerHotkey('1', () => s().setView('map'), { label: 'Map view', group: 'Everywhere' }),
+      registerHotkey('2', () => s().setView('table'), { label: 'Table view', group: 'Everywhere' }),
+      registerHotkey('[', () => s().setLeftOpen(!s().leftOpen), { label: 'Toggle the left panel', group: 'Everywhere' }),
+      registerHotkey(']', () => s().setRightOpen(!s().rightOpen, { user: true }), { label: 'Toggle the right panel', group: 'Everywhere' }),
+      registerHotkey('\\', () => s().setBottomOpen(!s().bottomOpen), { label: 'Collapse / expand the bottom panel', group: 'Everywhere' }),
+      registerHotkey('?', () => s().setShortcutsOpen(true), { label: 'Keyboard shortcuts', group: 'Everywhere' }),
+      registerHotkey('shift+m', () => s().setFactorsOpen(true), { label: 'RS Means factors', group: 'Everywhere' }),
+      registerHotkey('mod+o', () => { if (!s().extraction.running) chooseFiles(); }, { label: 'Add documents', group: 'Everywhere', allowInInput: true }),
+      registerHotkey('mod+enter', () => { const st = s(); if (st.pendingFiles.length && !st.extraction.running) void st.analyze(); else return false; }, { label: 'Analyze pending documents', group: 'Everywhere', allowInInput: true }),
+      // Esc, lowest layers: clear the selection, then leave the building
+      pushEscape(() => { const st = s(); if (st.selection.kind === null) return false; st.select({ kind: null }); return true; }, 'selection'),
+      pushEscape(() => { const st = s(); if (st.focusMode !== 'building') return false; st.setFocusMode('site'); return true; }, 'base'),
+    ];
+    return () => { for (const off of offs) off(); };
+  }, []);
 }

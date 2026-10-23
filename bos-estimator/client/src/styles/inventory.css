@@ -1,0 +1,100 @@
+/* Left panel › Inventory tab (UI spec §5.3). Owned by the inventory feature.
+   Fixed chrome: toolbar 40 + chips 32 + column header 28 + footer 32 (+ the panel's 40 px tabs) = 172 px. */
+.inv{display:grid;grid-template-rows:var(--toolbar-h) 32px minmax(0,1fr) var(--foot-h);flex:1;min-height:0;min-width:0}
+.inv__listwrap{display:grid;grid-template-rows:28px minmax(0,1fr);min-height:0;min-width:0}
+
+/* ---------- toolbar ---------- */
+.inv__toolbar{display:flex;align-items:center;gap:4px;padding:0 6px 0 8px;min-width:0}
+.inv__search{flex:1}
+
+/* ---------- shared query controls (also used by the Table view) ---------- */
+.qsearch{position:relative;min-width:0;display:flex;align-items:center;gap:6px;height:var(--ctl-h);padding:0 8px;border:1px solid var(--border-ctl);border-radius:var(--r-2);
+  background:var(--well);color:var(--text-3);cursor:text;transition:border-color var(--dur-1),box-shadow var(--dur-1)}
+.qsearch--sm{height:var(--ctl-h-sm)}
+.qsearch:hover{border-color:#71809a}
+.qsearch:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.qsearch__icon{flex-shrink:0}
+.qsearch__input{flex:1;min-width:0;height:100%;padding:0;border:0;background:transparent;color:var(--text-1);font:400 var(--fs-md)/1 var(--font-sans);outline:none}
+.qsearch__input::placeholder{color:var(--text-3);opacity:1}
+.qsearch__clear{display:grid;place-items:center;width:18px;height:18px;padding:0;border:0;border-radius:3px;background:transparent;color:var(--text-3);cursor:pointer;flex-shrink:0}
+.qsearch__clear:hover{background:var(--surface-3);color:var(--text-1)}
+.qsearch__count{font:500 var(--fs-xs)/1 var(--font-sans);color:var(--text-3);white-space:nowrap;flex-shrink:0}
+.qchips{display:flex;align-items:center;gap:6px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+  mask-image:linear-gradient(90deg,#000 calc(100% - 16px),transparent);-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 16px),transparent)}
+.qchips::-webkit-scrollbar{display:none}
+.qchip.is-quiet{--chip-bg:var(--surface-2);--chip-bd:var(--border-1)}
+.qchip.is-quiet.chip--neutral{--chip-fg:var(--text-2)}
+.qchip__campus{max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.qchips__sep{width:1px;height:16px;background:var(--border-2);flex-shrink:0}
+.inv__chips{padding:0 16px 0 8px}
+
+/* ---------- column header (28, sortable) ---------- */
+.inv__head{display:grid;grid-template-columns:60px minmax(0,1fr) 76px 20px;align-items:stretch;gap:8px;padding:0 8px 0 11px;border-bottom:1px solid var(--border-1);
+  font:500 var(--fs-xs)/1 var(--font-sans);color:var(--text-3);min-width:0}
+.inv__th,.inv__th-part{all:unset;display:inline-flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;min-width:0;color:var(--text-3)}
+.inv__th:hover,.inv__th-part:hover{color:var(--text-1)}
+.inv__th:focus-visible,.inv__th-part:focus-visible{outline:2px solid var(--focus);outline-offset:-2px;border-radius:3px}
+.inv__th.is-on,.inv__th-part.is-on{color:var(--text-1)}
+.inv__th--r{justify-content:flex-end;gap:4px;cursor:default}
+.inv__th--name{gap:4px}
+.inv__th-sec{font-weight:600;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;min-width:0}
+.inv__th-count{font-weight:500;color:var(--text-3)}
+.inv__th-by{color:var(--text-3);font-weight:400;white-space:nowrap;flex-shrink:0}
+
+/* ---------- list ---------- */
+.inv__list{position:relative;overflow-y:auto;overflow-x:hidden;contain:strict;min-height:0;overscroll-behavior:contain;outline:none}
+.inv__list:focus-visible{box-shadow:inset 0 0 0 1px var(--border-2)}
+.inv__inner{position:relative;width:100%}
+.inv-vrow{position:absolute;left:0;right:0}
+.inv-sec{display:flex;align-items:center;gap:6px;height:100%;padding:0 12px;background:var(--surface-1);border-bottom:1px solid var(--border-1);
+  font:600 var(--fs-sm)/1 var(--font-sans);color:var(--text-2);white-space:nowrap;overflow:hidden}
+.inv-sec__count{color:var(--text-3);font-weight:500}
+.inv-sec__note{margin-left:auto;color:var(--text-3);font:400 var(--fs-xs)/1 var(--font-sans);overflow:hidden;text-overflow:ellipsis}
+.inv__empty{padding:32px 16px;text-align:center;color:var(--text-3);font-size:var(--fs-sm);line-height:var(--lh-sm)}
+.inv__empty b{color:var(--text-2);font-weight:600}
+.link-btn{all:unset;color:var(--accent);cursor:pointer;font-weight:500}
+.link-btn:hover{text-decoration:underline}
+.link-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+.inv-newpill{position:sticky;bottom:10px;z-index:4;display:flex;align-items:center;gap:4px;width:fit-content;height:24px;padding:0 10px;
+  margin:-34px auto 10px;border:0;border-radius:var(--r-pill);background:var(--new);color:#03222a;font:600 var(--fs-xs)/1 var(--font-sans);cursor:pointer;box-shadow:var(--sh-pop)}
+
+/* ---------- footer ---------- */
+.inv__foot{display:flex;align-items:center;gap:8px;padding:0 10px;border-top:1px solid var(--border-1);font-size:var(--fs-xs);color:var(--text-2);white-space:nowrap;min-width:0;overflow:hidden}
+.inv__foot-fte{margin-left:auto;font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--accent)}
+
+/* ---------- row (40, two lines): [3px stripe][# 60][name flex][metrics 76][state 20] ---------- */
+.inv-row{position:relative;display:grid;grid-template-columns:60px minmax(0,1fr) 76px 20px;align-items:center;gap:8px;height:100%;padding:0 8px 0 11px;cursor:pointer;
+  border-bottom:1px solid rgba(38,48,67,.6);transition:background-color var(--dur-1);user-select:none}
+.inv-row::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:0 2px 2px 0;background:var(--cat)}
+.inv-row::after{content:"";position:absolute;left:11px;bottom:0;height:2px;width:var(--fte);max-width:calc(100% - 19px);background:rgba(90,169,245,.45);pointer-events:none}
+.inv-row:hover,.inv-row.is-hover{background:var(--surface-3)}
+.inv-row.is-sel{background:var(--surface-sel)}
+.inv-row.is-sel::before{background:var(--accent);width:2px;top:0;bottom:0;border-radius:0}
+.inv-row.is-cursor{box-shadow:inset 0 0 0 2px var(--focus)}
+.inv-row.is-flash{animation:inv-flash 600ms ease-out}
+@keyframes inv-flash{0%,30%{background-color:rgba(90,169,245,.42)}100%{background-color:var(--surface-sel)}}
+.inv-row.is-new{animation:inv-new 2.5s ease-out}
+.inv-row.is-new::before{background:var(--new)}
+@keyframes inv-new{from{background-color:rgba(34,211,238,.12)}to{background-color:rgba(34,211,238,0)}}
+:root[data-reduced-motion="true"] .inv-row.is-new,:root[data-reduced-motion="true"] .inv-row.is-flash{animation:none}
+@media (prefers-reduced-motion:reduce){.inv-row.is-new,.inv-row.is-flash{animation:none}}
+.inv-row.is-out .inv-row__title,.inv-row.is-out .inv-row__num,.inv-row.is-out .inv-row__metrics,.inv-row.is-out .inv-row__fte{color:var(--text-3)}
+.inv-row.is-incoming{cursor:default;font-style:italic}
+.inv-row.is-incoming::before{background:var(--new)}
+.inv-row.is-incoming .inv-row__title{color:var(--text-2)}
+
+.inv-row__no{display:flex;flex-direction:column;gap:2px;min-width:0}
+.inv-row__num{font:500 var(--fs-sm)/16px var(--font-mono);color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-row__conf{display:inline-flex;align-items:center;gap:3px;font:500 var(--fs-xs)/14px var(--font-sans);white-space:nowrap}
+.inv-row__conf.is-verified{color:var(--ok-text)}
+.inv-row__name{display:flex;flex-direction:column;gap:2px;min-width:0}
+.inv-row__title{display:flex;align-items:center;gap:6px;min-width:0;font:500 var(--fs-md)/18px var(--font-sans);color:var(--text-1)}
+.inv-row__title-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.inv-row__edited{flex-shrink:0;width:6px;height:6px;border-radius:50%;background:var(--edit)}
+.inv-row__sub{font:400 var(--fs-xs)/14px var(--font-sans);color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-status{display:inline-flex;align-items:center;height:16px;padding:0 5px;border-radius:var(--r-1);background:var(--surface-3);color:var(--text-2);font:500 11.5px/16px var(--font-sans);font-style:normal}
+.inv-row__reason{color:var(--text-3)}
+.inv-row__metrics{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font:400 var(--fs-sm)/16px var(--font-mono);color:var(--text-2);min-width:0;white-space:nowrap}
+.inv-row__fte{color:var(--accent)}
+.inv-row__state{display:grid;place-items:center}
+.inv-row__icon{display:inline-grid;place-items:center}

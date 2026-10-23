@@ -1,0 +1,83 @@
+/* Bottom panel (UI spec §5.9): Crews | Log; 112 px expanded, 36 px collapsed, taller while the Log is open. */
+.bottom-panel{display:flex;flex-direction:column;height:var(--dock-h);background:var(--surface-1);border-top:1px solid var(--border-1);min-width:0;overflow:hidden;
+  transition:height var(--dur-2) var(--ease);pointer-events:auto}
+.bottom-panel.is-collapsed{height:var(--dock-h-collapsed)}
+.bottom-panel.is-log{height:min(240px,40vh)}
+.bp__head{display:flex;align-items:center;gap:8px;height:35px;padding-right:6px;flex-shrink:0;min-width:0}
+.bottom-panel.is-open .bp__head{border-bottom:1px solid var(--border-1)}
+.bp__head .tabs{border-bottom:0;height:100%;flex-shrink:0;padding:0 4px}
+.bp__toggle{margin-left:auto}
+.bp__body{flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* collapsed header: clock, play, speed and crew chips (110 px each) */
+.bp__mini{display:flex;align-items:center;gap:6px;min-width:0;flex:1;overflow:hidden}
+.bp__time{font-size:var(--fs-sm);color:var(--text-1);flex-shrink:0}
+.bp__speed{width:84px;flex-shrink:0}
+.bp__mini .bp__speed{width:84px}
+.bp__mini-crews{display:flex;gap:4px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:none;mask-image:linear-gradient(90deg,#000 calc(100% - 16px),transparent)}
+.bp__mini-crews::-webkit-scrollbar{display:none}
+.bp__mini-chip,.bp__mini-crews .chip{width:110px;justify-content:flex-start}
+.bp__mini-crews .chip__count{margin-left:auto;flex-shrink:0;font:500 var(--fs-xs)/1 var(--font-mono)}
+.bp__mini-crews .chip__main{width:100%;min-width:0}
+.bp__lastlog{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-3)}
+
+/* crews: clock card (fixed 200 px) + cards */
+.bp__crews{display:flex;gap:8px;flex:1;min-height:0;padding:6px 8px}
+.bp__clock{display:flex;flex-direction:column;justify-content:center;gap:4px;width:200px;flex-shrink:0;padding:4px 8px;border-radius:var(--r-3);background:var(--surface-2)}
+.bp__clock-row{display:flex;align-items:center;gap:8px;min-width:0}
+.bp__clock-time{font:500 24px/28px var(--font-mono);color:var(--text-1)}
+.bp__clock-part{font-size:var(--fs-xs);color:var(--text-3);white-space:nowrap}
+.bp__play{margin-left:auto}
+.bp__scrub{flex:1;min-width:0;margin:0;accent-color:var(--accent)}
+.bp__clock .bp__speed{width:90px}
+.bp__cards-wrap{position:relative;flex:1;min-width:0;display:flex}
+.bp__cards{display:flex;gap:8px;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.bp__cards::-webkit-scrollbar{display:none}
+.bp__cards-wrap.fade-l .bp__cards{mask-image:linear-gradient(90deg,transparent,#000 24px)}
+.bp__cards-wrap.fade-r .bp__cards{mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
+.bp__cards-wrap.fade-l.fade-r .bp__cards{mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
+.bp__pg{position:absolute;top:50%;transform:translateY(-50%);z-index:2;box-shadow:var(--sh-overlay)}
+.bp__pg--l{left:-4px}
+.bp__pg--r{right:-4px}
+.bp__card{position:relative;flex:1 0 190px;min-width:190px;max-width:240px;border:1px solid var(--border-1);border-radius:var(--r-3);background:var(--surface-2);overflow:hidden}
+.bp__card:hover{border-color:var(--border-2)}
+.bp__card.is-on{border:2px solid var(--crew)}
+.bp__card-main{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;gap:8px;width:100%;height:100%;padding:5px 8px;border:0;background:transparent;color:var(--text-1);text-align:left;cursor:pointer}
+.bp__card.is-on .bp__card-main{padding:4px 7px}
+.bp__card .ring{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:conic-gradient(var(--crew) calc(var(--p) * 1%),var(--surface-3) 0)}
+.bp__card .ring span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--surface-2);font:500 var(--fs-xs)/1 var(--font-mono)}
+.bp__card .txt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.bp__card .name{display:flex;align-items:center;gap:5px;font:600 var(--fs-sm)/var(--lh-sm) var(--font-sans);min-width:0}
+.bp__card .name svg{color:var(--crew);flex-shrink:0}
+.bp__card .name .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bp__card .name .cnt{margin-left:auto;font:400 var(--fs-xs)/var(--lh-sm) var(--font-mono);color:var(--text-2);white-space:nowrap}
+.bp__card .now{font-size:var(--fs-xs);line-height:var(--lh-xs);color:var(--text-3);white-space:pre-line;overflow:hidden;max-height:32px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.bp__card.is-off .ring{opacity:.6}
+.bp__jump{position:absolute;left:44px;bottom:3px;padding:1px 4px;border:0;border-radius:3px;background:var(--surface-2);color:var(--accent);font:500 var(--fs-xs)/16px var(--font-sans);cursor:pointer}
+.bp__jump:hover{background:var(--accent-soft)}
+.bp__card-x{position:absolute;top:3px;right:3px;display:grid;place-items:center;width:18px;height:18px;border:0;border-radius:3px;background:transparent;color:var(--text-2);cursor:pointer}
+.bp__card-x:hover{background:var(--surface-3);color:var(--text-1)}
+.bp__empty{padding:12px;color:var(--text-3);font-size:var(--fs-sm);font-family:var(--font-sans)}
+
+/* log */
+.bp__log{display:flex;flex-direction:column;flex:1;min-height:0;container:bplog/inline-size}
+.bp__log-bar{display:flex;align-items:center;gap:4px;padding:5px 8px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.bp__log-bar::-webkit-scrollbar{display:none}
+.bp__log-bar .icon-btn{margin-left:auto}
+.bp__log-list{flex:1;min-height:0;overflow:auto;padding:0 10px 8px;font-size:12px;line-height:17px;overscroll-behavior:contain}
+.bp__log-line{display:grid;grid-template-columns:58px 40px minmax(0,1fr);gap:8px;padding:1px 0}
+.bp__log-line .t{color:var(--text-3)}
+.bp__log-line .tag{color:var(--text-3)}
+.bp__log-line .txt{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text-2)}
+.bp__log-line.is-status .txt{color:var(--accent)}
+.bp__log-line.is-found .txt{color:var(--text-1)}
+.bp__log-line.is-warning .txt,.bp__log-line.is-warning .tag{color:var(--warn-text)}
+.bp__log-line.is-error .txt,.bp__log-line.is-error .tag{color:var(--bad-text)}
+.bp__log-line.is-thinking .txt{color:var(--text-3);font-style:italic}
+.bp__log-line.is-tool .txt{color:var(--ok-text)}
+.bp__log-sep{padding:6px 0 2px;font:600 var(--fs-xs)/var(--lh-xs) var(--font-sans);color:var(--text-3)}
+@container bplog (max-width:520px){.bp__log-line{grid-template-columns:40px minmax(0,1fr)}.bp__log-line .t{display:none}}
+.bp__card.is-on .name .cnt{padding-right:16px}
+.bp__card.is-off .now{-webkit-line-clamp:1}
+.bp__card.is-off .bp__card-main{padding-bottom:20px}
+.bp__card.is-on.is-off .bp__card-main{padding-bottom:19px}

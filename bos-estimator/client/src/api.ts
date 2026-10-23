@@ -15,18 +15,26 @@ export async function errorMessage(res: Response, fallback: string): Promise<str
   return `${fallback} (${text || status}${text ? '' : `, ${res.status}`})`;
 }
 
+async function json<T>(p: Promise<Response>, fallback: string): Promise<T> {
+  let r: Response;
+  try { r = await p; } catch (err) { throw new Error(`${fallback} (could not reach the server: ${(err as Error).message})`); }
+  if (!r.ok) throw new Error(await errorMessage(r, fallback));
+  return r.json() as Promise<T>;
+}
+
 export interface Health { ok: boolean; aiAvailable: boolean; presets: { id: string; label: string; blurb: string }[]; defaultModel: string; defaultEffort: string }
 
 export const api = {
-  health: () => fetch('/api/health').then((r) => r.json() as Promise<Health>),
-  sample: () => fetch('/api/sample').then((r) => r.text()),
-  getProject: (id: string) => fetch(`/api/projects/${id}`).then((r) => r.json() as Promise<Project>),
-  saveProject: (p: Project) => fetch(`/api/projects/${p.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }).then((r) => r.json() as Promise<Project>),
-  resetProject: (id: string) => fetch(`/api/projects/${id}`, { method: 'DELETE' }).then((r) => r.json() as Promise<Project>),
-  estimate: (id: string) => fetch(`/api/projects/${id}/estimate`, { method: 'POST' }).then((r) => r.json() as Promise<EstimateResult>),
+  health: () => json<Health>(fetch('/api/health'), 'Health check failed'),
+  sample: () => fetch('/api/sample').then(async (r) => { if (!r.ok) throw new Error(await errorMessage(r, 'Could not load the sample RFP')); return r.text(); }),
+  getProject: (id: string) => json<Project>(fetch(`/api/projects/${id}`), 'Could not load the project'),
+  /** Throws on failure (the shell shows "Not saved · Retry"). */
+  saveProject: (p: Project) => json<Project>(fetch(`/api/projects/${p.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }), 'Save failed'),
+  resetProject: (id: string) => json<Project>(fetch(`/api/projects/${id}`, { method: 'DELETE' }), 'Reset failed'),
+  estimate: (id: string) => json<EstimateResult>(fetch(`/api/projects/${id}/estimate`, { method: 'POST' }), 'Estimate failed'),
   exportCsvUrl: (id: string) => `/api/projects/${id}/export.csv`,
   runTopDown: (id: string, body: { provider?: 'auto' | 'claude' | 'heuristic'; priorAward?: PriorAward; overrides?: Partial<TopDownAssumptions> }) =>
-    fetch(`/api/projects/${id}/topdown`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async (r) => { if (!r.ok) throw new Error(await errorMessage(r, 'Top-down cross-check failed')); return r.json() as Promise<TopDownEstimate>; }),
+    json<TopDownEstimate>(fetch(`/api/projects/${id}/topdown`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), 'Top-down cross-check failed'),
 };
 
 export interface ExtractOptions {
@@ -41,6 +49,8 @@ export interface ExtractOptions {
   mode: 'replace' | 'append';
   signal?: AbortSignal;
   onEvent: (e: ExtractionEvent) => void;
+  /** called once the server answered (the upload is done and the stream is open) */
+  onResponse?: () => void;
 }
 
 /** POST multipart and parse the server-sent event stream. */
@@ -58,6 +68,7 @@ export async function runExtraction(o: ExtractOptions): Promise<void> {
   }
   if (!res.ok) throw new Error(await errorMessage(res, 'Extraction request failed'));
   if (!res.body) throw new Error('Extraction request failed (empty response from the server)');
+  o.onResponse?.();
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = '';
