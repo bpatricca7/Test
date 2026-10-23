@@ -225,13 +225,15 @@ function fullPack(facilities: ResolvedFacility[], grounds: GroundsArea[]): SiteL
     return out;
   };
   const halfW = campusW / 2, halfD = campusD / 2;
-  const sPack = bandPack(south, campusW + 20);
+  // a band is at least as wide as a square of its own area, so a grounds-heavy site packs into blocks, not strips
+  const squareW = (items: GroundsArea[]) => Math.sqrt(items.reduce((a, g) => { const z = looseSize(g, cap); return a + (z.w + GAP) * (z.d + GAP); }, 0)) * 1.15;
+  const sPack = bandPack(south, Math.max(campusW + 20, squareW(south)));
   const sW = sPack.length ? Math.max(...sPack.map((p) => p.x + p.w / 2)) : 0;
   for (const p of sPack) zones.push({ id: p.g.id, kind: p.g.kind, box: { x: p.x - sW / 2, z: halfD + ROAD + p.z, w: p.w, d: p.d }, realSqft: looseReal(p.g) });
-  const ePack = bandPack(east, Math.max(40, campusW * 0.5));
+  const ePack = bandPack(east, Math.max(40, campusW * 0.5, squareW(east)));
   const eW = ePack.length ? Math.max(...ePack.map((p) => p.x + p.w / 2)) : 0;
   for (const p of ePack) zones.push({ id: p.g.id, kind: p.g.kind, box: { x: halfW + ROAD + p.x, z: -halfD + p.z, w: p.w, d: p.d }, realSqft: looseReal(p.g) });
-  const nPack = bandPack(north, campusW + eW + 20);
+  const nPack = bandPack(north, Math.max(campusW + eW + 20, squareW(north)));
   const nD = nPack.length ? Math.max(...nPack.map((p) => p.z + p.d / 2)) : 0;
   const nW = nPack.length ? Math.max(...nPack.map((p) => p.x + p.w / 2)) : 0;
   for (const p of nPack) zones.push({ id: p.g.id, kind: p.g.kind, box: { x: p.x - nW / 2 + eW / 2, z: -halfD - ROAD - nD + p.z, w: p.w, d: p.d }, realSqft: looseReal(p.g) });

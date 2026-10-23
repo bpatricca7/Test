@@ -55,7 +55,6 @@ function useHoursDriven() {
 
 function FactorsBody({ onClose }: { onClose: () => void }) {
   const overrides = useStore((s) => s.project?.factorOverrides ?? EMPTY);
-  const setOverride = useStore((s) => s.setFactorOverride);
   const hours = useHoursDriven();
   const [q, setQ] = useState('');
   const [onlyOverridden, setOnlyOverridden] = useState(false);
@@ -67,7 +66,7 @@ function FactorsBody({ onClose }: { onClose: () => void }) {
   const shown = sort === 'hours' ? flat.length : groups.reduce((s, g) => s + g.factors.length, 0);
   const resetAll = async () => {
     const ok = await useStore.getState().confirm({ title: `Reset ${overridden} factor override${overridden === 1 ? '' : 's'}?`, body: 'Every line goes back to its default labor-hours per unit.', confirmLabel: 'Reset overrides', danger: true });
-    if (ok) for (const k of Object.keys(overrides)) setOverride(k, null);
+    if (ok) useStore.getState().setFactorOverrides(Object.fromEntries(Object.keys(overrides).map((k) => [k, null])));
   };
   return (
     <Dialog open onClose={onClose} title="RS Means-style productivity factors" subtitle={`${FACTORS.length} lines · ${overridden} overridden${hours.has ? ` · ${compact(hours.total)} direct hrs/yr` : ''}`}
@@ -146,12 +145,11 @@ function Row({ f, overrides, hours, showCrew }: { f: Factor; overrides: Record<s
 /** P1: paste "factorId,value" (or tab-separated) lines; reports applied and skipped lines. */
 function BulkPaste() {
   const pop = usePopover<HTMLButtonElement>();
-  const setOverride = useStore((s) => s.setFactorOverride);
   const [text, setText] = useState('');
   const [report, setReport] = useState<string | null>(null);
   const area = useRef<HTMLTextAreaElement>(null);
   const apply = () => {
-    let ok = 0; const skipped: string[] = [];
+    let ok = 0; const skipped: string[] = []; const patch: Record<string, number> = {};
     for (const raw of text.split(/\r?\n/)) {
       const line = raw.trim(); if (!line || line.startsWith('#')) continue;
       const [id, val] = line.split(/[,\t;]\s*/);
@@ -159,8 +157,9 @@ function BulkPaste() {
       const r = val != null ? parseNumber(val) : { ok: false as const, error: 'no value' };
       if (!f) { skipped.push(`${id ?? line}: unknown factor`); continue; }
       if (!r.ok || r.value === undefined || r.value < 0) { skipped.push(`${id}: bad value`); continue; }
-      setOverride(f.id, r.value); ok++;
+      patch[f.id] = r.value; ok++;
     }
+    useStore.getState().setFactorOverrides(patch);
     setReport(`Applied ${ok} override${ok === 1 ? '' : 's'}${skipped.length ? `; skipped ${skipped.length}: ${skipped.slice(0, 4).join('; ')}${skipped.length > 4 ? '…' : ''}` : ''}.`);
     if (ok) setText('');
   };

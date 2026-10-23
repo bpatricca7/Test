@@ -1,0 +1,289 @@
+{
+  "id": "county-govt-narrative-docx",
+  "title": "County government janitorial RFP (DOCX): narrative Description of Facilities / Locations for 21 sites, short summary table without parks, jail/sally port and garage bays excluded, Addendum No. 1 revises one building and adds a site",
+  "theme": "county-govt",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://www.gtcountymi.gov/DocumentCenter/View/14906/Custodial-Services-RFB-PDF",
+        "note": "Grand Traverse County (MI) Facilities Management, Custodial Services RFB (2020): memorandum format; \"custodial services for 12 County office buildings ... approximately 330,000 total square feet and services for 5 parks\"; each building as a block \"Governmental Center  estimated square footage: 54,337 / 400 Boardman Avenue  Evenings: Monday thru Friday / Traverse City, MI 49684\"; Jail listed with unsecured areas weekdays; \"When buildings are closed for holidays (listed below), no custodial services are required except that services are still required for those buildings noted as open.\" Model for the Sites 10-17 and 22 blocks, the parks group and Section 2.3. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://gtcountymi.gov/DocumentCenter/View/7701/Custodial-Services-RFB-PDF?bidId=",
+        "note": "Grand Traverse County Custodial Services RFB (2017 edition): same block layout (\"Law Enforcement Center ... estimated square footage: 23,326\"). Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://clinton-county.org/DocumentCenter/View/7753/Clinton-County-Janitorial-Services-RFP-Final?bidId=",
+        "note": "Clinton County (MI) Janitorial Services RFP: \"It is Clinton County's intent to contract professional cleaning services on an annual basis for the following county facilities\"; \"Scope of Work: Clinton County Courthouse (approximately 120,000 sq. ft.) All common areas will be cleaned five (5) nights per week\"; courtrooms, holding cells, jury rooms, public and employee restrooms; Sheriff's Office about 9,000 sq. ft. three nights a week; Health Department; fairgrounds hall and restrooms; background checks and key control. Model for Section 1.1, the Site 1 wording, the fairgrounds hall (Site 17) and Section 2.4. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://lenoircountync.gov/wp-content/uploads/2023/03/Janitorial-Service-RFP-Addendum-1.pdf",
+        "note": "Lenoir County (NC) Janitorial Service RFP Addendum #1 (March 10, 2023): addendum header (department, date), \"Please note the Location and date change for the Bid Opening\", and a building list (Schedules D-M) with address, floors and square footage, including the Sheriff's Annex and Jail Admin/Magistrate office. Model for Addendum No. 1 Item 1 and its location changes. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://sccwi.gov/DocumentCenter/View/11885/Janitorial-Services-RFP---2026?bidId=",
+        "note": "St. Croix County (WI) Janitorial Services RFP - 2026: \"TO WHOM IT MAY CONCERN\" cover letter; locations \"Government Center and Jail\", Services Center, Agriculture & Education Center; \"Service is to be bid at all of the locations listed, with a separate cost per building\"; square footage and service hours reviewed during the site visit; three-year term with ability to extend. Model for the cover letter, Attachment B per-site pricing and the term. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://blackhawkcounty.iowa.gov/DocumentCenter/View/7051/FY25-RFP-Janitorial?bidId=",
+        "note": "Black Hawk County (IA) FY25 RFP Janitorial: scope covers the Courthouse, \"the Jail administration area\" and Consolidated Communications Center, Juvenile Court Services and Pinecrest. Model for limiting the jail to its administrative and public areas (Site 8). Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://jeffersoncountytx.gov/blobs/purchasing/nfb/ADD/236.pdf",
+        "note": "Jefferson County (TX) RFP 23-052/MR addendum cost form: each courthouse/annex with address, floors, elevators, square feet and service days/hours (\"Mon-Fri, 5:30 pm-11:30 pm\"). Source of the 5:30-11:30 p.m. window (Section 2.2, Site 6) and of floors/elevators in the narrative. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://franklincountywa.gov/DocumentCenter/View/4065/2025-Janitorial-RFP-Final?bidId=",
+        "note": "Franklin County (WA) 2025 Janitorial RFP: Courthouse, Security Building, Public Safety Building, Corrections Center and Justice Center, with square footage given floor by floor (e.g. Justice Center first floor 14,400 sq. ft.) and a grand total. Model for the floor-by-floor breakdowns (Sites 2, 4, 6). Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://www.burlington-wi.gov/DocumentCenter/View/4359/RFP-City-of-Burlington-Janitorial-Services-2026",
+        "note": "City of Burlington (WI) Janitorial Services RFP 2026: facility table \"Facility | Total Sq. Ft. | Approx. Area Cleaned | Visits Per Week\". Model for distinguishing building area from the area cleaned (Sites 6, 8, 10) and for the short summary table. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://www.hendersonvillenc.gov/sites/default/files/uploads/rfp/rfp_221523001_janitorial_services_1.pdf",
+        "note": "City of Hendersonville (NC) RFP #221523001 Janitorial Services: frequency stated per facility (\"City Hall, 3 days per week\"; \"Downtown Restrooms, 7 days per week\"). Model for per-site frequency wording and seven-day public restroom service. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://www.cariboumaine.org/wp-content/uploads/2022/02/RFP-Janitorial-Services.pdf",
+        "note": "City of Caribou (ME) RFP Janitorial Services: \"Unless otherwise specified, work shall be on a five-day basis, Monday through Friday, between the hours of 6:00 PM and 6:00 AM.\" Paraphrased in Section 2.2. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://www.chinohills.org/DocumentCenter/View/28715/City-of-Chino-Hills-Janitorial-Services-RFP",
+        "note": "City of Chino Hills (CA) Janitorial Services RFP: general hours plus facility-specific windows (police building 7:00 PM-6:00 AM; library after closing). Model for the dispatch-floor and library-closing wording (Sites 5, 7). Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://wincoil.gov/images/departments/purchasing/open-bids-quotes-rfps/RFP_24P-2358_ADDENDUM_TWO_FINAL_pdf.pdf",
+        "note": "Winnebago County (IL) RFP #24P-2358 Facilities Janitorial Services, Addendum Two: bidder Q&A asking for the incumbent vendor, its tenure and the existing annual contract value. Model for putting the current contract in Addendum Q&A (Q1/A1). Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://wincoil.gov/images/RFP_24P-2358_ADDENDUM_ONE_docx.pdf",
+        "note": "Winnebago County RFP #24P-2358 Addendum One: square footage and housekeeping floor plans issued by addendum, Juvenile Detention Center lobby added. Model for changing scope and square footage by addendum. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://www.cityofventura.ca.gov/DocumentCenter/View/49091/Addendum-1",
+        "note": "City of Ventura (CA) janitorial RFP Addendum 1: clarifies that the Attachment A square footage is the full building size. Model for Addendum Q2/A2 (gross vs cleanable). Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      },
+      {
+        "url": "https://archive.oa.mo.gov/fmdc/facilitiesoperations/addendum/JLSG0416A_Addendum_1a.pdf",
+        "note": "Missouri OA / FMDC janitorial bid amendment (Springfield): a location \"ADDED PER AMENDMENT 001\" with its square footage; \"the state agency may add or delete buildings ... at any time during the term of the contract\". Model for Addendum Item 3 (Site 22 added) and Section 1.7. Full document not opened in this session (WebFetch could not resolve hosts and the egress proxy refused direct downloads); wording taken from the search-engine excerpts of the document."
+      }
+    ],
+    "notes": "Every value is illustrative: Kessling County, Michigan, its towns (Ardmore Falls, Halvorsen, Corwin), addresses, ZIP codes, square footages, schedules, the solicitation (RFP No. 2026-041), the incumbent (Northern Shores Building Services, Inc., Contract No. KC-23-0412, $91,240/month) and the purchasing contact (reserved .example.org domain). No rows were copied. The structure and wording follow the county and city janitorial RFPs cited: Grand Traverse County building blocks (\"estimated square footage:\" / \"Evenings: Monday thru Friday\"), Clinton County \"Scope of Work: ... (approximately N sq. ft.)\" lead and \"five (5) nights per week\", Franklin County floor-by-floor areas, Burlington \"Approx. Area Cleaned\", Black Hawk County jail administration area only, St. Croix per-building pricing, Lenoir / Winnebago / Ventura / Missouri addenda. Research limits: WebFetch failed to resolve every host and the egress proxy refused direct downloads, so the sources were read only through search-engine excerpts; the quoted phrases are as the excerpts gave them. The sally-port / inmate-worker exclusion wording was not found verbatim in any source and is the author's construction from the jail-administration-only scopes (Black Hawk, Lenoir) and the Clinton County holding-cell mention. Independent review (2026-10-23): WebFetch again failed DNS and the proxy refused direct download (403); search excerpts confirmed the Black Hawk County 2024 janitorial bid scope \"Jail (Administration Area and Consolidated Communications Center)\" and the Winnebago County 24P-2358 Addendum Two Q&A on the incumbent and annual contract value (answered there by attaching the prior agreement and an invoice); the Grand Traverse and Clinton County phrases could not be re-confirmed from excerpts. All truth values were re-derived from the rendered DOCX and agree."
+  },
+  "inputs": [
+    {
+      "src": "rfp-2026-041-janitorial.html",
+      "as": "docx",
+      "out": "RFP-2026-041-Janitorial-Services-with-Addendum-1.docx"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "1",
+        "name": "Kessling County Courthouse",
+        "grossSqft": 38900,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2",
+        "name": "Kessling County Administration Building",
+        "grossSqft": 52400,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "3",
+        "name": "Courthouse Annex",
+        "grossSqft": 9860,
+        "floors": 2,
+        "serviceLevel": "3x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "4",
+        "name": "Human Services Building",
+        "grossSqft": 46210,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "5",
+        "name": "Kessling County Library, Main Library",
+        "grossSqft": 27300,
+        "floors": 2,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "6",
+        "name": "Kessling County Justice Center",
+        "grossSqft": 71250,
+        "cleanableSqft": 69150,
+        "floors": 3,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "7",
+        "name": "Law Enforcement Center (Sheriff's Office and Central Dispatch)",
+        "grossSqft": 24600,
+        "floors": 2,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "8",
+        "name": "Kessling County Jail",
+        "grossSqft": 96800,
+        "cleanableSqft": 5850,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "9",
+        "name": "Friend of the Court and Probation Building",
+        "grossSqft": 12480,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "10",
+        "name": "Central Garage (Facilities & Fleet)",
+        "grossSqft": 34200,
+        "cleanableSqft": 4350,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "11",
+        "name": "Commission on Aging Senior Center",
+        "grossSqft": 15600,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "12",
+        "name": "Animal Control & Adoption Center",
+        "grossSqft": 8900,
+        "floors": 1,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "13",
+        "name": "Emergency Operations Center",
+        "grossSqft": 6250,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "14",
+        "name": "Records Storage Center",
+        "grossSqft": 11800,
+        "floors": 1,
+        "serviceLevel": "biweekly",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "15",
+        "name": "North County Service Center",
+        "grossSqft": 7420,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "16",
+        "name": "South County Service Center",
+        "grossSqft": 6180,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "17",
+        "name": "Fairgrounds Exhibit Hall",
+        "grossSqft": 14400,
+        "floors": 1,
+        "category": "community"
+      },
+      {
+        "buildingNumber": "18",
+        "name": "Lakeview County Park, Beach House",
+        "grossSqft": 1840,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "19",
+        "name": "Lakeview County Park, Campground Shower Building",
+        "grossSqft": 1120,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "20",
+        "name": "Riverbend Trailhead Restroom",
+        "grossSqft": 380,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "21",
+        "name": "Cedar Bluff Park, Lodge",
+        "grossSqft": 3600,
+        "floors": 1,
+        "category": "community"
+      },
+      {
+        "buildingNumber": "22",
+        "name": "Community Corrections and Pretrial Services Office",
+        "grossSqft": 5280,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "admin"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "cold",
+      "installationName": "Kessling County",
+      "solicitation": "RFP No. 2026-041"
+    },
+    "priorAward": {
+      "annualValue": 1094880,
+      "incumbent": "Northern Shores Building Services, Inc.",
+      "contractNumber": "KC-23-0412",
+      "awardYear": 2023
+    }
+  },
+  "traps": [
+    "Narrative inventory: square footage, floors, days of service and exclusions for each site are in prose under \"SECTION 3 - DESCRIPTION OF FACILITIES / LOCATIONS\". Table 3-1 is a short summary (Site | Facility | Address | Approx. Sq. Ft. | Service Days) of the 17 County buildings only: it has no floors, hours or cleaning areas, and it omits the four park facilities (Sites 18-21), which exist only as run-in paragraphs in Section 3.4.",
+    "Three narrative layouts in one document: Sites 1-9 are Heading 4 + address line + paragraph (Site 2 instead has a plain Grand Traverse-style block under its heading: \"Kessling County Administration Building - estimated square footage: 52,400\" / \"400 E. Main Street - Evenings: Monday thru Friday\"); Sites 10-17 (and Addendum Site 22) are Grand Traverse-style three-line blocks with only the site name bold and the lines split by <w:br/> (\"Site 10 - Central Garage (Facilities & Fleet) - estimated square footage: 34,200\" / \"2850 County Farm Road - Evenings: Monday thru Friday\" / \"Ardmore Falls, MI 49689\") followed by a prose paragraph; Sites 18-21 are single paragraphs with a bold name lead and the address in the same paragraph (a separate plain run). A reader that drops <w:br/> glues the area to the street number (\"34,2002850 County Farm Road\", \"5,280 sq. ft.610 Orchard Street\").",
+    "Mixed area wording: \"Scope of Work: Kessling County Courthouse (approximately 38,900 sq. ft.)\", \"estimated square footage: 52,400\", \"9,860 sq. ft. +/-\", \"approximately 41,750 square feet\", \"approximately 5,280 sq. ft.\". Street numbers (1700, 1720, 2850, 7700) and ZIP codes (49689, 49631, 49655) sit next to the areas.",
+    "Floor-by-floor and floor-finish breakdowns are not facilities: Administration Building 9,800 + 14,200 x 3 = 52,400 and carpet 34,000 + VCT 11,600 + ceramic 6,800 = 52,400; Justice Center 26,150 + 24,300 + 20,800 = 71,250; Human Services 21,420 + 20,330 = 41,750, revised by the addendum to 25,880 + 20,330 = 46,210.",
+    "Gross vs contractor cleaning area (stated in the narrative only; Table 3-1 shows the gross with an asterisk glued to the number, \"71,250*\", \"96,800*\", \"34,200*\"): Justice Center 71,250 gross, holding cells / prisoner corridor / sally port 2,100 excluded, cleaning area 69,150; Jail 96,800 gross, secure areas (housing, booking, vehicle sally port, kitchen, laundry, medical) cleaned by inmate workers, contractor area 5,850; Central Garage 34,200 gross, 29,850 of bays excluded, contractor area 4,350. Truth: grossSqft = building area, cleanableSqft = the stated contractor area.",
+    "Exclusions with no stated area (Courthouse basement archive room, Administration server room, Health Department lab and pharmacy, Senior Center kitchen, Animal Control kennels / surgery, LEC evidence room, Records shelving) do not change the stated building area; cleanableSqft is not set for those sites.",
+    "Section 3.5 \"Facilities Not Included\" lists buildings with areas that are NOT in scope: Juvenile Detention Center (18,600), Medical Care Facility (84,000), former Corwin Township Hall (3,100, vacant / for sale), Pine Run Park restroom (450, removed from service, demolition spring 2027), Airport terminal (no area). Also not in scope: the Lakeview concession stand (separate 420 sq. ft. building) and the fairgrounds barns, grandstand and outdoor restrooms.",
+    "Addendum No. 1 (dated November 20, 2026, bound after Attachment B) supersedes the RFP and the original pages never hint at it: Item 2 revises Site 4 Human Services Building from 41,750 to 46,210 sq. ft. (4,460 sq. ft. WIC addition); Item 3 adds Site 22 Community Corrections and Pretrial Services Office (5,280 sq. ft., one story, Monday / Wednesday / Friday evenings); Item 4 revises the Table 3-1 total to 489,830 for 18 buildings.",
+    "Stale prose total: Section 1.2 still says \"seventeen (17) County buildings totaling approximately 480,000 square feet\" after the addendum; it is a rounded prose total, not a facility.",
+    "Totals are not facilities: Table 3-1 \"TOTAL - 17 County buildings\" 480,090; Addendum Item 4 \"TOTAL - 18 County buildings: 489,830\"; Attachment B \"TOTAL ANNUAL PRICE (Lines A-1 through C-3)\". Table 3-1 total = sum of its rows; with the addendum, 480,090 + 4,460 + 5,280 = 489,830. Parks (1,840 + 1,120 + 380 + 3,600 = 6,940) are outside both totals; all 22 in-scope facilities sum to 496,770.",
+    "Attachment B repeats the sites with its own line numbers that differ from site numbers: A-17 is Site 20, B-1/B-2 are Sites 18/19, C-1 is Site 17, C-2 is Site 21, C-3/C-4 are \"All\", and the addendum adds A-18 for Site 22. \"Est. Qty / Yr\" values (12, 1, 31, 58, 40) are pricing quantities, not facility data. Building numbers in truth are the Site numbers.",
+    "Names differ between the narrative, Table 3-1 and Attachment B: \"Kessling County Administration Building\" / \"Administration Building\"; \"Commission on Aging Senior Center\" / \"Senior Center\"; \"Law Enforcement Center (Sheriff's Office and Central Dispatch)\" / \"Law Enforcement Center / Central Dispatch\"; \"Kessling County Jail\" / \"Jail (public and administrative areas only)\" / \"Jail - public and admin areas\"; \"Lakeview County Park, Beach House\" / \"Lakeview Beach House\". Same facilities, not extras.",
+    "Service frequency wording (per site): \"five (5) nights per week, Monday thru Friday\" and \"Evenings: Monday thru Friday\" = daily_5; \"six (6) days per week, Monday thru Saturday ... No Sunday cleaning\" while the library is open Sundays Sept-May = daily_6; \"seven (7) days per week, including holidays\" (LEC) = daily_7; \"three (3) evenings per week - Monday, Wednesday and Friday\" and \"Friday, Saturday and Sunday mornings\" = 3x_week; \"Tuesday and Friday\", \"Tuesday and Thursday\", \"Monday and Thursday\" evenings = 2x_week; \"Once per week (Thursday)\" plus on-call after EOC activations = weekly; \"Every other Wednesday (26 visits per year)\" = biweekly. Table 3-1 abbreviations: \"M-F\", \"M, W, F\", \"M-Sat\", \"7 days\", \"Tu, F\", \"Th\", \"Alt. Wed.\", \"Tu, Th\", \"M, Th\", \"On call\".",
+    "No recurring service level for event / rental sites: Fairgrounds Exhibit Hall (Site 17) is cleaned after scheduled events (31 in 2025) and each morning of fair week; Cedar Bluff Lodge (Site 21) after each rental (58 in 2025). serviceLevel is omitted for both.",
+    "Seasonal park buildings: Site 18 Beach House daily, seven days a week, May 29 - September 6, 2027 only (about 101 days); Site 19 Campground Shower Building daily May 1 - October 15 (about 168 days). Truth uses daily_7 as the stated weekly pattern. Model limitation: daily_7 is 360 days/yr in shared/types.ts, so their labor estimate runs high until a seasonal day count is supported.",
+    "Section 2.5 task-frequency table (Each service visit / Weekly / Monthly / Quarterly / Semi-annually / Annually) is per task, not a facility service level.",
+    "Floors: \"Four-story office building (Lower Level and Floors 1-3)\" = 4; Courthouse is \"three stories over a full basement\", so floors is left out of truth for Site 1; the Riverbend Trailhead Restroom states no story count, so floors is left out for Site 20.",
+    "Grounds are out of scope: building maintenance, grounds maintenance, lawn care and snow removal are by County staff (1.2, 2.7, 3.4). Acreage in sentences is information only: Courthouse square 2.3 acres, Lakeview County Park 46 acres with 14 acres of mowed turf and 900 feet of beach, 38-acre fairgrounds, 120-acre Cedar Bluff Park. Expected grounds is an empty list.",
+    "Distractor counts and years near the areas: restrooms (10, 14, 4, 16, 6, 18 + 10, 8, 3), 6 courtrooms, jury assembly seating 150, 212-bed jail, 12 exam rooms, 8 interview rooms, 64-site campground, years 1898 / 1987 / 1979 / 2008 / 2004, 2020 population 63,912. Restroom counts are not fixture counts, so restroomFixtures is not set.",
+    "Prior award appears only in Addendum Q&A A1: Northern Shores Building Services, Inc., Contract No. KC-23-0412, awarded November 2023, term February 1, 2024 - January 31, 2027, $91,240 monthly = $1,094,880 annually (event / rental cleaning billed separately). No total contract value is stated, so totalValue and periodMonths are not set. Other dollar amounts ($1,000,000 / $2,000,000 CGL, $1,000,000 auto, $50,000 crime bond, $150 / $250 deductions) are not award values.",
+    "Contract term: three years (February 1, 2027 - January 31, 2030) plus two one-year extensions = 5 contract years. Solicitation \"RFP No. 2026-041\". Climate: Michigan, with a November 1 - April 15 winter-conditions clause = cold.",
+    "DOCX specifics: the RFP header block and the addendum header are body paragraphs and a two-column key-dates table (no Word header/footer); site names in Sections 3.3-3.4 are bold runs, not heading styles; line breaks inside the Grand Traverse-style blocks are <w:br/> within one paragraph."
+  ]
+}

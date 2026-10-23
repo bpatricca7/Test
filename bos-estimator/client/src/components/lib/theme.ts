@@ -15,6 +15,8 @@ export type RowReview = 'verified' | 'flagged' | 'needs' | 'ok';
 export const CONF = { hi: 0.75, mid: 0.45 } as const; // display bands
 export const REVIEW_CONF_THRESHOLD = 0.6; // needs-review threshold (spec §6.2)
 export function confBand(c: number): ConfBand { return c >= CONF.hi ? 'hi' : c >= CONF.mid ? 'mid' : 'lo'; }
+/** Tone of the bottom-up vs implied Δ chip (§5.1): ≤ 10 % ok, ≤ 25 % warn, otherwise bad. */
+export function deltaTone(d: number): 'ok' | 'warn' | 'bad' { const a = Math.abs(d); return a <= 0.1 ? 'ok' : a <= 0.25 ? 'warn' : 'bad'; }
 export const CONF_GLYPH = { hi: '●', mid: '◆', lo: '▲' } as const;
 export const CONF_COLOR = { hi: '#22c55e', mid: '#f59e0b', lo: '#ef4444' } as const;
 export const REVIEW_COLOR = { verified: '#22c55e', flagged: '#f472b6', needs: '#f59e0b', ok: '#c9ced6' } as const;

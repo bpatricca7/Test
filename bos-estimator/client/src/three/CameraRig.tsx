@@ -132,7 +132,7 @@ export function CameraRig() {
     inRun: false, runFits: 0, runUserMoved: false, lastAutoAt: -1e9, lastGrowthAt: -1e9,
     fitBounds: null as Box2 | null, lastSpec: null as FitSpec | null, lastInteract: performance.now(), lastChange: 0,
     preEnter: null as Pose | null, inBuilding: false, damping: true, camSeq: camCmd?.seq ?? 0, maxDist: 400,
-    fitLayout: null as SiteLayout | null,
+    fitLayout: null as SiteLayout | null, lastCmdFitAt: -1e9,
   });
   const layoutRef = useRef<SiteLayout | null>(layout);
   layoutRef.current = layout;
@@ -210,7 +210,8 @@ export function CameraRig() {
     } else if (phase === 'done') {
       s.lastAutoAt = performance.now();
       s.pendingExtract = false;
-      if (!s.runUserMoved && !s.inBuilding) fitSite();
+      // one fit for "run done", whether the shell's request or the phase change arrives first
+      if (!s.runUserMoved && !s.inBuilding && performance.now() - s.lastCmdFitAt > 2500) fitSite();
       s.inRun = false;
     } else if (phase === 'failed' || phase === 'cancelled' || phase === 'idle') { s.inRun = false; s.pendingExtract = false; }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -244,8 +245,9 @@ export function CameraRig() {
     if (!camCmd || camCmd.seq === s.camSeq) return;
     s.camSeq = camCmd.seq;
     if (camCmd.kind === 'fit-site') {
-      if (performance.now() - s.lastAutoAt < 1000) {
-        // same moment as an automatic trigger (first data, run done): one fit. If the layout was re-packed in
+      if (performance.now() - s.lastAutoAt < 2500) {
+        // the shell's own request for the same moment as an automatic trigger (first data, run done): one fit.
+        // If the layout was re-packed in
         // between (relayout after a first read), retarget it without counting another fit.
         if (layoutRef.current && layoutRef.current !== s.fitLayout && !s.runUserMoved && !s.inBuilding) fitSite({ count: false });
         return;
@@ -253,7 +255,7 @@ export function CameraRig() {
       if (!layoutRef.current) { s.pendingFit = true; return; }
       if (s.inBuilding) return;
       fitSite();
-      s.fitted = true;
+      s.fitted = true; s.lastCmdFitAt = performance.now();
     } else frameSelection();
   }, [camCmd?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -300,11 +302,16 @@ export function CameraRig() {
         startAnim(computeFit(camera, size.width, size.height, spec), 600, 'enter');
       } else {
         const hx = Math.max(b.height, Math.min(b.floors, 24) * (b.floorHeight + explodeGap(b)));
-        const dist = Math.max(b.box.w, b.box.d, hx) * 1.5 + 8;
-        const target = new THREE.Vector3(b.box.x, hx * 0.4, b.box.z);
         const pol = 55 * DEG;
-        const pos = target.clone().add(new THREE.Vector3(Math.sin(pol) * Math.sin(az), Math.cos(pol), Math.sin(pol) * Math.cos(az)).multiplyScalar(dist));
-        startAnim({ target, pos }, 600, 'enter');
+        // spec distance max(w, d, h) × 1.5 + 8, pulled back when the (exploded) building would not fit the free rect
+        const fit = computeFit(camera, size.width, size.height, { bounds: { x: b.box.x, z: b.box.z, w: b.box.w + 2, d: b.box.d + 2 }, maxH: hx, az, polar: pol });
+        const dist = Math.max(Math.max(b.box.w, b.box.d, hx) * 1.5 + 8, fit.dist);
+        if (dist > Math.max(b.box.w, b.box.d, hx) * 1.5 + 8) startAnim({ target: fit.target, pos: fit.pos }, 600, 'enter');
+        else {
+          const target = new THREE.Vector3(b.box.x, hx * 0.4, b.box.z);
+          const pos = target.clone().add(new THREE.Vector3(Math.sin(pol) * Math.sin(az), Math.cos(pol), Math.sin(pol) * Math.cos(az)).multiplyScalar(dist));
+          startAnim({ target, pos }, 600, 'enter');
+        }
       }
     } else if (!inside && s.inBuilding) {
       s.inBuilding = false;

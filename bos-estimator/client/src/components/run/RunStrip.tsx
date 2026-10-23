@@ -9,9 +9,7 @@ import { useDerived } from '../../derived';
 import { clockMs, duration } from '../../fmt';
 import { cx } from '../lib/cx';
 import { Button, IconButton, Tooltip } from '../ui';
-import { firstNeedsByImpact, goToRow } from '../inspector/queue';
-import { nextNeeds } from '../inventory/reviewLoop';
-import { sortPatch } from '../lib/query';
+import { startReview } from '../inventory/reviewLoop';
 import { roleLabel } from '../documents/reader';
 import '../../styles/run.css';
 
@@ -143,22 +141,14 @@ function useRestore(x: ExtractionState) {
 
 function Done({ x, elapsed }: { x: ExtractionState; elapsed: number }) {
   const dismiss = useStore((s) => s.dismissRun);
-  const setQuery = useStore((s) => s.setQuery);
-  const { counts, rowMeta, estById, gestById } = useDerived();
+  const { counts, estById, gestById } = useDerived();
   const askRestore = useRestore(x);
   const r = x.result;
   const delta = r && (x.startCount ?? 0) > 0 ? ` (+${r.added} new · ${r.changed} changed · ${r.removed} missing)` : '';
   const took = x.endedAt && x.startedAt ? x.endedAt - x.startedAt : elapsed;
   const full = `Read complete in ${duration(took)} · ${x.progress.registered.toLocaleString()} facilities · ${x.progress.grounds.toLocaleString()} grounds · ${counts.needs.toLocaleString()} need review · ${x.warnings.length} warning${x.warnings.length === 1 ? '' : 's'}${delta}`;
-  const review = () => {
-    const s = useStore.getState();
-    setQuery({ chip: 'needs', text: '', ...sortPatch('impact') });
-    s.openLeft('inventory');
-    if (s.view === 'table') s.setView('map');
-    s.select({ kind: null });
-    // let the list publish its new order, then take the first row J would (same order as the keys)
-    setTimeout(() => { if (!nextNeeds(1, { quiet: true })) { const p = useStore.getState().project; if (p) goToRow(firstNeedsByImpact(p.inventory, rowMeta, estById, gestById)); } }, 150);
-  };
+  // [Review N]: the Needs review chip sorted by Impact, and its first row selected (§5.5)
+  const review = () => { startReview((id) => estById.get(id)?.fte ?? gestById.get(id)?.fte ?? 0, { needsChip: true }); };
   return (
     <div className="runstrip runstrip--done" aria-label="Read complete">
       <CircleCheck size={16} className="runstrip__icon" aria-hidden />

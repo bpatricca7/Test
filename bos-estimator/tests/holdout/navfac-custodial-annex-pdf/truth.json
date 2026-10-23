@@ -1,0 +1,425 @@
+{
+  "id": "navfac-custodial-annex-pdf",
+  "title": "NAVFAC BOS Section J extract (PDF): J-1503010 Custodial attachments with COL / Service Class tables, 3-page landscape Custodial Inventory (main base + annex + outlying NOSC, floor-type SF, subtotals, excluded/on-call/NAF/option rows), conformed through Amendment 0002, plus J-1503050-04 Total Acreage Summary",
+  "theme": "military-bos",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID84378411329489519550270390172200117027/J-1503010%20Custodial.pdf",
+        "note": "NAVFAC Atlantic \"Section J-1503010 Custodial\" (PDF, Jan 2022, posted with the BOS Poland RFP N62470-21-R-0002): attachment index J-1503010-01..-06, definitions list, J-1503010-03 Common Output Level Standards (COL 1 Prestige HQ / COL 2 Prestige REGCOM / COL 3 / COL 4 work-item matrix, Notes 1-4), J-1503010-04 Service Classes A-D, J-1503010-05 Mandated Service Classes for Hospitals and Clinics, frequency legend (S, D, 3W, 2W, W, 2M, M, 6Y, 4Y, 3Y, 2Y, Y, M/18, Y/2, 0). Tables on pages 3-5 are copied from it (abridged where noted); \"Custodial Inventory is provided as a separate attachment file named J-1503010-06 Custodial Inventory.xlsx\"."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID17496671638689343863787266752627103266/J-1503010%20Custodial.pdf",
+        "note": "Section J-1503010 Custodial (PDF, Jun 2020): nine-attachment numbering used by this fixture (-06 Mandated Service Classes for Child Youth Program Facilities, -07 Maps and Locations and -08 Floor Plans \"will be provided upon award\", -09 Custodial Inventory \"provided as separate attachment\"); CYP table and OPNAV Instruction 1700.9 Chapter 19 reference copied (abridged) on page 6."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID132007103362279768111943685007714419458/N6945021R0056%20Section%20C.pdf",
+        "note": "NAVFAC Southeast Section C, N69450-21-R-0056, NSA Panama City and NOSC Tallahassee (Apr 2021): main installation plus outlying NOSC in one BOS; Annex 15 sub-annex list (1503010 Custodial ... 1503060); \"Facilities or spaces listed as Prestige in the Custodial Inventory ... receive services at COL 2\"; inventory \"detailing floor types and surface area\"; \"Hospital, clinic and galley floors to be sanitized are identified on the Custodial Inventory\"; \"additional supplies at NOSC Tallahassee during drill weekends. Drill weekends are once per month\"; building perimeter = \"within five feet from the building outside wall\"; custodial service orders priced from J-0200000-17 ELINs. Model for the site grouping, the Prestige / sanitize / drill-weekend remarks and Note 10."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID13007136327205386842817887683565179804/N6945020R0010SectionC.pdf",
+        "note": "NAVFAC Southeast Section C, N69450-20-R-0010, Naval Station Guantanamo Bay (Dec 2019): \"The Contractor shall perform custodial services at the associated frequencies shown for COL 3\"; \"A few facilities shall receive services after normal working hours. Such facilities are identified the Custodial Inventory\"; Prestige grounds \"are considered improved grounds and shall be maintained at COLS 2\". Model for the after-hours remarks (Note 5) and grounds Note 2."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID84378411329489519550270390172200117027/N62470-21-R-0002%20BOS%20Poland%20RFP.pdf",
+        "note": "NAVFAC Atlantic BOS Poland RFP N62470-21-R-0002 (Jan 2022), Section J table of contents: Annex-numbered attachment list (J-1501000-03 Facility Listing, J-1503010-06 Custodial Inventory, J-1503050 Grounds Maintenance and Landscaping). Model for the cover index layout."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID214896083279806155317518988249053576329/Attach_(4)_J-1503050-04_Total_Acreage_Summary.pdf",
+        "note": "ATTACHMENT J-1503050-04 \"AREA MAPS/Total Acreage Summary\" (Oct 2019; MCB Camp Butler sites FOS/KIN/LES/PLA/FUT): one-page table Type | Spec. Item | Installation | Acreage with tenant-prefixed types (\"USMC Prestige\", \"MCCS Improved\", \"FENCE LINE Semi-Improved\", \"USMC (Airfield) Semi-Improved\"), multi-site codes in one cell and a TOTAL row. Page 10 copies this layout; all acreages are illustrative."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID16469748308018354582666070556571127870/C-1503050%20Grounts%20Maint_Landscaping_Amend%200007%20%20(Att35).pdf",
+        "note": "NAVFAC Washington Section C 1503050 Grounds Maintenance and Landscaping, Amendment 0007 (Feb 2020): \"installation grounds parcels designated as improved, semi-improved and unimproved areas\"; \"Exterior trash cans and debris removal within 5 feet of designated buildings are excluded from this specification. This is included in 1503010, Custodial.\" Basis for the grounds notes on page 10."
+      },
+      {
+        "url": "https://www.neco.navy.mil/biz_ops/840-v5static.aspx?hkey=190867310",
+        "note": "NECO listing for Portsmouth Naval Shipyard custodial solicitation N40085-19-R-9047 (seen through web search only; neco.navy.mil was not reachable from this session): attachment \"J-1503010-09_Custodial_InventoryREV.pdf\" posted with an amendment. Evidence that NAVFAC custodial inventories are issued as PDFs and reissued as revised attachments by amendment."
+      },
+      {
+        "url": "https://govtribe.com/opportunity/federal-contract-opportunity/base-operations-support-bos-services-at-naval-support-facility-nsf-redzikowo-poland-n6247023r0010-1",
+        "note": "GovTribe listing for NSF Redzikowo BOS N62470-23-R-0010 (search result only, not fetched): \"J-1503010-06 Custodial Inventory.xlsx\"; a Sigonella listing in the same search shows \"J-1503010-06.b Custodial Inventory and Frequencies.xlsx\". Evidence that the inventory carries per-facility frequency data."
+      }
+    ],
+    "notes": "Every installation, site, facility number, name, CCN, floor count, square footage, floor-type split, restroom count, service schedule, acreage and the solicitation number (N69450-26-R-0014) are illustrative. Naval Support Activity Tarpon Sound, Saltmarsh Point Annex and NOSC Cypress Landing are fictional. CCNs and CCN titles are plausible NAVFAC P-72 / iNFADS style codes from the author's knowledge; they could not be checked against FC 2-000-05N Appendix A because wbdg.org was not reachable. The COL, Service Class, hospital/clinic and CYP frequency tables are copied from the real NAVFAC J-1503010 templates (abridged on pages 5-6). The real inventories (J-1503010-06/-09) are Excel workbooks whose contents could not be retrieved, so the inventory column set (iNFADS facility data, custodial SF by floor type, restrooms, COL / Class, Service Days, Remarks) is built from what the Section C texts say the inventory contains: floor types and surface area, fixtures, Prestige spaces, after-hours facilities, sanitized floors and drill-weekend service. Bundling the J-1503010 attachments and J-1503050-04 in one PDF is a simplification; real solicitations usually post each sub-annex as its own file. The solicitation number carries FY26 (N69450-26-R-0014) because the solicitation is dated 24 July 2026 and a PIIN carries the fiscal year in which it is assigned (DFARS 204.1603); the two real NAVFAC Southeast numbers cited (N69450-21-R-0056, Apr 2021; N69450-20-R-0010, Dec 2019) follow the same rule."
+  },
+  "inputs": [
+    {
+      "src": "n6945026r0014-sec-j-annex15-amd0002.html",
+      "as": "pdf",
+      "out": "N6945026R0014 Section J Annex 15 J-1503010 Custodial and J-1503050-04 (Conformed Amd 0002).pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "100",
+        "name": "NSA Headquarters (Commanding Officer)",
+        "grossSqft": 31480,
+        "cleanableSqft": 27490,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "102",
+        "name": "Public Works Department / FEAD Office",
+        "grossSqft": 18760,
+        "cleanableSqft": 15875,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "104",
+        "name": "Personnel Support Detachment / ID Card and Pass Office",
+        "grossSqft": 9840,
+        "cleanableSqft": 8730,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "110",
+        "name": "Littoral Systems Test Laboratory (tenant)",
+        "grossSqft": 44320,
+        "cleanableSqft": 30290,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "lab"
+      },
+      {
+        "buildingNumber": "112",
+        "name": "Navy College Office / Learning Resource Center",
+        "grossSqft": 12350,
+        "cleanableSqft": 11520,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "115",
+        "name": "Fleet and Family Support Center",
+        "grossSqft": 10920,
+        "cleanableSqft": 10240,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "120",
+        "name": "Fire Station No. 1",
+        "grossSqft": 11250,
+        "cleanableSqft": 3980,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "122",
+        "name": "Security Department / Police Station",
+        "grossSqft": 14620,
+        "cleanableSqft": 12500,
+        "floors": 2,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "130",
+        "name": "Branch Health Clinic Tarpon Sound",
+        "grossSqft": 38900,
+        "cleanableSqft": 33450,
+        "floors": 2,
+        "serviceLevel": "daily_6",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "140",
+        "name": "Gulf Breeze Galley",
+        "grossSqft": 21300,
+        "cleanableSqft": 8640,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "150",
+        "name": "Unaccompanied Housing Bldg 150",
+        "grossSqft": 52860,
+        "cleanableSqft": 10420,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "151",
+        "name": "Unaccompanied Housing Bldg 151",
+        "grossSqft": 52860,
+        "cleanableSqft": 10420,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "152",
+        "name": "Unaccompanied Housing Bldg 152",
+        "grossSqft": 68400,
+        "cleanableSqft": 13950,
+        "floors": 4,
+        "serviceLevel": "daily_5",
+        "category": "barracks"
+      },
+      {
+        "buildingNumber": "160",
+        "name": "Fitness Center",
+        "grossSqft": 29750,
+        "cleanableSqft": 26880,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "162",
+        "name": "Outdoor Pool Bathhouse",
+        "grossSqft": 3640,
+        "cleanableSqft": 2980,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "170",
+        "name": "Child Development Center",
+        "grossSqft": 24600,
+        "cleanableSqft": 22310,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "172",
+        "name": "Youth Center / School Age Care",
+        "grossSqft": 12880,
+        "cleanableSqft": 11640,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "180",
+        "name": "Religious Ministry Facility (Chapel)",
+        "grossSqft": 8950,
+        "cleanableSqft": 7420,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "200",
+        "name": "Logistics Support Center Warehouse",
+        "grossSqft": 46200,
+        "cleanableSqft": 4860,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "210",
+        "name": "Public Works Maintenance Shops",
+        "grossSqft": 22480,
+        "cleanableSqft": 5310,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "212",
+        "name": "Transportation / Vehicle Maintenance Shop",
+        "grossSqft": 18900,
+        "cleanableSqft": 3240,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "220",
+        "name": "Expeditionary Dive Training Facility (tenant)",
+        "grossSqft": 34100,
+        "cleanableSqft": 28650,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "225",
+        "name": "Littoral Warfare Training Center Detachment (tenant)",
+        "grossSqft": 15420,
+        "cleanableSqft": 13980,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "230",
+        "name": "Helicopter Maintenance Hangar (tenant)",
+        "grossSqft": 38400,
+        "cleanableSqft": 6120,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "hangar"
+      },
+      {
+        "buildingNumber": "250",
+        "name": "Liberty Center",
+        "grossSqft": 7860,
+        "cleanableSqft": 7120,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "255",
+        "name": "Auto Skills Center",
+        "grossSqft": 9200,
+        "cleanableSqft": 1450,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "SP-01",
+        "name": "Annex Operations Building",
+        "grossSqft": 12340,
+        "cleanableSqft": 10880,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "SP-04",
+        "name": "Small Craft Maintenance Shop",
+        "grossSqft": 16800,
+        "cleanableSqft": 2240,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "SP-07",
+        "name": "Range Control Tower",
+        "grossSqft": 2450,
+        "cleanableSqft": 1980,
+        "floors": 3,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "SP-12",
+        "name": "Annex Locker and Shower Building",
+        "grossSqft": 2880,
+        "cleanableSqft": 2610,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1",
+        "name": "Navy Operational Support Center Cypress Landing",
+        "grossSqft": 26740,
+        "cleanableSqft": 23180,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2",
+        "name": "NOSC Vehicle Maintenance / Storage Building",
+        "grossSqft": 4800,
+        "cleanableSqft": 620,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [
+      {
+        "kind": "improved_turf",
+        "quantity": 6.84,
+        "unit": "acres",
+        "name": "NAVY Prestige (NSA TS)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 128.47,
+        "unit": "acres",
+        "name": "NAVY Improved (NSA TS)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 21.3,
+        "unit": "acres",
+        "name": "MWR Improved (NSA TS)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 3.15,
+        "unit": "acres",
+        "name": "CYP Improved (NSA TS)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 84.65,
+        "unit": "acres",
+        "name": "NAVY Semi-Improved (NSA TS)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 12.18,
+        "unit": "acres",
+        "name": "FENCE LINE Semi-Improved (NSA TS/SPA)"
+      },
+      {
+        "kind": "unimproved",
+        "quantity": 236.9,
+        "unit": "acres",
+        "name": "NAVY Unimproved (NSA TS/SPA)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 4.75,
+        "unit": "acres",
+        "name": "SPA Improved (SPA)"
+      },
+      {
+        "kind": "improved_turf",
+        "quantity": 2.86,
+        "unit": "acres",
+        "name": "NOSC Improved (NOSC CL)"
+      },
+      {
+        "kind": "semi_improved",
+        "quantity": 1.4,
+        "unit": "acres",
+        "name": "NOSC Semi-Improved (NOSC CL)"
+      }
+    ],
+    "site": {
+      "climateZone": "hot_humid",
+      "installationName": "Naval Support Activity Tarpon Sound",
+      "solicitation": "N69450-26-R-0014"
+    }
+  },
+  "traps": [
+    "Gross vs custodial area on every row: \"Facility Total SF\" (iNFADS gross, General Note 1) and \"Total Custodial SF\" (sum of the five floor-type columns, General Note 2). Truth grossSqft = Facility Total SF and cleanableSqft = Total Custodial SF. Partial-service buildings have large gaps: Hangar 230 38,400 / 6,120 (hangar bay excluded), Warehouse 200 46,200 / 4,860, Unaccompanied Housing 150/151 52,860 / 10,420 and 152 68,400 / 13,950 (common areas only, Note 8), Galley 140 21,300 / 8,640 (kitchen by Annex 13 contractor), Fire Station 120 11,250 / 3,980, PW Shops 210 22,480 / 5,310, Vehicle Shop 212 18,900 / 3,240, Small Craft Shop SP-04 16,800 / 2,240, NOSC 2 4,800 / 620.",
+    "Five floor-type columns (Carpet, Resilient (VCT / LVT / Rubber), Ceramic / Quarry / Terrazzo, Wood, Sealed Concrete) sit between the gross and the custodial total. Their values (e.g. Bldg 100 carpet 16,420; Bldg 130 resilient 24,760) are not facility areas, and many cells are 0.",
+    "Seven rows in the same table are not in scope and carry a Facility Total SF with em dashes in the custodial columns: 175 CDC Expansion (option, Note 12), 190 Navy Exchange Main Store and 192 Navy Gateway Inns and Suites (NAF, not in contract, Note 11), 240 Former Administration Building (vacant, demolition FY28, Note 9, A0002), 245 Small Arms Range Office (on-call service orders only, Note 10, A0002), SP-10 Waterfront Operations / Boat House (on-call only, Note 10), NOSC 3 Storage Shed (not serviced, Note 9). None is expected; General Note text says they are excluded from subtotals.",
+    "Conformed through Amendment 0002: the inventory rows already carry the revised values, while the cover's Summary of Changes prints the superseded ones: Fac. 104 resilient 4,010 and custodial 7,960 (now 4,780 / 8,730); Fac. 152 gross 64,800 (now 68,400); Fac. 240 formerly 14,380 custodial SF and Fac. 245 formerly 1,860 (both deleted from Recurring Work); old subtotals 354,935 / 15,100 / 393,835 custodial SF, 738,190 gross, 33 facilities. Fac. SP-12 (2,880 / 2,610) is new in A0002 and is expected.",
+    "Totals are not facilities: SUBTOTAL rows per site with a facility count (\"SUBTOTAL – NSA TARPON SOUND – MAIN BASE (26 facilities)\" 660,240 / 339,465; Saltmarsh Point Annex (4) 34,470 / 17,710; NOSC Cypress Landing (2) 31,540 / 23,800) and \"GRAND TOTAL – ALL SITES (32 facilities)\" 726,250 / 380,975; the totals in cover item 6; the acreage TOTAL 502.50.",
+    "Three sites in one table: NSA Tarpon Sound Main Base, Saltmarsh Point Annex (14 miles south) and the outlying NOSC Cypress Landing (118 miles northeast). Dark group-header rows span the table and are not facilities; the Main Base group continues on page 2 under \"(CONTINUED)\". \"Annex\" means both PWS Annex 15 and the Saltmarsh Point Annex site.",
+    "Three building-number schemes: three-digit main base numbers (100-255), \"SP-01\"..\"SP-12\" at the annex, and single digits \"1\", \"2\", \"3\" at the NOSC. The CCN column (610-10, 721-11, 171-35 ...) is a category code, not a building number.",
+    "Footnote superscripts are glued to the facility name in the text layer: \"Unaccompanied Housing Bldg 1508\", \"Bldg 1518\", \"Bldg 1528\" (Bldg 150/151/152 + Note 8), \"Fitness Center5\", \"Laboratory (tenant)7\", \"Child Development Center5\", \"Center Cypress Landing13\", \"Expansion12\", \"Building9\". A reader that takes the number from the name gets 1508; the Fac. No. column is authoritative.",
+    "Landscape 16-column table over three pages with a two-row header repeated on each page: group headers with glued note markers (\"FACILITY DATA (iNFADS, 30 JUN 2026)1\", \"CUSTODIAL AREA BY FLOOR TYPE (SF)2\", \"SERVICE\"), column titles stacked over up to four text lines (\"Resilient / (VCT / LVT / / Rubber)\", \"COL / Class3\", \"Service Days4\"). Facility names and CCN titles wrap over two or three lines; remarks wrap up to five lines (Galley 140).",
+    "Service frequency is the \"Service Days\" column, defined in General Note 4: M-F -> daily_5, M-Sa -> daily_6 (Branch Health Clinic 130), M-Su -> daily_7 (Fire Station, Police, Galley, Fitness Center, Liberty Center), M/W/F -> 3x_week (Chapel 180, Vehicle Shop 212), T/Th -> 2x_week (225, SP-04), Wed -> weekly (255, SP-07, NOSC 2). The \"COL / Class\" column (COL 3, B, C, D, MTF, CYP) and the frequency matrices on pages 3-6 (S, D, 3W, 2W, W, 2M, M, 6Y, 4Y, Y, Y/2, 0) are per work item, not per facility: COL 3 empties waste weekly (W) but cleans restrooms once per shift (S), so COL 3 is not a weekly service level. General Note 4 also says a work item whose frequency exceeds the Service Days (e.g. 3W in a Wed facility) is performed on each Service Day, so the Service Days column caps the visit frequency.",
+    "Seasonal facility: 162 Outdoor Pool Bathhouse is M-Su but only Memorial Day through Labor Day (Note 6). It is in scope, but no serviceLevel is expected because none of the app's levels expresses a seasonal schedule.",
+    "NOSC 1 is M-F with restroom servicing added on the Saturday and Sunday of the monthly drill weekend (Note 13). Expected serviceLevel is daily_5 (the Service Days column); drill weekends are an add-on restroom task, not a 6- or 7-day schedule.",
+    "Twin buildings 150 and 151 carry identical figures (52,860 / 10,420, 3 floors). Both are facilities, not a duplicated row.",
+    "Remarks and the page-9 notes hold distractor numbers: \"(2,140 SF) at COL 2 (Prestige)\" inside Bldg 100 (a Prestige sub-area, not a facility), room numbers \"Rms 118–131\", service windows (0600–1800, 2100–0500, 1830–2300), \"Annex 13\", \"BOD Aug 2026\", \"FY28\", \"Spec Item 3.2\", \"J-0200000-17\".",
+    "\"Rest-rooms\" is a count of restrooms per facility (column total 141), not fixtures. Restroom fixtures are not stated, so restroomFixtures is not expected.",
+    "Grounds come from the one-page J-1503050-04 Total Acreage Summary, not the custodial inventory. Types carry tenant prefixes (NAVY, MWR, CYP, FENCE LINE, SPA, NOSC). Prestige is improved grounds (grounds Note 2), so NAVY Prestige 6.84, NAVY Improved 128.47, MWR Improved 21.30, CYP Improved 3.15, SPA Improved 4.75 and NOSC Improved 2.86 are improved_turf. NAVY Semi-Improved 84.65, FENCE LINE Semi-Improved 12.18 and NOSC Semi-Improved 1.40 are semi_improved; NAVY Unimproved 236.90 is unimproved. Some Installation cells name two sites (\"NSA TS/SPA\"). The Spec. Item column (3.1 / 3.2 / 3.3) is not a quantity, and TOTAL 502.50 is not an area.",
+    "Front matter (pages 1-6) has no facilities but plenty of codes and numbers: attachment numbers J-1503010-01..-09, COL 1-4 and Service Class A-D matrices, CNIC dates, CFR citations (29 CFR 1910.141 / 1910.1030) and OPNAV Instruction 1700.9. (The five-foot building-perimeter rule is in grounds Note 5 on page 10, not in the front matter.) J-1503010-07 Maps and -08 Floor Plans are \"provided upon award\".",
+    "Category is expected only where the CCN title is unambiguous (ADMINISTRATIVE OFFICE -> admin, UNACCOMPANIED ENLISTED HOUSING -> barracks, ENLISTED DINING FACILITY -> dining, DISPENSARY AND DENTAL CLINIC -> medical, GENERAL WAREHOUSE -> warehouse, PUBLIC WORKS / VEHICLE MAINTENANCE / SMALL CRAFT REPAIR SHOP -> maintenance, ACFT MAINTENANCE HANGAR -> hangar, PHYSICAL FITNESS CENTER -> fitness, CHILD DEVELOPMENT CENTER -> child_care, ACADEMIC / APPLIED INSTRUCTION -> education, RDT&E LABORATORY -> lab, FAMILY SERVICE CENTER / RELIGIOUS MINISTRY / RECREATION CENTER -> community). It is left out (23 of 32 carry one) for the fire station, police station, 172 Youth Center / School Age Care (CCN 740-76 is in the 740 community-facility series but the row is a CYP facility, so community and child_care are both defensible), bathhouses, auto hobby shop, range control tower, reserve training building and NOSC 2 Vehicle Maintenance / Storage Building (same CCN title as 212, but the name adds storage, so maintenance and warehouse are both defensible).",
+    "Site: Naval Support Activity Tarpon Sound, Florida (hot_humid), solicitation N69450-26-R-0014. Section J attachments state neither the contract term nor a prior award, so contractYears and priorAward are not expected; the amendment and iNFADS dates are not contract dates."
+  ]
+}

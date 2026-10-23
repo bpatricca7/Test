@@ -45,7 +45,6 @@ export function Lighting() {
   const tmp = useMemo(() => new THREE.Color(), []);
   const dir = useMemo(() => new THREE.Vector3(), []);
   const fl = useMemo(() => ({ c: new THREE.Color(), m: new THREE.Vector3(), b: new THREE.Vector3() }), []);
-  const fast = quality !== 'high';
   const lastShadowT = useRef(-1);
   const lastShadowAt = useRef(0);
 
@@ -109,7 +108,7 @@ export function Lighting() {
       fieldUniforms.uGround.value.copy(groundColor);
       fog.near = Math.max(300, geo.r * 2); fog.far = Math.max(fog.near + 200, geo.r * 6);
     }
-    groundMaterial(fast).color.copy(groundColor);
+    groundMaterial(true).color.copy(groundColor);
     // irradiance / π on a horizontal surface, for the unlit flat surfaces of the Fast tier
     const c = fl.c.setRGB(0, 0, 0);
     if (amb.current) { c.r = amb.current.color.r * amb.current.intensity; c.g = amb.current.color.g * amb.current.intensity; c.b = amb.current.color.b * amb.current.intensity; }
@@ -129,8 +128,9 @@ export function Lighting() {
       for (const x of [-1, 1]) { fl.b.set(x, 1, 0.5).unproject(camera).sub(camera.position).normalize(); up = Math.max(up, fl.b.y); }
       sky.current.visible = up > -0.03;
     }
-    // shadow map: refresh on demand (layout, selection, lighting) and at ≤ 4 Hz while the Live sun moves
-    if (live && quality === 'high' && Math.abs(t - lastShadowT.current) > 0.02 && performance.now() - lastShadowAt.current > 250) { lastShadowT.current = t; rt.shadowDirty = true; }
+    // shadow map: refresh on demand (layout, selection, lighting) and at ≤ 1 Hz while the Live sun moves (spec: ≤ 4 Hz)
+    // the Live sun moves with the clock: refresh the shadow map when it has moved ≥ 6 sim-minutes, at most 1×/s
+    if (live && quality === 'high' && Math.abs(t - lastShadowT.current) > 0.1 && performance.now() - lastShadowAt.current > 1000) { lastShadowT.current = t; rt.shadowDirty = true; }
     if (rt.shadowDirty) { gl.shadowMap.needsUpdate = true; rt.shadowDirty = false; lastShadowAt.current = performance.now(); }
   }, -2);
 
@@ -161,12 +161,13 @@ export function Lighting() {
 export function Ground() {
   const { layout } = useDerived();
   const select = useStore((s) => s.select);
-  const fast = useStore((s) => s.quality) !== 'high';
   const b = layout?.bounds ?? { x: 0, z: 0, w: 200, d: 200 };
   const size = Math.max(6000, Math.max(b.w, b.d) * 12);
   useEffect(() => { groundUniforms.uFadeFar.value = Math.max(900, Math.max(b.w, b.d) * 2.2); }, [b.w, b.d]);
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[b.x, 0, b.z]} receiveShadow material={groundMaterial(fast)} name="ground" renderOrder={-1}
+    // the open ground never carries building shadows (lots, roads and pads cover the campus), so it stays on the
+    // cheap unlit × flat-light material in both tiers
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[b.x, 0, b.z]} material={groundMaterial(true)} name="ground" renderOrder={-1}
       onClick={(e) => { if (e.delta > 4 || useStore.getState().focusMode === 'building') return; e.stopPropagation(); select({ kind: null }); }}>
       <planeGeometry args={[size, size]} />
     </mesh>

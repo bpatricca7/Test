@@ -73,6 +73,7 @@ function useMapHotkeys(enabled: boolean) {
   useHotkey('f', () => s().requestCamera(s().selection.kind ? 'frame-selection' : 'fit-site'), { label: 'Frame the selection', group: 'Map', enabled });
   useHotkey('c', () => { const i = COLOR_BY.findIndex((c) => c.id === s().colorBy); s().setColorBy(COLOR_BY[(i + 1) % COLOR_BY.length].id); }, { label: 'Cycle colour-by', group: 'Map', enabled });
   useHotkey('l', () => { const i = LABELS.findIndex((c) => c.id === s().labelMode); s().setLabelMode(LABELS[(i + 1) % LABELS.length].id); }, { label: 'Cycle labels', group: 'Map', enabled });
+  useHotkey('p', () => { if (s().focusMode === 'building') return false; s().setPlanView(!s().planView); }, { label: 'Plan view (top-down, north up)', group: 'Map', enabled });
   useHotkey('i', () => {
     const st = s();
     if (st.focusMode === 'building') { st.setFocusMode('site'); return; }
@@ -171,6 +172,7 @@ function ViewToolbar() {
       { id: 'q-high', label: 'High', hint: 'Shadows, ambient occlusion, bloom in live lighting', checked: s.quality === 'high', onSelect: () => s.setQuality('high') },
       { id: 'q-fast', label: 'Fast', hint: 'For large sites and slower machines', checked: s.quality === 'fast', onSelect: () => s.setQuality('fast') },
       { kind: 'separator' },
+      { id: 'plan', label: 'Plan view', hint: 'Top-down, north up, numbers on the roofs', kbd: 'p', checked: s.planView, disabled: s.focusMode === 'building', onSelect: () => s.setPlanView(!s.planView) },
       { id: 'orbit', label: 'Orbit when idle', checked: s.autoOrbit, onSelect: () => s.setAutoOrbit(!s.autoOrbit) },
       { id: 'reduced', label: 'Reduced motion', checked: s.reducedMotion, onSelect: () => s.setReducedMotionPref(!s.reducedMotion) },
       { kind: 'separator' },
@@ -190,7 +192,7 @@ function ViewToolbar() {
       <IconButton size="sm" icon={Focus} label="Fit the site" tooltip="Fit the site (H)" onClick={() => st().requestCamera('fit-site')} />
       <IconButton size="sm" icon={Table2} label="Inventory table" tooltip="Inventory table (2)" onClick={() => st().setView('table')} />
       <MenuButton label="View options" placement="bottom-end" items={moreItems}
-        trigger={(t) => <IconButton ref={t.ref} size="sm" icon={Ellipsis} label="View options" tooltip="Quality, orbit, re-layout" aria-haspopup="menu" aria-expanded={t.open} onClick={t.toggle} />} />
+        trigger={(t) => <IconButton ref={t.ref} size="sm" icon={Ellipsis} label="View options" tooltip="Quality, plan view, orbit, re-layout" aria-haspopup="menu" aria-expanded={t.open} onClick={t.toggle} />} />
     </div>
   );
 }

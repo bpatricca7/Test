@@ -5,7 +5,7 @@
 
 import { useStore } from '../../store';
 import { registerHotkey } from '../lib/keys';
-import { currentOrder, metaOf, metaSnapshot, useNavOrder } from '../lib/query';
+import { currentOrder, metaOf, metaSnapshot, sortPatch, sortRows, useNavOrder } from '../lib/query';
 import { useDerived } from '../../derived';
 
 type Sel = { kind: 'facility' | 'grounds'; id: string };
@@ -129,6 +129,28 @@ export function unreview(): boolean {
   const id = target(); if (!id) return false;
   if (pending) flushPending();
   st().setReview([id], null);
+  return true;
+}
+
+/**
+ * [Start review] (project summary) and [Review N] (run strip): select the first row that needs review.
+ * With `needsChip` the inventory switches to the Needs review chip sorted by Impact (§5.5) and the first row by
+ * impact = fte × (1 − confidence) is taken, so it is the row the list shows first. Without it, J's order is tried
+ * first and the impact order is the fallback.
+ */
+export function startReview(fte: (id: string) => number, opts: { needsChip?: boolean } = {}): boolean {
+  const s = st();
+  if (opts.needsChip) {
+    s.setQuery({ chip: 'needs', text: '', ...sortPatch('impact') });
+    if (s.view === 'map') s.openLeft('inventory');
+  } else if (nextNeeds(1, { quiet: true })) return true;
+  const p = s.project; if (!p) return false;
+  const metas = metaSnapshot();
+  const needs = (r: { id: string }) => metas.get(r.id)?.review === 'needs';
+  const id = sortRows(p.inventory.facilities.filter(needs), 'impact', true, fte)[0]?.id ?? sortRows(p.inventory.grounds.filter(needs), 'impact', true, fte)[0]?.id;
+  if (!id) return false;
+  anchor = { id, index: 0 };
+  selectRow(id);
   return true;
 }
 

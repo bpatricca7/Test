@@ -11,6 +11,7 @@ import { TopBar } from './components/shell/TopBar';
 import { Rail } from './components/shell/Rail';
 import { LeftPanel, RightEdgeHandle, RightPanel } from './components/shell/Panels';
 import { ShortcutsSheet } from './components/shell/ShortcutsSheet';
+import { DropOverlay } from './components/shell/DropOverlay';
 import { usePanelAutoRules, useInsetsWriter, useReducedMotionAttr, useUiZoomWriter } from './components/shell/layout';
 import { chooseFiles } from './components/shell/fileChooser';
 import { RunStrip } from './components/run/RunStrip';
@@ -19,6 +20,11 @@ import { BottomPanel } from './components/bottom/BottomPanel';
 import { ViewportOverlays } from './components/overlays/ViewportOverlays';
 import { ConfirmHost, ToastHost } from './components/ui';
 import { registerHotkey, pushEscape } from './components/lib/keys';
+import { analyzeNow } from './components/documents/reader';
+// Module-level key bindings: undo/redo (lib/history) and the review loop J/K/V/X/U and / (inventory/reviewLoop)
+// register once at import, so they work in both views whichever panel is open.
+import './components/lib/history';
+import './components/inventory/reviewLoop';
 
 const FactorsDialog = lazy(() => import('./components/dialogs/FactorsDialog').then((m) => ({ default: m.FactorsDialog })));
 
@@ -90,6 +96,7 @@ const Shell = memo(function Shell() {
       </div>
       <ConfirmHost />
       <ShortcutsSheet />
+      <DropOverlay />
       {factorsOpen && <Suspense fallback={null}><FactorsDialog /></Suspense>}
     </div>
   );
@@ -108,7 +115,7 @@ function useGlobalHotkeys() {
       registerHotkey('?', () => s().setShortcutsOpen(true), { label: 'Keyboard shortcuts', group: 'Everywhere' }),
       registerHotkey('shift+m', () => s().setFactorsOpen(true), { label: 'RS Means factors', group: 'Everywhere' }),
       registerHotkey('mod+o', () => { if (!s().extraction.running) chooseFiles(); }, { label: 'Add documents', group: 'Everywhere', allowInInput: true }),
-      registerHotkey('mod+enter', () => { const st = s(); if (st.pendingFiles.length && !st.extraction.running) void st.analyze(); else return false; }, { label: 'Analyze pending documents', group: 'Everywhere', allowInInput: true }),
+      registerHotkey('mod+enter', () => { const st = s(); if (st.pendingFiles.length && !st.extraction.running) void analyzeNow(); else return false; }, { label: 'Analyze pending documents', group: 'Everywhere', allowInInput: true }),
       // Esc, lowest layers: clear the selection, then leave the building
       pushEscape(() => { const st = s(); if (st.selection.kind === null) return false; st.select({ kind: null }); return true; }, 'selection'),
       pushEscape(() => { const st = s(); if (st.focusMode !== 'building') return false; st.setFocusMode('site'); return true; }, 'base'),

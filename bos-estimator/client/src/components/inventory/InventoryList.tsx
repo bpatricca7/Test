@@ -45,7 +45,7 @@ interface Props {
   empty: ReactNode;
   label: string;
   /** the column header row; receives the section at the top of the viewport (the sticky section header) */
-  header: (section: { label: string; count: number; note?: string } | null) => ReactNode;
+  header: (section: { label: string; count: number; note?: string } | null, sections: number) => ReactNode;
 }
 
 export const InventoryList = memo(forwardRef<InventoryListHandle, Props>(function InventoryList({ items, rowMeta, fteOf, maxFte, hostName, empty, label, header }, ref) {
@@ -164,6 +164,7 @@ export const InventoryList = memo(forwardRef<InventoryListHandle, Props>(functio
     const over = Math.max(0, Math.min(8, Math.floor((MAX_MOUNTED - visible) / 2)));
     first = Math.max(0, visFirst - over); last = Math.min(n - 1, visLast + over);
   }
+  const heads = useMemo(() => items.reduce((k, it) => k + (it.t === 'head' ? 1 : 0), 0), [items]);
   // sticky section header: the section of the first visible row (shown in the column header row)
   let sticky: Extract<ListItem, { t: 'head' }> | null = null;
   if (n) {
@@ -192,7 +193,7 @@ export const InventoryList = memo(forwardRef<InventoryListHandle, Props>(functio
 
   return (
     <div className="inv__listwrap">
-    {header(sticky ? { label: sticky.label, count: sticky.count, note: sticky.note } : null)}
+    {header(sticky ? { label: sticky.label, count: sticky.count, note: sticky.note } : null, heads)}
     <div ref={el} className="inv__list" role="listbox" aria-label={label} tabIndex={0} aria-activedescendant={activeId}
       onScroll={measure} onKeyDown={onKeyDown}
       onMouseDown={() => setKbd(false)}

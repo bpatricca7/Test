@@ -437,9 +437,14 @@ function publishNow() {
   const s = useStore.getState();
   if (!sameSet(s.filterIds, next)) s.setFilterIds(next);
 }
-/** Trailing 150 ms debounce, at most 600 ms behind while changes keep coming (streaming). */
-function schedulePublish() {
+/**
+ * Trailing 150 ms debounce, at most 600 ms behind while changes keep coming. While a read streams, data-driven
+ * updates are throttled to one per second so the 3D filter adds at most 1 store write/s to the ≤ 4/s run flushes.
+ */
+function schedulePublish(queryChanged = true) {
   const now = performance.now();
+  const streaming = !queryChanged && useStore.getState().extraction.running;
+  if (streaming) { if (!pubTimer) { pubFirst = now; pubTimer = setTimeout(publishNow, 1000); } return; }
   if (!pubFirst) pubFirst = now;
   if (pubTimer) clearTimeout(pubTimer);
   pubTimer = setTimeout(publishNow, now - pubFirst > 450 ? 0 : 150);
@@ -450,13 +455,15 @@ let unsubscribe: (() => void) | null = null;
 export function startFilterPublisher() {
   if (unsubscribe) return;
   unsubscribe = useStore.subscribe((s, prev) => {
+    // the Incoming chip ends with its run: back to All instead of an empty list
+    if (prev.extraction.staging.active && !s.extraction.staging.active && s.query.chip === 'incoming') queueMicrotask(() => { if (useStore.getState().query.chip === 'incoming') useStore.getState().setQuery({ chip: 'all' }); });
     const queryChanged = s.query.text !== prev.query.text || s.query.chip !== prev.query.chip;
     const active = queryActive(s.query);
     if (!active && !queryChanged) return; // nothing to keep in sync
     const dataChanged = s.project?.inventory !== prev.project?.inventory || s.project?.review !== prev.project?.review
       || s.extraction.staging !== prev.extraction.staging || s.extraction.result !== prev.extraction.result
       || (s.extraction.recent !== prev.extraction.recent && /is:new/i.test(s.query.text));
-    if (queryChanged || dataChanged) schedulePublish();
+    if (queryChanged || dataChanged) schedulePublish(queryChanged);
   });
   // a query restored before this module loaded
   if (queryActive(useStore.getState().query)) schedulePublish();

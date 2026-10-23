@@ -1,11 +1,15 @@
 import { memo, useLayoutEffect, useRef, useState } from 'react';
-import { Calculator, ChevronDown, CircleAlert, Download, Ellipsis, LoaderCircle, Map as MapIcon, Table2 } from 'lucide-react';
+import { Calculator, ChevronDown, CircleAlert, Copy, Download, Ellipsis, FileJson, FileSpreadsheet, LoaderCircle, Map as MapIcon, Server, Table2 } from 'lucide-react';
 import { useStore, type UiZoom } from '../../store';
 import { useDerived, useTopDownLive } from '../../derived';
 import { api } from '../../api';
 import { compact, n0, n1, nonNeg, signedPct } from '../../fmt';
 import { Button, IconButton, MenuButton, Num, Popover, Segmented, TextField, Tooltip, usePopover, type MenuItem } from '../ui';
 import { cx } from '../lib/cx';
+import { deltaTone } from '../lib/theme';
+import { currentOrder } from '../lib/query';
+import { confirmResetProject } from '../dialogs/confirms';
+import { copyRowsTsv, exportBackup, exportEstimateCsv, exportInventoryCsv } from './exports';
 
 /** Top bar (UI spec §5.1): name, view switch, save state, AI chip | priority metric strip (+N) | hero FTE + Δ | actions. */
 export const TopBar = memo(function TopBar() {
@@ -155,7 +159,6 @@ function MetricStrip() {
   );
 }
 
-function deltaTone(d: number) { const a = Math.abs(d); return a <= 0.1 ? 'ok' : a <= 0.25 ? 'warn' : 'bad'; }
 
 /** Hero FTE from useTopDownLive() only; click opens Estimate › Cross-check. */
 function Hero() {
@@ -189,40 +192,31 @@ export function displayMenuItems(): MenuItem[] {
   ];
 }
 
-/** Reset with a ConfirmDialog listing what is lost (UI spec §5.11). */
-export async function confirmReset() {
-  const s = useStore.getState(); const p = s.project; if (!p) return;
-  const reviewed = Object.values(p.review ?? {}).filter((r) => r.status !== 'unreviewed').length;
-  const lost = [
-    `${p.inventory.facilities.length.toLocaleString()} facilities`,
-    `${p.inventory.grounds.length.toLocaleString()} grounds areas`,
-    `${Object.keys(p.factorOverrides ?? {}).length} factor overrides`,
-    `${reviewed.toLocaleString()} review marks`,
-    p.topDown || p.priorAward ? 'the previous-award facts and cross-check' : '',
-  ].filter(Boolean);
-  const ok = await s.confirm({ title: 'Reset this project?', body: `This clears ${lost.join(', ')}. It cannot be undone.`, confirmLabel: 'Reset project', danger: true });
-  if (ok) await s.clearProject();
-}
-
 function Actions() {
   const setFactorsOpen = useStore((s) => s.setFactorsOpen);
   const projectId = useStore((s) => s.projectId);
   const setShortcutsOpen = useStore((s) => s.setShortcutsOpen);
-  const { counts } = useDerived();
+  const { counts, est, rowMeta } = useDerived();
   const download = (href: string) => { const a = document.createElement('a'); a.href = href; a.download = ''; document.body.appendChild(a); a.click(); a.remove(); };
   const unreviewed = counts.total - counts.verified;
+  const empty = counts.total === 0;
   return (
     <div className="tb-actions">
       <Button className="btn--collapse" variant="ghost" icon={Calculator} tooltip="RS Means factors (Shift+M)" aria-label="Factors" onClick={() => setFactorsOpen(true)}>Factors</Button>
       <MenuButton label="Export" placement="bottom-end"
         items={() => [
           ...(unreviewed > 0 ? [{ kind: 'header', label: `${unreviewed.toLocaleString()} rows not reviewed` } as MenuItem] : []),
-          { id: 'csv', label: 'Estimate CSV (server)', icon: Download, onSelect: () => download(api.exportCsvUrl(projectId)) },
+          { id: 'inv', label: 'Inventory with review (CSV)', icon: FileSpreadsheet, hint: 'Every row: fields, review, issues, edits, source, Hrs, FTE', disabled: empty, onSelect: () => exportInventoryCsv(est, rowMeta, counts.needs) },
+          { id: 'est', label: 'Estimate detail (CSV)', icon: FileSpreadsheet, hint: 'Task lines, crews with your wages, manning by year', disabled: !est || empty, onSelect: () => exportEstimateCsv(est) },
+          { id: 'tsv', label: 'Copy visible rows (TSV)', icon: Copy, hint: 'The inventory rows in the current filter and sort', disabled: empty, onSelect: () => copyRowsTsv(currentOrder(), est, rowMeta) },
+          { id: 'json', label: 'Project backup (.json)', icon: FileJson, onSelect: exportBackup },
+          { kind: 'separator' },
+          { id: 'csv', label: 'Estimate CSV (server)', icon: Server, hint: 'Uses the default wages', disabled: empty, onSelect: () => download(api.exportCsvUrl(projectId)) },
         ]}
         trigger={(t) => <Button ref={t.ref} className="btn--collapse" variant="ghost" icon={Download} iconEnd={ChevronDown} tooltip="Export" aria-label="Export" aria-haspopup="menu" aria-expanded={t.open} onClick={t.toggle}>Export</Button>} />
       <MenuButton label="More" placement="bottom-end"
         items={() => [
-          { id: 'reset', label: 'Reset project…', danger: true, onSelect: () => void confirmReset() },
+          { id: 'reset', label: 'Reset project…', danger: true, onSelect: () => void confirmResetProject() },
           { kind: 'separator' },
           ...displayMenuItems(),
           { kind: 'separator' },

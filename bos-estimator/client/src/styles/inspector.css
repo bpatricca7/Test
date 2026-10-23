@@ -21,7 +21,7 @@
 .insp__flag.is-flagged{color:var(--flag);border-color:rgba(244,114,182,.55);background:rgba(244,114,182,.12)}
 .insp__nav{display:inline-flex;align-items:center;gap:2px;margin-left:auto}
 .insp__nav-pos{min-width:44px;text-align:center;font-size:var(--fs-xs);color:var(--text-2);white-space:nowrap;border-radius:var(--r-1)}
-@container insp (max-width:379px){.insp__row3 .btn .kbd{display:none}.insp__row3{gap:4px}}
+@container insp (max-width:439px){.insp__row3 .btn .kbd{display:none}.insp__row3{gap:4px}}
 @container insp (max-width:359px){.insp__inside .btn__label{display:none}.insp__inside{width:var(--ctl-h-sm);padding:0}.insp__nav-pos{min-width:38px}}
 
 /* ---------- body ---------- */

@@ -14,7 +14,6 @@ import { IconButton, Menu, Meter, usePopover } from '../ui';
 import { InventoryList, type InventoryListHandle, type ListItem, itemId } from './InventoryList';
 import { QueryChips, QuerySearch, SortMenuButton } from './QueryControls';
 import { selectRow } from './reviewLoop';
-import '../lib/history';
 import '../../styles/inventory.css';
 
 export const InventoryTab = memo(function InventoryTab() {
@@ -59,11 +58,11 @@ export const InventoryTab = memo(function InventoryTab() {
   const arrow = (k: SortKey) => (sort === k ? <Arrow size={11} aria-hidden /> : null);
 
   const byHint = sort !== 'source' && !['bldg', 'name', 'gross', 'fte'].includes(sort) ? `${sortLabel(sort)} ${desc ? '↓' : '↑'}` : null;
-  const renderHeader = (section: { label: string; count: number } | null) => (
+  const renderHeader = (section: { label: string; count: number } | null, sections: number) => (
     <div className="inv__head" role="row">
       <button type="button" role="columnheader" className={cx('inv__th', sort === 'bldg' && 'is-on')} aria-sort={ariaSort('bldg')} onClick={() => headerSort('bldg')} title="Sort by building number">#{arrow('bldg')}</button>
       <button type="button" role="columnheader" className={cx('inv__th', 'inv__th--name', sort === 'name' && 'is-on')} aria-sort={ariaSort('name')} onClick={() => headerSort('name')} title={`Sort by name${byHint ? ` (now: ${byHint})` : ''}`}>
-        <span className="inv__th-sec">{section ? <>{section.label}{byHint ? null : <span className="inv__th-count"> {section.count.toLocaleString()}</span>}</> : 'Name'}</span>{arrow('name')}
+        <span className="inv__th-sec">{section && !(byHint && sections < 2) ? <>{section.label}{byHint ? null : <span className="inv__th-count"> {section.count.toLocaleString()}</span>}</> : 'Name'}</span>{arrow('name')}
         {byHint && <span className="inv__th-by">· {byHint}</span>}
       </button>
       <span className="inv__th inv__th--r" role="columnheader">

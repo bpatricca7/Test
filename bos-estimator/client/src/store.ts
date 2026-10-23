@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { api, runExtraction, type ExtractOptions, type Health } from './api';
 import type { Assumptions, ExtractionEvent, Facility, GroundsArea, Inventory, PriorAward, Project, TopDownAssumptions } from '@shared/types';
 import type { Crew } from '@shared/factors';
-import { normBldg, normCampus, normName, type ReviewEntry, type ReviewMap, type ReviewStatus } from './components/lib/review';
+import { changedFields, fieldValue, isManualRow, normBldg, normCampus, normName, revertPatch, withEditMarkers, type ReviewEntry, type ReviewMap, type ReviewStatus } from './components/lib/review';
 import { ACCEPT, isAccepted, skipReason } from './components/lib/files';
 import type { ConfirmOptions } from './components/ui/Dialog';
 
@@ -121,6 +121,42 @@ function diffInventories(before: Inventory, after: Inventory): RunResult {
   return { added, removed, changed, unchanged, changedIds };
 }
 
+/**
+ * Copies the fields named in each entry's `edited` map from the `from` rows onto the `to` rows with the same id
+ * (an edit made by hand during a run survives the run's inventory and the reload). Returns `to` when nothing applies.
+ */
+function carryEdits(from: Inventory, to: Inventory, entries: ReviewMap): Inventory {
+  const ids = Object.keys(entries).filter((id) => Object.keys(entries[id].edited ?? {}).length);
+  if (!ids.length) return to;
+  const fromF = new Map(from.facilities.map((f) => [f.id, f]));
+  const fromG = new Map(from.grounds.map((g) => [g.id, g]));
+  const patchOf = (src: Facility | GroundsArea, dst: Facility | GroundsArea, paths: string[]) => {
+    const patch: Record<string, unknown> = {};
+    for (const path of paths) {
+      const v = fieldValue(src, path);
+      if (path === 'dining.mealsPerDay') { const d = (dst as Facility).dining ?? (src as Facility).dining; if (d) patch.dining = { ...d, mealsPerDay: typeof v === 'number' ? v : 0 }; }
+      else patch[path] = v;
+    }
+    return patch;
+  };
+  let changed = false;
+  const facilities = to.facilities.map((f) => { const src = fromF.get(f.id); const e = entries[f.id]; if (!src || !e?.edited) return f; const patch = patchOf(src, f, Object.keys(e.edited)); if (!changes(f, patch)) return f; changed = true; return { ...f, ...patch } as Facility; });
+  const grounds = to.grounds.map((g) => { const src = fromG.get(g.id); const e = entries[g.id]; if (!src || !e?.edited) return g; const patch = patchOf(src, g, Object.keys(e.edited)); if (!changes(g, patch)) return g; changed = true; return { ...g, ...patch } as GroundsArea; });
+  return changed ? { ...to, facilities, grounds } : to;
+}
+
+/** Whether a patch changes any field of the row (objects and arrays compared by value). */
+function changes(row: object, patch: object): boolean {
+  const r = row as Record<string, unknown>;
+  for (const [k, v] of Object.entries(patch)) {
+    const before = r[k];
+    if (before === v || ((before ?? null) === null && (v ?? null) === null)) continue;
+    if (typeof v === 'object' && v !== null && typeof before === 'object' && before !== null && JSON.stringify(before) === JSON.stringify(v)) continue;
+    return true;
+  }
+  return false;
+}
+
 const sameInventory = (a: Inventory, b: Inventory) => { try { return JSON.stringify(a) === JSON.stringify(b); } catch { return false; } };
 const fmtFound = (f: Facility) => `＋ ${f.buildingNumber ? `Bldg ${f.buildingNumber} · ` : ''}${f.name} — ${f.grossSqft.toLocaleString()} SF${f.cleanableSqft ? ` (${f.cleanableSqft.toLocaleString()} cleanable)` : ''} · ${Math.round(f.confidence * 100)}%`;
 
@@ -191,13 +227,24 @@ interface State {
   init(): Promise<void>;
   setProjectName(name: string): void;
   patchInventory(fn: (inv: Inventory) => Inventory): void;
+  /** Edits record edited markers (§6.3 P1: field → extracted value) in the same store write; no-op patches write nothing. */
   updateFacility(id: string, patch: Partial<Facility>): void;
   removeFacility(id: string): void;
   addFacility(): void;
   updateGrounds(id: string, patch: Partial<GroundsArea>): void;
   removeGrounds(id: string): void;
   addGrounds(facilityId?: string): void;
+  /** Per-row patches for many rows (bulk actions, TSV paste) with their edited markers: one store write. Returns the rows changed. */
+  updateRows(facilities: ReadonlyMap<string, Partial<Facility>>, grounds?: ReadonlyMap<string, Partial<GroundsArea>>): number;
+  /** Remove facilities and grounds areas in one write; grounds attached to a removed building become site-wide. */
+  removeRows(ids: readonly string[]): void;
+  /** R: put the given edited fields (default: every edited field of the row) back to the extracted values. */
+  revertEdits(id: string, paths?: readonly string[]): boolean;
+  /** Undo / redo: replace the inventory and the review marks in one write (drops a selection that no longer exists). */
+  restoreDoc(doc: { inventory: Inventory; review: ReviewMap | undefined }): void;
   setFactorOverride(id: string, value: number | null): void;
+  /** Several factor overrides in one write (null removes one): reset all, bulk paste. */
+  setFactorOverrides(patch: Record<string, number | null>): void;
   setAssumption<K extends keyof Assumptions>(key: K, value: Assumptions[K] | undefined): void;
   setAi(patch: Partial<Project['ai']>): void;
   setWage(crew: Crew, value: number | null): void;
@@ -251,7 +298,8 @@ interface State {
   openRight(t: RightTab): void;
   /** open the Estimate tab and ask it to scroll to a section (e.g. 'crosscheck') */
   openEstimate(section?: string): void;
-  setBottomOpen(v: boolean): void;
+  /** `auto` (minimum free rect, run start) does not count as the user touching the panel */
+  setBottomOpen(v: boolean, opts?: { auto?: boolean }): void;
   setBottomTab(t: BottomTab): void;
   /** open the bottom panel on the Log tab with a filter */
   openLog(filter?: LogFilter): void;
@@ -269,6 +317,7 @@ interface State {
   addPendingFiles(files: File[] | FileList): void;
   removePendingFile(f: File): void;
   clearPending(): void;
+  clearSkipped(): void;
   setReader(patch: Partial<ReaderSettings>): void;
   /** flush the debounced save now; resolves false when the PUT failed */
   saveNow(): Promise<boolean>;
@@ -391,23 +440,75 @@ export const useStore = create<State>((set, get) => {
     },
     setProjectName(name) { mutateProject((p) => ({ ...p, name })); },
     patchInventory(fn) { mutateProject((p) => ({ ...p, inventory: fn(p.inventory) })); },
-    updateFacility(id, patch) { get().patchInventory((inv) => ({ ...inv, facilities: inv.facilities.map((f) => (f.id === id ? { ...f, ...patch } : f)) })); },
-    removeFacility(id) {
-      get().patchInventory((inv) => ({ ...inv, facilities: inv.facilities.filter((f) => f.id !== id), grounds: inv.grounds.map((g) => (g.facilityId === id ? { ...g, facilityId: undefined } : g)) }));
-      const sel = get().selection;
-      if (sel.kind === 'facility' && sel.id === id) set({ selection: { kind: null }, focusMode: 'site' });
-    },
+    updateFacility(id, patch) { get().updateRows(new Map([[id, patch]])); },
+    removeFacility(id) { get().removeRows([id]); },
     addFacility() {
       const id = `b-manual-${Date.now().toString(36)}`;
       const f: Facility = { id, name: 'New facility', category: 'admin', grossSqft: 10000, floors: 1, serviceLevel: 'daily_5', scope: ['custodial', 'floor_care'], confidence: 1, notes: 'Added manually' };
       get().patchInventory((inv) => ({ ...inv, facilities: [...inv.facilities, f] }));
       set({ selection: { kind: 'facility', id }, focusMode: 'site' });
     },
-    updateGrounds(id, patch) { get().patchInventory((inv) => ({ ...inv, grounds: inv.grounds.map((g) => (g.id === id ? { ...g, ...patch } : g)) })); },
-    removeGrounds(id) {
-      get().patchInventory((inv) => ({ ...inv, grounds: inv.grounds.filter((g) => g.id !== id) }));
+    updateGrounds(id, patch) { get().updateRows(new Map(), new Map([[id, patch]])); },
+    removeGrounds(id) { get().removeRows([id]); },
+    updateRows(fac, grd = new Map()) {
+      const p = get().project; if (!p || (!fac.size && !grd.size)) return 0;
+      const at = Date.now();
+      let review = p.review; let reviewCopied = false; let n = 0;
+      const apply = <T extends Facility | GroundsArea>(row: T, patch: Partial<T> | undefined): T => {
+        if (!patch || !changes(row, patch)) return row;
+        n++;
+        if (!isManualRow(row.id)) {
+          const prev = review?.[row.id];
+          const next = withEditMarkers(prev, changedFields(row, patch), at);
+          if (next && next !== prev) { if (!reviewCopied) { review = { ...(review ?? {}) }; reviewCopied = true; } review![row.id] = next; }
+        }
+        return { ...row, ...patch };
+      };
+      const facilities = fac.size ? p.inventory.facilities.map((f) => apply(f, fac.get(f.id))) : p.inventory.facilities;
+      const grounds = grd.size ? p.inventory.grounds.map((g) => apply(g, grd.get(g.id))) : p.inventory.grounds;
+      if (!n) return 0;
+      mutateProject((q) => ({ ...q, inventory: { ...q.inventory, facilities, grounds }, review }));
+      return n;
+    },
+    removeRows(ids) {
+      const drop = new Set(ids); if (!drop.size) return;
+      mutateProject((p) => ({
+        ...p,
+        inventory: {
+          ...p.inventory,
+          facilities: p.inventory.facilities.filter((f) => !drop.has(f.id)),
+          grounds: p.inventory.grounds.filter((g) => !drop.has(g.id)).map((g) => (g.facilityId && drop.has(g.facilityId) ? { ...g, facilityId: undefined } : g)),
+        },
+      }));
       const sel = get().selection;
-      if (sel.kind === 'grounds' && sel.id === id) set({ selection: { kind: null } });
+      if (sel.kind !== null && drop.has(sel.id)) set({ selection: { kind: null }, focusMode: 'site', selectedAgentId: null });
+    },
+    revertEdits(id, paths) {
+      const p = get().project; if (!p) return false;
+      const entry = p.review?.[id]; const edited = entry?.edited; if (!entry || !edited) return false;
+      const list = (paths ?? Object.keys(edited)).filter((k) => k in edited);
+      if (!list.length) return false;
+      const f = p.inventory.facilities.find((x) => x.id === id);
+      const g = f ? undefined : p.inventory.grounds.find((x) => x.id === id);
+      const row = f ?? g; if (!row) return false;
+      const patch = revertPatch(row, list, edited);
+      const left = { ...edited }; for (const k of list) delete left[k];
+      const next: ReviewEntry = { ...entry, at: Date.now() }; if (Object.keys(left).length) next.edited = left; else delete next.edited;
+      mutateProject((q) => ({
+        ...q,
+        inventory: f ? { ...q.inventory, facilities: q.inventory.facilities.map((x) => (x.id === id ? { ...x, ...patch } as Facility : x)) }
+          : { ...q.inventory, grounds: q.inventory.grounds.map((x) => (x.id === id ? { ...x, ...patch } as GroundsArea : x)) },
+        review: { ...(q.review ?? {}), [id]: next },
+      }));
+      return true;
+    },
+    restoreDoc(doc) {
+      mutateProject((p) => ({ ...p, inventory: doc.inventory, review: doc.review }));
+      const sel = get().selection;
+      if (sel.kind !== null) {
+        const exists = sel.kind === 'facility' ? doc.inventory.facilities.some((f) => f.id === sel.id) : doc.inventory.grounds.some((g) => g.id === sel.id);
+        if (!exists) set({ selection: { kind: null }, focusMode: 'site', selectedAgentId: null });
+      }
     },
     addGrounds(facilityId) {
       const id = `g-manual-${Date.now().toString(36)}`;
@@ -415,8 +516,10 @@ export const useStore = create<State>((set, get) => {
       get().patchInventory((inv) => ({ ...inv, grounds: [...inv.grounds, g] }));
       set({ selection: { kind: 'grounds', id } });
     },
-    setFactorOverride(id, value) {
-      mutateProject((p) => { const o = { ...(p.factorOverrides ?? {}) }; if (value == null || !isFinite(value)) delete o[id]; else o[id] = value; return { ...p, factorOverrides: o }; });
+    setFactorOverride(id, value) { get().setFactorOverrides({ [id]: value }); },
+    setFactorOverrides(patch) {
+      if (!Object.keys(patch).length) return;
+      mutateProject((p) => { const o = { ...(p.factorOverrides ?? {}) }; for (const [id, value] of Object.entries(patch)) { if (value == null || !isFinite(value)) delete o[id]; else o[id] = value; } return { ...p, factorOverrides: o }; });
     },
     setAssumption(key, value) {
       mutateProject((p) => { const a = { ...(p.assumptionOverrides ?? {}) } as Record<string, unknown>; if (value === undefined || (typeof value === 'number' && !isFinite(value))) delete a[key]; else a[key] = value; return { ...p, assumptionOverrides: a as Partial<Assumptions> }; });
@@ -596,7 +699,10 @@ export const useStore = create<State>((set, get) => {
                 // §7.3: the run's inventory replaces the project's, staging clears, the diff is computed
                 const snap = x0.snapshot;
                 result = snap && (snap.inventory.facilities.length + snap.inventory.grounds.length) > 0 ? diffInventories(snap.inventory, e.inventory) : { added: e.inventory.facilities.length + e.inventory.grounds.length, removed: 0, changed: 0, unchanged: 0, changedIds: [] };
-                inventory = e.inventory; facilities = e.inventory.facilities; grounds = e.inventory.grounds;
+                // edits made by hand during the run (review entries newer than its start) carry over to the new rows
+                const runEdits: ReviewMap = {};
+                for (const [rid, r] of Object.entries(p0.review ?? {})) if (r.at > startedAt && r.edited) runEdits[rid] = r;
+                inventory = carryEdits(p0.inventory, e.inventory, runEdits); facilities = inventory.facilities; grounds = inventory.grounds;
                 staged = emptyStaging(); incoming = []; incomingG = []; seen.ids = null;
                 const name = p0.name === 'Untitled BOS estimate' && e.inventory.site.installationName ? `${e.inventory.site.installationName} BOS` : p0.name;
                 projPatch = { ...projPatch, name, extraction: { provider: e.provider, model: e.model, finishedAt: new Date().toISOString(), durationMs: e.durationMs, usage: e.usage } };
@@ -648,10 +754,14 @@ export const useStore = create<State>((set, get) => {
         // reload the authoritative project (the server saved it on success), then merge review marks made during the run (§6.3)
         try {
           const server = await api.getProject(projectId) as ClientProject;
-          const local = get().project?.review ?? {};
+          const localProject = get().project;
+          const local = localProject?.review ?? {};
           const newer: ReviewMap = {};
           for (const [id, r] of Object.entries(local)) if (r.at > startedAt) newer[id] = r;
-          const mergedProject: ClientProject = Object.keys(newer).length ? { ...server, review: { ...(server.review ?? {}), ...newer } } : server;
+          let mergedProject: ClientProject = Object.keys(newer).length ? { ...server, review: { ...(server.review ?? {}), ...newer } } : server;
+          // fields edited by hand during the run (entries newer than its start) keep the local value on the reloaded row
+          // (`done` already carried them onto the run's rows, so the current local inventory holds them)
+          if (localProject) mergedProject = { ...mergedProject, inventory: carryEdits(localProject.inventory, mergedProject.inventory, newer) };
           set({ project: mergedProject });
           editVersion = savedVersion = 0;
           if (Object.keys(newer).length) { editVersion = 1; await doSave(); }
@@ -756,7 +866,7 @@ export const useStore = create<State>((set, get) => {
     setRightTab(t) { set({ rightTab: t }); },
     openRight(t) { set({ rightOpen: true, rightTab: t }); },
     openEstimate(section) { set((s) => ({ rightOpen: true, rightTab: 'estimate', estimateFocus: section ? { section, seq: (s.estimateFocus?.seq ?? 0) + 1 } : s.estimateFocus })); },
-    setBottomOpen(v) { set({ bottomOpen: v, bottomTouched: true }); },
+    setBottomOpen(v, opts) { set(opts?.auto ? { bottomOpen: v } : { bottomOpen: v, bottomTouched: true }); },
     setBottomTab(t) { set({ bottomTab: t, bottomTouched: true }); },
     openLog(filter) { set((s) => ({ bottomOpen: true, bottomTab: 'log', bottomTouched: true, logFilter: filter ?? s.logFilter })); },
     setLogFilter(f) { set({ logFilter: f }); },
@@ -794,6 +904,7 @@ export const useStore = create<State>((set, get) => {
     },
     removePendingFile(f) { set((s) => ({ pendingFiles: s.pendingFiles.filter((x) => x !== f) })); },
     clearPending() { set({ pendingFiles: [], pendingSkipped: [] }); },
+    clearSkipped() { set({ pendingSkipped: [] }); },
     setReader(patch) { set((s) => ({ reader: { ...s.reader, ...patch } })); },
     async saveNow() {
       if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }

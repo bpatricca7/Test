@@ -178,6 +178,60 @@ export function reviewKey(entry: ReviewEntry | undefined, issues: readonly Issue
   return countsTowardReview(issues) ? 'needs' : 'ok';
 }
 
+// ---- edited markers (§6.3 P1): field → extracted value, captured on the first manual edit ----
+type AnyRow = Facility | GroundsArea;
+const sameValue = (a: unknown, b: unknown) => (a ?? null) === (b ?? null) || JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+/** Rows added by hand have no extracted values, so they never carry markers. */
+export const isManualRow = (id: string) => id.startsWith('b-manual-') || id.startsWith('g-manual-');
+
+/** Field paths a marker uses: top-level keys, plus "dining.mealsPerDay". */
+export function fieldValue(row: AnyRow, path: string): unknown {
+  if (path === 'dining.mealsPerDay') return (row as Facility).dining?.mealsPerDay;
+  return (row as unknown as Record<string, unknown>)[path];
+}
+
+/** [path, before, after] for every field the patch actually changes. */
+export function changedFields(row: AnyRow, patch: Partial<Facility> | Partial<GroundsArea>): [string, unknown, unknown][] {
+  const out: [string, unknown, unknown][] = [];
+  for (const [k, v] of Object.entries(patch)) {
+    if (k === 'dining') { const before = (row as Facility).dining?.mealsPerDay; const after = (v as Facility['dining'])?.mealsPerDay; if (!sameValue(before, after)) out.push(['dining.mealsPerDay', before, after]); continue; }
+    const before = (row as unknown as Record<string, unknown>)[k];
+    if (!sameValue(before, v)) out.push([k, before, v]);
+  }
+  return out;
+}
+
+/**
+ * The review entry after a manual edit: the first time a field moves away from its extracted value the extracted
+ * value is kept in `edited[field]`; editing it back removes the marker. Returns `prev` when nothing changes.
+ */
+export function withEditMarkers(prev: ReviewEntry | undefined, changes: [string, unknown, unknown][], at: number): ReviewEntry | undefined {
+  if (!changes.length) return prev;
+  const edited: Record<string, unknown> = { ...(prev?.edited ?? {}) };
+  let touched = false;
+  for (const [k, before, after] of changes) {
+    if (!(k in edited)) { edited[k] = before ?? null; touched = true; }
+    else if (sameValue(edited[k], after)) { delete edited[k]; touched = true; }
+  }
+  if (!touched) return prev;
+  const entry: ReviewEntry = { ...(prev ?? { status: 'unreviewed' as const }), at };
+  if (Object.keys(edited).length) entry.edited = edited; else delete entry.edited;
+  return entry;
+}
+
+/** The patch that puts edited fields back to their extracted values. */
+export function revertPatch(row: AnyRow, paths: string[], edited: Record<string, unknown>): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  for (const path of paths) {
+    const v = edited[path] ?? undefined;
+    if (path === 'dining.mealsPerDay') {
+      const d = (row as Facility).dining;
+      if (d) patch.dining = { ...d, mealsPerDay: typeof v === 'number' ? v : 0 };
+    } else patch[path] = v;
+  }
+  return patch;
+}
+
 // ---- memoized per row ----
 interface Cached { ctx: ReviewContext; entry: ReviewEntry | undefined; meta: RowMeta }
 const rowCache = new WeakMap<object, Cached>();

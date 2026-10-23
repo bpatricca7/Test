@@ -106,7 +106,6 @@ function Hero() {
   const hoverId = useStore((s) => s.hoverId ?? null);
   const buildingTab = useStore((s) => s.buildingTab);
   const colorBy = useStore((s) => s.colorBy ?? 'category');
-  const lighting = useStore((s) => s.lighting ?? 'review');
   const crewFilter = useStore((s) => s.crewFilter);
   const fmap = useFacilityMap();
   if (selection.kind !== 'facility' || !d.layout) return null;
@@ -176,8 +175,8 @@ function Post() {
   if (quality !== 'high') return null;
   const live = lighting === 'live';
   return (
-    <EffectComposer ref={composer} multisampling={0} enableNormalPass={false}>
-      {live ? <Bloom mipmapBlur levels={3} intensity={0.6} luminanceThreshold={0.85} luminanceSmoothing={0.2} radius={0.6} /> : <></>}
+    <EffectComposer ref={composer} multisampling={0} enableNormalPass={false} frameBufferType={live ? THREE.HalfFloatType : THREE.UnsignedByteType}>
+      {live ? <Bloom mipmapBlur levels={3} resolutionScale={0.5} intensity={0.6} luminanceThreshold={0.85} luminanceSmoothing={0.2} radius={0.6} /> : <></>}
       {live ? <Vignette eskil={false} offset={0.2} darkness={0.5} /> : <></>}
       <SMAA ref={smaa} preset={SMAAPreset.LOW} />
     </EffectComposer>

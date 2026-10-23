@@ -45,8 +45,8 @@
 .est__crew .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .est__table .wage{width:56px;margin-left:auto}
 .est__table .wage .input{padding:0 4px;font-family:var(--font-mono);font-size:var(--fs-xs)}
-.est__table--crews col.c-hrs{width:64px}.est__table--crews col.c-fte{width:52px}.est__table--crews col.c-heads{width:44px}.est__table--crews col.c-wage{width:64px}.est__table--crews col.c-labor{width:64px}
-@container est (max-width:359px){.est__table--crews col.c-heads{width:40px}.est__table--crews col.c-wage{width:60px}.est__table--crews col.c-labor{width:62px}.est__sticky{gap:5px;font-size:var(--fs-xs)}}
+.est__table--crews col.c-hrs{width:56px}.est__table--crews col.c-fte{width:66px}.est__table--crews col.c-heads{width:40px}.est__table--crews col.c-wage{width:60px}.est__table--crews col.c-labor{width:64px}
+@container est (max-width:359px){.est__sticky{gap:5px;font-size:var(--fs-xs)}}
 .est__table--years col.c-h{width:60px}.est__table--years col.c-f{width:76px}.est__table--years col.c-hd{width:46px}.est__table--years col.c-l{width:64px}
 .est__fte-cell{position:relative}
 .est__fte-cell .bar{position:absolute;right:4px;bottom:5px;height:2px;border-radius:1px;background:rgba(90,169,245,.45);max-width:calc(100% - 8px)}

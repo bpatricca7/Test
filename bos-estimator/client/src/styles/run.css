@@ -47,10 +47,11 @@
 .rs-docs-tip .meta{font-size:var(--fs-xs);color:var(--text-3)}
 
 /* narrowing order: ticker → stage labels (active only) → docs → grounds → "Log" label → "Facilities" word */
-@container runstrip (max-width:959px){.runstrip--running .runstrip__ticker{display:none}}
+@container runstrip (max-width:1279px){.runstrip--running .runstrip__ticker{display:none}}
 @container runstrip (max-width:1023px){.runstrip__step:not(.is-active) .label{display:none}}
 @container runstrip (max-width:859px){.rs-docs{display:none}}
-@container runstrip (max-width:679px){.rs-grounds{display:none}.rs-log .btn__label{display:none}.rs-log{width:var(--ctl-h-sm);padding:0}.runstrip__counters{gap:8px}.runstrip__step + .runstrip__step::before{width:6px}}
+@container runstrip (max-width:759px){.rs-grounds{display:none}}
+@container runstrip (max-width:679px){.rs-log .btn__label{display:none}.rs-log{width:var(--ctl-h-sm);padding:0}.runstrip__counters{gap:8px}.runstrip__step + .runstrip__step::before{width:6px}}
 @container runstrip (max-width:539px){.rs-fac .k{display:none}.rs-staged{display:none}.runstrip__step:not(.is-active):not(.is-done) .dot{width:10px;height:10px}}
 /* done: a shorter summary when the strip is narrow (the full text stays in the title) */
 .rs-short{display:none}

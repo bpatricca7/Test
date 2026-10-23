@@ -105,9 +105,16 @@ export function Workers() {
     ring.renderOrder = 2;
     proxy.visible = false; proxy.count = 0; proxy.raycast = proxyRaycast; proxy.name = 'crew-proxy';
     body.name = 'crew-bodies'; head.name = 'crew-heads'; gear.name = 'crew-gear'; ring.name = 'crew-rings';
-    return { body, head, gear, ring, proxy, xbody, xhead, ids: [] as string[], xray: new Uint8Array(cap) };
+    // far away a figure is a few pixels tall: draw the whole crew as one Points mesh (crew-coloured dots)
+    const dotGeo = new THREE.BufferGeometry();
+    const dotPos = new THREE.BufferAttribute(new Float32Array(cap * 3), 3); dotPos.setUsage(THREE.DynamicDrawUsage);
+    const dotCol = new THREE.BufferAttribute(new Float32Array(cap * 3), 3); dotCol.setUsage(THREE.DynamicDrawUsage);
+    dotGeo.setAttribute('position', dotPos); dotGeo.setAttribute('color', dotCol);
+    const dots = new THREE.Points(dotGeo, mat('crew-dots', () => new THREE.PointsMaterial({ size: 5, sizeAttenuation: false, vertexColors: true })));
+    dots.frustumCulled = false; dots.raycast = () => {}; dots.name = 'crew-dots'; dots.renderOrder = 4;
+    return { body, head, gear, ring, proxy, xbody, xhead, dots, dotPos, dotCol, ids: [] as string[], xray: new Uint8Array(cap) };
   }, [cap]);
-  useEffect(() => () => { for (const m of [meshes.body, meshes.head, meshes.gear, meshes.ring, meshes.proxy]) m.geometry.dispose(); }, [meshes]);
+  useEffect(() => () => { for (const m of [meshes.body, meshes.head, meshes.gear, meshes.ring, meshes.proxy, meshes.dots]) m.geometry.dispose(); }, [meshes]);
   useEffect(() => { meshes.proxy.userData.xray = meshes.xray; }, [meshes]);
 
   // fixed bounding spheres: the site bounds × 1.5
@@ -196,6 +203,21 @@ export function Workers() {
     }
     meshes.body.count = n; meshes.head.count = n; meshes.ring.count = n; meshes.proxy.count = n; meshes.gear.count = g;
     meshes.xbody.count = xi; meshes.xhead.count = xi;
+    // figure height on screen (≈ 1.3 units at the target distance): below 4 px, switch to dots
+    const ctl2 = controlsRef() as { target?: THREE.Vector3 } | null;
+    const pxPerUnit = ortho ? camera.zoom : size.height / (2 * Math.max(1, ctl2?.target ? camera.position.distanceTo(ctl2.target) : 300) * Math.tan((camera.fov * Math.PI) / 360));
+    const asDots = !focused && 1.3 * pxPerUnit < 4;
+    meshes.dots.visible = asDots;
+    for (const m of [meshes.body, meshes.head, meshes.gear, meshes.ring]) m.visible = !asDots;
+    if (asDots) {
+      for (let i = 0; i < crew.length; i++) {
+        const c = crew[i];
+        meshes.dotPos.setXYZ(i, c.wx, c.wy, c.wz);
+        c0.set(crewColor(c.crew as Crew)); meshes.dotCol.setXYZ(i, c0.r, c0.g, c0.b);
+      }
+      meshes.dots.geometry.setDrawRange(0, crew.length);
+      meshes.dotPos.needsUpdate = true; meshes.dotCol.needsUpdate = true;
+    }
     for (const m of [meshes.body, meshes.head, meshes.ring, meshes.proxy, meshes.gear, meshes.xbody, meshes.xhead]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
     meshes.ids = crew.map((c) => c.id);
     meshes.proxy.userData.ids = meshes.ids;
@@ -227,6 +249,7 @@ export function Workers() {
       <primitive object={meshes.gear} />
       <primitive object={meshes.xbody} />
       <primitive object={meshes.xhead} />
+      <primitive object={meshes.dots} />
       <primitive object={meshes.proxy} onClick={onClick} onPointerOver={onOver} onPointerOut={onOut} />
     </group>
   );

@@ -2,10 +2,7 @@
 // sharing: a snapshot is the project's own immutable inventory/review objects), capped at 50. Every store change made
 // in one task is one step (a commit, a bulk action, a paste, a removal, a restore); a whole extraction run, from the
 // pre-run state to the merged reload, is one step. Ctrl/⌘+Z undoes; Ctrl/⌘+Shift+Z or Ctrl+Y redoes.
-//
-// Note: the store has no "replace inventory and review" action, so apply() writes `review` with useStore.setState
-// and the inventory through patchInventory (which schedules the save). See the report: a store-level history /
-// `restoreDoc` action would replace this.
+// Undo and redo apply a snapshot with store.restoreDoc (one write, one save).
 
 import { create } from 'zustand';
 import type { Inventory } from '@shared/types';
@@ -36,8 +33,8 @@ const sync = () => useHistory.setState({
 const docOf = (p: ClientProject): Doc => ({ inventory: p.inventory, review: p.review });
 const sameDoc = (a: Doc, b: Doc) => a.inventory === b.inventory && a.review === b.review;
 
-/** Name the next step ("Gross SF of 5995", "Verify 12 rows"); used by the toast after undo / redo. */
-export function labelNext(label: string) { nextLabel = label; }
+/** Name the next step ("Gross SF of 5995", "Verify 12 rows"); used by the toast after undo / redo. null clears it. */
+export function labelNext(label: string | null) { nextLabel = label; }
 
 function inferLabel(a: Doc, b: Doc): string {
   const df = b.inventory.facilities.length - a.inventory.facilities.length;
@@ -99,18 +96,9 @@ const unsubscribe = useStore.subscribe((s, prev) => {
 });
 
 function apply(doc: Doc) {
-  const s = useStore.getState(); const p = s.project; if (!p) return;
+  if (!useStore.getState().project) return;
   applying = true;
-  try {
-    if (p.review !== doc.review) useStore.setState({ project: { ...p, review: doc.review } });
-    // patchInventory goes through the store's mutate path, which schedules the save (with the review above)
-    useStore.getState().patchInventory(() => doc.inventory);
-    const sel = useStore.getState().selection;
-    if (sel.kind !== null) {
-      const exists = sel.kind === 'facility' ? doc.inventory.facilities.some((f) => f.id === sel.id) : doc.inventory.grounds.some((g) => g.id === sel.id);
-      if (!exists) useStore.getState().select({ kind: null });
-    }
-  } finally { applying = false; }
+  try { useStore.getState().restoreDoc(doc); } finally { applying = false; }
 }
 
 function blockedByRun(): boolean {

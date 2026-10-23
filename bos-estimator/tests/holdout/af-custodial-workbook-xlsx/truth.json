@@ -1,0 +1,481 @@
+{
+  "id": "af-custodial-workbook-xlsx",
+  "title": "Air Force custodial PWS Attachment 2 / Appendix B workbook (XLSX): Notes, Summary and three zone tabs plus a GSU tab, Level 1/2/4 blocks with repeated stacked headers, Restroom / Carpet / Hard Floor / Other SF split, Amendment 0001 applied (row deleted, row added, SF re-measured, frequency changed), reference-only SCIF and optional-CLIN rows below the zone totals",
+  "theme": "military-bos",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID297162707687379821580624672536441025401/Attachment%201%20-%20Custodial%20PWS.pdf",
+        "note": "Dyess AFB Custodial Services PWS (13 Aug 2021), Appendix B \"Estimated Square Footage and Cleaning Level\". Fetched and read with pdftotext. Columns Facility No. / Description / User/Agency / Restroom SF / Carpet SF / Hard Floor SF / Total Cleaned SF per Facility; one block per cleaning level (Level 1 - Prestige, Level 2 - Basic, Level 4 - Special Requirement) with the header repeated; \"Level N Total\" rows that put the facility count in the Facility No. column (\"81 Total # Facilities\"); the same facility number on several lines (7008, 9203); letter-suffixed numbers (6030A/B/C, 7316A/B); partial areas (\"3-Bay Hangar (Bay 1 Only)\"); para 4.20.3 modification unit pricing from the Appendix B category totals (paraphrased in Notes tab Note 9). Format only; no rows copied."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID239120740891441165113625913503342013529/Atch_02_Custodial_Services_-_PWS.pdf",
+        "note": "Sheppard AFB / Frederick Auxiliary Airfield Custodial Services PWS (revised 3 Aug 2018), Appendix B \"Estimated Square Footage and Cleaning Category\". Fetched and read. Floor-finish split columns (Carpet / Vinyl / Ceramic / Concrete / Hardwood / Other / Total Sq Ft) with blank cells for zero; SUBTotal / TOTAL rows with the count in the Bldg # column; the same building in two categories (402, 920); two buildings at a separate auxiliary airfield (model for the GSU tab); Appendix A frequency wording \"1x a week\", \"1x every two weeks\", \"3x a week\". Format only."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID51452482767498558535584979091168261202/PWS_for_CDC_and_NASIC.pdf",
+        "note": "Wright-Patterson AFB Custodial PWS for the CDCs and NASIC (2 Apr 2018), Appendix B (July 2018). Fetched and read. Spreadsheet-export look: two-decimal square footage (510.82, 4,545.19), \"N/A\" cells, stacked headers (\"Total Cleaned SF per Facility (Carpet & Hard Floor)\"), Level 2 and Level 4 blocks, a note on a contractor-occupied building, and \"Per Occurrence / Total Per Month / Total Per Year\" workload rows under the facility rows (model for the Summary workload block and the GSU decimals). Format only."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID100363056541034031518908095969877301366/DRAFT%20Appendix%20B%20-%20Facility%20Sq%20Meters%2001%20June%202021.pdf",
+        "note": "Aviano AB DRAFT Appendix B, Custodial Services (1 June 2021). Fetched and read. BUILDING NUMBER / AREA (zone code A1, C, D, E, F) / Floor / BUILDING DESCRIPTION / CARPET / NON-CARPET / RESTROOMS / TOTAL, Level 1 and Level 2 blocks with TOTALS rows, the same building on two lines (176), partial-building lines (\"Hangar 3 - MAIN GF\"), and a seasonal remark (\"APR - OCT\"). Model for the Zone column and the seasonal facility. Format only (the fixture uses SF, not m2)."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID57155383415613588625416825616511317979/APPENDIX_A,_Air_Force_Custodial_Standards.pdf",
+        "note": "Appendix A - Air Force Custodial Standards (stand-alone attachment). Fetched and read. Level 1 Prestige / Level 2 Basic / Level 3 Academics / Level 4 Special Requirements (Fitness Centers, CDC, Youth Center, SAP) and frequency wording (\"1 x Week\", \"1 x every 2 Weeks\", \"2 x Week\", \"1 x Daily\"). Model for Notes tab Note 3 and the Level 4 grouping."
+      },
+      {
+        "url": "https://aws.state.ak.us/OnlinePublicNotices/Notices/Attachment.aspx?id=140242",
+        "note": "Performance Work Statement for Custodial Services at Eielson AFB (168th Wing, Alaska ANG), State of Alaska public notice attachment. Known only from a web-search summary (host unreachable from this environment): a per-facility table of facility number, activity, square footage and service frequency (e.g. 2x a week). Only support for a per-building days-per-week column (Svc Freq). No content copied."
+      },
+      {
+        "url": "https://samsearch.co/gov-explore/federal/joint-base-charleston-custodial-services/FA441826R0011",
+        "note": "Joint Base Charleston Custodial Services, FA441826R0011 (2026): the package lists \"Attachment 2 - Appendix B 14 April 2026 (XLS)\" and re-issues it with the Rev 1 PWS by amendment. Known only from web-search summaries (the page and SAM.gov were not reachable from this environment); used only for the idea that Appendix B is issued as an Excel workbook named Attachment 2 and conformed by amendment. No content copied."
+      }
+    ],
+    "notes": "Every value is illustrative: the base (Tallgrass Air Force Base, Kansas, and its Cottonwood Annex GSU are fictional), the host wing number (726 ABW) and unit symbols, the solicitation number FA4693-27-R-0007, Amendment 0001 and its date, all facility numbers, names and square footages. The workbook layout and wording follow the real Air Force custodial Appendix B tables cited (Dyess 2021, Sheppard 2018, Wright-Patterson 2018, Aviano 2021) and the Air Force Custodial Standards appendix. Those real appendices are PDFs; the XLSX form (Notes, Summary and one tab per zone) is the fixture's assumption, supported only by search summaries showing Appendix B issued as an XLS attachment (JB Charleston 2026). No rows were copied, so fidelity is real-format. gen.mjs builds the workbook source and this file from one table."
+  },
+  "inputs": [
+    {
+      "src": "appendix-b.json",
+      "as": "xlsx",
+      "out": "FA4693-27-R-0007 Atch 2 - Appendix B Est SF and Cleaning Level (Amd 0001).xlsx"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "1102",
+        "name": "Base Operations",
+        "grossSqft": 6502,
+        "cleanableSqft": 6502,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1110",
+        "name": "Passenger Terminal",
+        "grossSqft": 10104,
+        "cleanableSqft": 10104,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1114",
+        "name": "Air Traffic Control Tower",
+        "grossSqft": 1096,
+        "cleanableSqft": 1096,
+        "floors": 6,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1120",
+        "name": "Squadron Operations / Life Support",
+        "grossSqft": 17646,
+        "cleanableSqft": 17646,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1124",
+        "name": "Squadron Operations",
+        "grossSqft": 12310,
+        "cleanableSqft": 12310,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1130",
+        "name": "Maintenance Hangar (Admin & Shop Areas Only)",
+        "grossSqft": 10796,
+        "cleanableSqft": 10796,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "1132",
+        "name": "Fuel Cell Hangar (Admin Only)",
+        "grossSqft": 1384,
+        "cleanableSqft": 1384,
+        "floors": 1,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "1140",
+        "name": "Aircraft Maintenance Unit (AMU)",
+        "grossSqft": 9403,
+        "cleanableSqft": 9403,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "1146",
+        "name": "Aerospace Ground Equipment (AGE)",
+        "grossSqft": 4427,
+        "cleanableSqft": 4427,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "1150",
+        "name": "Fire Station / Crash Rescue",
+        "grossSqft": 7550,
+        "cleanableSqft": 7550,
+        "floors": 2,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "1158A",
+        "name": "Munitions Squadron Admin",
+        "grossSqft": 3355,
+        "cleanableSqft": 3355,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1158B",
+        "name": "Munitions Inspection Bay (Break Room & Latrine Only)",
+        "grossSqft": 444,
+        "cleanableSqft": 444,
+        "floors": 1,
+        "serviceLevel": "2x_week"
+      },
+      {
+        "buildingNumber": "1166",
+        "name": "Weather Flight",
+        "grossSqft": 1254,
+        "cleanableSqft": 1254,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "1172",
+        "name": "Aircrew Flight Equipment (Parachute Shop)",
+        "grossSqft": 3360,
+        "cleanableSqft": 3360,
+        "floors": 1,
+        "serviceLevel": "biweekly"
+      },
+      {
+        "buildingNumber": "1176",
+        "name": "Flight Simulator Facility",
+        "grossSqft": 5354,
+        "cleanableSqft": 5354,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "2000",
+        "name": "Wing Headquarters - Command Section",
+        "grossSqft": 6215,
+        "cleanableSqft": 6215,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2080",
+        "name": "Education Center & Base Library",
+        "grossSqft": 13786,
+        "cleanableSqft": 13786,
+        "floors": 2,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "2000",
+        "name": "Wing Headquarters - Staff Agencies",
+        "grossSqft": 18540,
+        "cleanableSqft": 18540,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2004",
+        "name": "Military Personnel Flight",
+        "grossSqft": 7870,
+        "cleanableSqft": 7870,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2010",
+        "name": "Comptroller / Finance",
+        "grossSqft": 4830,
+        "cleanableSqft": 4830,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2016",
+        "name": "Mission Support Group HQ",
+        "grossSqft": 9178,
+        "cleanableSqft": 9178,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2022",
+        "name": "Civil Engineer Squadron Admin",
+        "grossSqft": 10293,
+        "cleanableSqft": 10293,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2024",
+        "name": "CE Operations Flight Shops (Admin & Break Areas)",
+        "grossSqft": 7330,
+        "cleanableSqft": 7330,
+        "floors": 1,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "2030",
+        "name": "Base Supply Warehouse",
+        "grossSqft": 18185,
+        "cleanableSqft": 18185,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "2034",
+        "name": "Vehicle Maintenance",
+        "grossSqft": 8925,
+        "cleanableSqft": 8925,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "2040",
+        "name": "Communications Squadron",
+        "grossSqft": 11239,
+        "cleanableSqft": 11239,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2042",
+        "name": "Network Control Center",
+        "grossSqft": 4040,
+        "cleanableSqft": 4040,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "2048",
+        "name": "Security Forces Squadron / BDOC",
+        "grossSqft": 12108,
+        "cleanableSqft": 12108,
+        "floors": 2,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "2052",
+        "name": "Visitor Control Center (Pass & ID)",
+        "grossSqft": 1455,
+        "cleanableSqft": 1455,
+        "floors": 1,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "2060",
+        "name": "Contracting Squadron",
+        "grossSqft": 5156,
+        "cleanableSqft": 5156,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2066",
+        "name": "AFOSI Detachment",
+        "grossSqft": 2452,
+        "cleanableSqft": 2452,
+        "floors": 1,
+        "serviceLevel": "weekly",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "2070",
+        "name": "Bioenvironmental Engineering",
+        "grossSqft": 2138,
+        "cleanableSqft": 2138,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      },
+      {
+        "buildingNumber": "2076",
+        "name": "Airman Leadership School",
+        "grossSqft": 5445,
+        "cleanableSqft": 5445,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "education"
+      },
+      {
+        "buildingNumber": "2094",
+        "name": "USSF Space Operations Admin Annex",
+        "grossSqft": 4574,
+        "cleanableSqft": 4574,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "3002",
+        "name": "Base Chapel",
+        "grossSqft": 7940,
+        "cleanableSqft": 7940,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "3006",
+        "name": "Community Activity Center",
+        "grossSqft": 15360,
+        "cleanableSqft": 15360,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "3010",
+        "name": "Airman & Family Readiness Center",
+        "grossSqft": 4804,
+        "cleanableSqft": 4804,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "3014",
+        "name": "Bowling Center (Restrooms & Snack Bar Seating Only)",
+        "grossSqft": 2180,
+        "cleanableSqft": 2180,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "3018",
+        "name": "Outdoor Recreation",
+        "grossSqft": 4084,
+        "cleanableSqft": 4084,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "3020",
+        "name": "Arts & Crafts / Auto Skills Center",
+        "grossSqft": 6255,
+        "cleanableSqft": 6255,
+        "floors": 1,
+        "serviceLevel": "3x_week"
+      },
+      {
+        "buildingNumber": "3024",
+        "name": "Housing Management Office",
+        "grossSqft": 2691,
+        "cleanableSqft": 2691,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "3028",
+        "name": "Dining Facility",
+        "grossSqft": 6800,
+        "cleanableSqft": 6800,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "dining"
+      },
+      {
+        "buildingNumber": "3032",
+        "name": "Youth Sports Complex Restrooms",
+        "grossSqft": 236,
+        "cleanableSqft": 236,
+        "floors": 1
+      },
+      {
+        "buildingNumber": "3040",
+        "name": "Fitness Center",
+        "grossSqft": 47015,
+        "cleanableSqft": 47015,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "3044",
+        "name": "Child Development Center",
+        "grossSqft": 15735,
+        "cleanableSqft": 15735,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "child_care"
+      },
+      {
+        "buildingNumber": "3048",
+        "name": "Youth Center / School Age Program",
+        "grossSqft": 20605,
+        "cleanableSqft": 20605,
+        "floors": 1,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "101",
+        "name": "Det 1 Operations / Admin",
+        "grossSqft": 2207.75,
+        "cleanableSqft": 2207.75,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "104",
+        "name": "Power Production Shop (Break Room & Latrine Only)",
+        "grossSqft": 435.67,
+        "cleanableSqft": 435.67,
+        "floors": 1,
+        "serviceLevel": "weekly"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [],
+    "site": {
+      "installationName": "Tallgrass Air Force Base",
+      "solicitation": "FA4693-27-R-0007"
+    }
+  },
+  "traps": [
+    "Multi-sheet workbook: \"Notes & Instructions\", \"Summary\", three zone tabs and a GSU tab. Facility rows are only on the zone and GSU tabs.",
+    "The Summary tab repeats the totals twice (by zone and by cleaning level) and adds a workload block (\"Per Occurrence\" SF and \"Total Per Year\" = SF x annual service days, 103,276,102). None of these rows is a facility.",
+    "Every data tab has a three-row title block and a zone banner. Each cleaning-level block repeats a two-row stacked header with a merged \"ESTIMATED SQUARE FOOTAGE (SF)\" group cell, merged single-column headers and line breaks inside header cells.",
+    "Level subtotal and zone total rows put the facility COUNT in the Facility No. column (\"13 | Level 2 Total - # Facilities\"), as in the Dyess AFB Appendix B.",
+    "Same facility number on two lines: Bldg 2000 Command Section (Level 1, 6,215 SF) and Staff Agencies (Level 2, 18,540 SF). Truth keeps both line items in document order.",
+    "Letter-suffixed facility numbers 1158A / 1158B are separate facilities. They are text cells among numeric facility numbers.",
+    "Square footage is cleaning area, not gross area. Several rows are partial areas (\"Admin & Shop Areas Only\", \"Break Room & Latrine Only\", \"Restrooms & Snack Bar Seating Only\", dining room only). Truth sets grossSqft = cleanableSqft = Total Cleaned SF and leaves category off the partial-area rows, except the Dining Facility (3028), whose cleaned dining room, entry and restrooms are still dining space (category dining).",
+    "Total Cleaned SF is the sum of four split columns (Restroom + Carpet + Hard Floor + Other). Taking one split, or adding Restroom SF to the total again, gives the wrong area.",
+    "Distractor numbers sit beside the SF: No. of RR (restroom rooms, not fixtures), No. Flrs, User/Agency unit numbers (726 OSS, 727 ARS), zone ids, CLIN numbers, PWS paragraph numbers and annual service days.",
+    "Zero SF cells use four styles: blank, 0, \"-\" and \"N/A\".",
+    "Amendment 0001 is already applied in the cells. The Notes tab change log still prints the superseded Was values: 1180 at 4,868 SF, 2024 at 2,580 / 6,950, 3048 at 5 x Week, and the old grand total of 385,006.42.",
+    "A deleted row stays in place: 1180 sits inside the Zone 1 Level 2 block with level \"N/A\", Svc Freq \"DELETED\", zero SF and Rev \"A1\".",
+    "Rows below a zone total are out of scope: 2090 SCIF (\"reference only - not on contract\", 22,430 SF) and 3052 Optional CLIN 0006 Fitness Center Annex (9,850 SF). Both carry SF in the cells and the full repeated header.",
+    "Frequency wording: \"5 x Week\", \"7 x Week\", \"6 x Week (Mon-Sat)\", \"3 x Week\", \"2 x Week\", \"1 x Week\" and \"1x every two weeks\". 3032 is seasonal (\"3 x Week (APR-OCT only)\"), so it has no single service level and truth leaves serviceLevel off.",
+    "Cleaning Level (1 Prestige / 2 Basic / 4 Special Req) is a task standard, not the visit frequency. The visit frequency is the Svc Freq column (a Level 2 building can be 7 x Week).",
+    "Floors are printed as \"1 + Mezz\" on 1130, so truth leaves floors off. The 6-level control tower has only 1,096 cleaned SF.",
+    "The GSU tab is a separate site with 3-digit facility numbers and #,##0.00 format with measured decimals (2,207.75 and 435.67 SF). The grand total 385,092.42 therefore displays as 385,092 on the #,##0 Summary."
+  ]
+}

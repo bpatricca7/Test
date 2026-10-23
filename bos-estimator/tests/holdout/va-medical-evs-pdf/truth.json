@@ -1,0 +1,343 @@
+{
+  "id": "va-medical-evs-pdf",
+  "title": "VA medical center EMS housekeeping (EVS) workload attachment: campus facility listing with GSF vs CSF split by high / moderate / low risk, coded service schedules, Building 1 by floor, CBOC table, excluded buildings, optional new CLC, Amendment 0001 deletes / adds / corrects (PDF)",
+  "theme": "va-medical",
+  "provenance": {
+    "fidelity": "real-format",
+    "sources": [
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID135467017274262374363648670899572058680/Attachment%202%20HAMS%20PWS.pdf",
+        "note": "Hospital Aseptic Management Systems (HAMS) Performance-Based Work Statement, 35th Medical Group, Misawa AB (68 pp.; downloaded and read with pdftotext -layout). Military hospital housekeeping, the closest readable analog of a VA EVS workload attachment. Appendix A \"Estimated Workload Data\" (Building # / Name / Sq Ft to be cleaned / TOTAL) and the \"Workload by Sq Ft / BASE CODE\" crosstab are the model for Table B-1 and Table B-4; the BASE cleaning code listing, where each code fuses a day pattern with an area risk (\"7 Day Non case-Driven Critical Care\", \"5 Day All Other Areas\", \"2 Day All Other Areas on Tuesday & Thursday\", \"3 Day ... Monday, Wednesday, Friday\", \"0 Not Cleaned\"), is the model for the coded Service Schedule column and the Note 5 legend; the critical care / patient use / all other areas definitions are the model for the High / Moderate / Low Risk classes (Note 4); the per-building room listings with \"Sum\" rows are the model for Table B-3; the holiday exception for wards and the OR is the model for Codes A/B. Format only; no rows copied. The real appendix carries an internal inconsistency (Bldg 1760 is 3,877 SF in the first table but 3,040 in the crosstab total row); the fixture does not reproduce it."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID45087456464175768965815377536122301544/36C25018R0005-064.pdf",
+        "note": "VA clinic lease 36C25018L0003 (GSA Form L100), Section 6.07 Janitorial Services (downloaded and read). VA wording reused or paraphrased: housekeeping to \"the current standards of the Joint Commission\", isolation areas that need terminal cleaning, separate hours for \"Direct Patient Care Areas\", EPA-registered germicide for all patient areas, Monday-Friday work schedule. Shows that in a leased VA clinic the Lessor provides janitorial services, which is the basis for the Marston CBOC exclusion (Table B-2, Note 7(h))."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID58103017219499690749812197545078656787/S06.%2036C26321Q0187%200003.pdf",
+        "note": "VA Network Contracting Office 23, Amendment 0003 to janitorial RFQ 36C26321Q0187 (SF 30 plus continuation page; downloaded and read). Model for the Amendment 0001 pages: SF 30 block layout and wording (Items 2-16, \"To all Offerors/Bidders\", \"The purpose of this Amendment is to post responses to vendor questions\", \"Except as provided herein, all terms and conditions ... remain unchanged\"), and the continuation page \"Questions and Answers\" in \"Question: / Response:\" form with questions on square footage by floor type, floor plans, the prior contract (\"Is this a first-time labor and materials contract? Response: No\"), consumables and storage rooms."
+      },
+      {
+        "url": "https://imlive.s3.amazonaws.com/Federal%20Government/ID151682101211780583073746200899112515222/PWS%20Attachment%2009132018.pdf",
+        "note": "U.S. Coast Guard Base Seattle Janitorial Services PWS, HSCG84-17-R-PTE001 (downloaded and read). Building list where service covers only part of some buildings (\"Entire bldg\", \"2nd FLOOR\", \"Foyer and Restroom\", \"See Exh. 5\") with service hours per building, \"Contractor shall only bill for the square footage serviced\", and escorted cleaning in secure areas. Model for the partial-service rows (Bldgs 4, 11, 12, 25) and Note 9."
+      },
+      {
+        "url": "https://sam.gov/opp/9e4ffeb165cc4b5094f8b6ca7f6312e2/view",
+        "note": "Portland VAMC (VA NCO 20) Sources Sought, Aug 2023, \"Janitorial Services - Hospital Grade Housekeeping Cleaning, Non-Patient Care Areas\": approximately 442,000 SF across various buildings, cleaning 7 days a week, base plus four option years. NOT FETCHED (SAM.gov is blocked from this sandbox); content known only from web-search summaries. Supports the patient care / non-patient care split, 7-day service and the base + 4 term."
+      },
+      {
+        "url": "https://sam.gov/opp/d5998a3a2f344dc6834296afce37d621/view",
+        "note": "Oklahoma City VA Health Care System janitorial solicitation (base 09-01-2026 to 08-31-2027 plus four option years): \"The total approximate square footage for each location is shown below\", listing the medical center (about 353,720 SF) with Lawton Main, Lawton North and Stillwater CBOC areas; aseptic cleaning. NOT FETCHED; from web-search summaries. Supports one EVS contract covering a VAMC plus its CBOCs with SF per location (Table B-2)."
+      },
+      {
+        "url": "https://sam.gov/opp/35e7e4ffb1ee47d6990c815af7ec36d0/view",
+        "note": "Alaska VA Healthcare System Hospital Housekeeping Services RFP (2024; amendment 36C26024R0015): Muldoon Healthcare Center, the Domiciliary, Transitional Housing Apartments and three CBOCs in one housekeeping contract; the sources-sought notice gave an estimated 272,102 SF total and listed patient rooms, patient restrooms, patient care rooms, outpatient clinics and administrative areas. NOT FETCHED; from web-search summaries. Supports a Domiciliary and CBOCs inside the same EVS workload."
+      },
+      {
+        "url": "https://sam.gov/opp/f4a1d65e35a3de8e92564ad8b3cac1c2/view",
+        "note": "Dayton VAMC \"Housekeeping Cleaning - 17 Buildings\", 36C250-18-Q-9337 (2018, SDVOSB); web-search summaries also describe the 2026 follow-on 36C25026Q0740 (about 20 buildings, about 622,750 SF, base plus four option years starting 1 October 2026). NOT FETCHED. Supports a VA campus of numbered buildings under one housekeeping contract and the 1 October start."
+      },
+      {
+        "url": "https://sam.gov/opp/efa0aba48a1b46baac5a2aa991e6e131/view",
+        "note": "VA Eastern Colorado Health Care System (Southern Colorado) janitorial / housekeeping solicitation, Nov 2023, PSC S201: web-search summaries report areas stated per location as \"Cleanable Square Footage\" (e.g. 76,731 for Colorado Springs). NOT FETCHED. Supports the CSF terminology."
+      }
+    ],
+    "notes": "Every value is illustrative: the medical center (Elk Prairie VA Medical Center, a fictional campus in Wisconsin), its address, every building number, name, GSF, CSF, bed count and schedule, the CBOCs, the solicitation number (36C25227R0014, in the real NCO 12 \"36C252\" format), the amendment, the incumbent (Brightwater Environmental Services Group, LLC), contract 36C25222C0087 and its dollar figures. No rows were copied, so fidelity is real-format. Limits of the grounding: SAM.gov, va.gov and every bid mirror except S3-hosted PDFs were blocked from this sandbox, and the search index held no VA EVS workload attachment on S3, so no real VA EVS building table was read. The table layout and the risk-class / coded-schedule structure come from the HAMS appendix (a DoD hospital); the VA wording comes from the VA clinic lease janitorial clause and the VA NCO 23 amendment; the VA-specific scope (CBOCs, Domiciliary, CLC, SCI/D, CRRC, Veterans Canteen Service, Fisher House, enhanced-use lease, SPS and NFS self-cleaning, Optional Line Item for a new building) comes from the search-indexed VA notices above and the author's knowledge of VA medical center organization. The High / Moderate / Low Risk labels are a common healthcare EVS convention, not verified against a VA attachment. One file, 9 pages: Attachment B as issued (pages B-1 to B-6) followed by Amendment 0001 (SF 30 and two continuation pages). Generated with gen.mjs from one table, so every printed subtotal and total reconciles."
+  },
+  "inputs": [
+    {
+      "src": "attachment-b-36c25227r0014.html",
+      "as": "pdf",
+      "out": "36C25227R0014 Attachment B - Facility Listing and Est Workload (w Amd 0001).pdf"
+    }
+  ],
+  "expect": {
+    "facilities": [
+      {
+        "buildingNumber": "1",
+        "name": "Main Hospital",
+        "grossSqft": 486240,
+        "cleanableSqft": 319615,
+        "floors": 7,
+        "serviceLevel": "daily_7",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "2",
+        "name": "Behavioral Health Inpatient",
+        "grossSqft": 62410,
+        "cleanableSqft": 47350,
+        "floors": 3,
+        "serviceLevel": "daily_7",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "7",
+        "name": "Domiciliary",
+        "grossSqft": 54300,
+        "cleanableSqft": 24075,
+        "floors": 3,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "7A",
+        "name": "Domiciliary Annex",
+        "grossSqft": 8920,
+        "cleanableSqft": 7240,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "200",
+        "name": "Community Living Center (CLC)",
+        "grossSqft": 104780,
+        "cleanableSqft": 82610,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "210",
+        "name": "Spinal Cord Injury / Disorders (SCI/D) Center",
+        "grossSqft": 88450,
+        "cleanableSqft": 66205,
+        "floors": 2,
+        "serviceLevel": "daily_7",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "6",
+        "name": "Prosthetics and Audiology Building",
+        "grossSqft": 22640,
+        "cleanableSqft": 17645,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "9",
+        "name": "Mental Health Outpatient Clinic",
+        "grossSqft": 31880,
+        "cleanableSqft": 26690,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "27",
+        "name": "Community Resource and Referral Center (CRRC)",
+        "grossSqft": 18960,
+        "cleanableSqft": 14180,
+        "floors": 2,
+        "serviceLevel": "daily_6"
+      },
+      {
+        "buildingNumber": "100",
+        "name": "Ambulatory Care Center",
+        "grossSqft": 148600,
+        "cleanableSqft": 115095,
+        "floors": 4,
+        "serviceLevel": "daily_6",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "101",
+        "name": "Dental Clinic",
+        "grossSqft": 14280,
+        "cleanableSqft": 11905,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "102",
+        "name": "Imaging Annex",
+        "grossSqft": 12450,
+        "cleanableSqft": 9840,
+        "floors": 1,
+        "serviceLevel": "daily_7",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "103",
+        "name": "Dialysis Center",
+        "grossSqft": 15360,
+        "cleanableSqft": 13125,
+        "floors": 1,
+        "serviceLevel": "daily_6",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "T-37",
+        "name": "Women's Health Modular",
+        "grossSqft": 6720,
+        "cleanableSqft": 5400,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "buildingNumber": "3",
+        "name": "Administration Building",
+        "grossSqft": 41250,
+        "cleanableSqft": 34180,
+        "floors": 3,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "4",
+        "name": "Nutrition and Food Service Building",
+        "grossSqft": 32600,
+        "cleanableSqft": 4980,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "5A",
+        "name": "Voluntary Service Building",
+        "grossSqft": 5980,
+        "cleanableSqft": 4870,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "10",
+        "name": "Education and Conference Center",
+        "grossSqft": 19840,
+        "cleanableSqft": 16320,
+        "floors": 2,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "buildingNumber": "11",
+        "name": "Engineering Service Building",
+        "grossSqft": 36920,
+        "cleanableSqft": 5840,
+        "floors": 2,
+        "serviceLevel": "3x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "12",
+        "name": "Warehouse",
+        "grossSqft": 48600,
+        "cleanableSqft": 3260,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "warehouse"
+      },
+      {
+        "buildingNumber": "14",
+        "name": "VA Police Building",
+        "grossSqft": 7480,
+        "cleanableSqft": 6150,
+        "floors": 1,
+        "serviceLevel": "daily_7"
+      },
+      {
+        "buildingNumber": "16",
+        "name": "Chapel",
+        "grossSqft": 6240,
+        "cleanableSqft": 5310,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "community"
+      },
+      {
+        "buildingNumber": "17",
+        "name": "Employee Wellness and Fitness Center",
+        "grossSqft": 9860,
+        "cleanableSqft": 8420,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "fitness"
+      },
+      {
+        "buildingNumber": "24",
+        "name": "Office of Information and Technology (OIT) Building",
+        "grossSqft": 21340,
+        "cleanableSqft": 14760,
+        "floors": 2,
+        "serviceLevel": "daily_5",
+        "category": "admin"
+      },
+      {
+        "buildingNumber": "25",
+        "name": "Fleet Garage",
+        "grossSqft": 18200,
+        "cleanableSqft": 2140,
+        "floors": 1,
+        "serviceLevel": "2x_week",
+        "category": "maintenance"
+      },
+      {
+        "buildingNumber": "41",
+        "name": "Whole Health and Telehealth Center",
+        "grossSqft": 9600,
+        "cleanableSqft": 7960,
+        "floors": 1,
+        "serviceLevel": "daily_5"
+      },
+      {
+        "name": "Pine Hollow CBOC",
+        "grossSqft": 24800,
+        "cleanableSqft": 20440,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "name": "Ellery CBOC",
+        "grossSqft": 11250,
+        "cleanableSqft": 9130,
+        "floors": 1,
+        "serviceLevel": "daily_5",
+        "category": "medical"
+      },
+      {
+        "name": "Tamarack Lake CBOC",
+        "grossSqft": 4860,
+        "cleanableSqft": 3810,
+        "floors": 1,
+        "serviceLevel": "3x_week",
+        "category": "medical"
+      }
+    ],
+    "facilitiesComplete": true,
+    "grounds": [],
+    "site": {
+      "contractYears": 5,
+      "climateZone": "cold",
+      "installationName": "Elk Prairie VA",
+      "solicitation": "36C25227R0014"
+    },
+    "priorAward": {
+      "annualValue": 7316480,
+      "spendToDate": 30912764.18,
+      "spendPeriodMonths": 53,
+      "incumbent": "Brightwater Environmental Services Group, LLC",
+      "contractNumber": "36C25222C0087",
+      "awardYear": 2022
+    }
+  },
+  "traps": [
+    "GSF vs CSF. Column (8) Gross SF is \"for information only\"; Columns (9)-(11) split the cleanable square feet (CSF) into High Risk (Critical Care), Moderate Risk (Patient Care) and Low Risk (Non-Patient Care), and Column (12) is Total CSF. Truth grossSqft = Column (8), cleanableSqft = Column (12), e.g. Main Hospital 486,240 GSF / 319,615 CSF. A reader that takes one risk column, or the GSF, as the cleanable area is wrong.",
+    "Large GSF-to-CSF gaps that are stated, not derived: partial-service buildings (Nutrition and Food Service 32,600 / 4,980; Engineering 36,920 / 5,840; Warehouse 48,600 / 3,260; Fleet Garage 18,200 / 2,140) and the Domiciliary, whose 21,640 SF of resident rooms is cleaned by residents (54,300 / 24,075, Note 8).",
+    "Service schedule is a letter code (Column 13) defined only in the Note 5 legend on page B-1: A = 24/7/365 and B = 7 days 0600-2230 (both daily_7), C = Mon-Sat (daily_6), D = Mon-Fri (daily_5), E = M/W/F (3x_week), F = Tue/Thu (2x_week), G = weekly. Codes A and B map to the same level.",
+    "Schedules differ by area inside a building: Note 6 and Table B-3 put Building 1 floor 7 offices on Code D and floor 6 specialty clinics on \"A / D\", while the building itself is Code A (truth daily_7). Bldg 100 and the Dialysis Center run Mon-Sat (Code C, daily_6); Engineering is M/W/F; Warehouse and Fleet Garage are Tue/Thu.",
+    "Table B-3 lists Building 1 by floor and unit (B, 1-7, SPS on floor 2, mechanical penthouse \"PH\"). Wards and units (ED, OR suite, ICU, 4 East / 4 West, Telemetry) are not facilities; the \"BUILDING 1 TOTAL\" row (58,960 / 173,885 / 86,770 / 319,615) repeats Table B-1 line 1. Floor numbers 1-7 and \"B\" are not building numbers. The Table B-1 Total CSF for Building 1 carries a glued asterisk (\"319,615*\").",
+    "Group D \"not in contract scope (for information only - do not price)\" lists 9 buildings with GSF: Research and Development (5, separate Research Service contract), Boiler Plant (13), Canteen Building (15, cleaned by Veterans Canteen Service), Child Development Center (18, out-leased under an enhanced-use lease), Fisher House (19), Parking Garage (20, 412,000 GSF - the largest number in the table), vacant Former Nurses' Quarters (21) and Former Laundry (23), and Building 300. None is expected; Note 7 repeats the exclusions in prose.",
+    "Option-only building: Building 300, New Community Living Center (96,400 GSF), prints estimated CSF (61,250 / 13,550 / 74,800) and Code A like an in-scope row, but it is Optional Line Item 1001 only and \"not included in any total\" (Note 11, Q&A 5). Not expected.",
+    "Table B-2 CBOCs have no building numbers (truth omits buildingNumber). Marston CBOC is listed with 18,400 GSF but excluded because the Lessor provides janitorial under the lease (Note 7(h), Q&A 7). Tamarack Lake CBOC is a part-time M/W/F clinic (Code E, 3x_week). \"Miles from VAMC\" (38 / 61 / 74 / 92) and the street numbers are distractors.",
+    "Amendment 0001 (last three pages, effective 12 April 2027) changes the attachment and says no conformed attachment will be issued: Item 1 deletes Bldg T-38 Telehealth Modular (4,320 GSF / 3,860 CSF; not expected); Item 2 adds Building 41 \"B-41\" Whole Health and Telehealth Center (9,600 GSF, 7,960 CSF, Code D) that appears in no table; Item 3 corrects Bldg 9 Low Risk 6,910 -> 8,450, so Total CSF 25,150 -> 26,690; Item 4 changes Bldg 16 Chapel from Code G (weekly) to Code F (2x_week). The original pages do not mention the amendment.",
+    "Totals and subtotals are not facilities: Group A 547,095, Group B 212,340, Group C 110,090 subtotal rows; \"TOTAL - TABLE B-1 ... (GROUPS A-C, 26 BUILDINGS)\" 1,328,620 GSF / 869,525 CSF; Group D GSF 672,110; Table B-2 total 33,380; Table B-4 grand total 902,905 with percentages and a by-code count table (29 buildings/clinics); Amendment Item 5 revised totals (875,165 and 908,545); the page B-1 prose \"34 existing buildings totaling 1,904,330 gross square feet\". Building counts sit inside the subtotal labels.",
+    "Three-row stacked header (group row BUILDING DATA / ESTIMATED CLEANABLE SQUARE FEET (CSF) BY AREA CLASSIFICATION / SERVICE, column titles with \"(Note n)\" references, and a (1)-(14) column-number row) repeated on both landscape pages of Table B-1; Group C starts at the bottom of page B-3 and continues under \"GROUP C ... (continued)\" on page B-4. Line numbers 1-35 are not building numbers.",
+    "Building-number forms: plain numbers (1, 2, 100, 210), letter suffixes (5A in scope next to excluded 5; 7A next to 7), temporary modulars \"T-37\" / \"T-38\", and \"Building 41 (B-41)\" in the amendment. Excluded Building 5 and in-scope 5A share a stem.",
+    "Distractor numbers next to the SF: Column (5) floors above grade with a separate Basement Y/N column (truth floors = Column 5), Column (7) operating beds (152, 44, 80, 120, 30) and \"24 sta.\", areas inside remarks (SPS 11,420 SF; resident rooms 21,640 SF; data center 4,980 SF; orthotic lab 2,300 SF; records storage 4,120 SF; specialty clinic 9,150 SF), 186 campus acres, 8 ORs / 24 ICU beds / 320 auditorium seats, 1,150 garage spaces, +/-5% tolerance.",
+    "Grounds are out of scope: the 186-acre campus figure is context only and Note 7(j) gives grounds maintenance, snow removal and parking lot sweeping to Engineering Service. Expected grounds is an empty list.",
+    "Prior award is only in Amendment Q&A 3: contract 36C25222C0087, awarded 26 September 2022 to Brightwater Environmental Services Group, LLC; Option Year 4 exercised at $7,316,480.00 for 12 months (annualValue); $30,912,764.18 paid over 53 months, 1 October 2022 - 28 February 2027 (spendToDate / spendPeriodMonths). No total contract value is stated, so totalValue and periodMonths are absent. The 26 September award date and \"Option Year 4\" are not the award year or a period length.",
+    "Contract term is stated once on page B-1: base period 1 October 2027 - 30 September 2028 plus four 12-month option periods, \"a total potential period of performance of five (5) years\" (contractYears 5). The incumbent's own base + four options is a different contract. Climate: Wisconsin, snow and ice removal mentioned = cold. Installation: page B-1 names the Elk Prairie VA Medical Center while every running header and the title block name the Elk Prairie VA Health Care System (the contract also covers its CBOCs), so truth installationName is the common stem \"Elk Prairie VA\" and either printed name scores."
+  ]
+}

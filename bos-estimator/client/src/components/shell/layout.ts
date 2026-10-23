@@ -69,7 +69,7 @@ export function useInsetsWriter(vpRef: RefObject<HTMLElement | null>, chromeRef:
       const w = r.width / z, h = r.height / z;
       if (w >= 320 && h >= 240) return;
       const s = useStore.getState();
-      if (h < 240 && s.bottomOpen) { useStore.setState({ bottomOpen: false }); return; }
+      if (h < 240 && s.bottomOpen) { s.setBottomOpen(false, { auto: true }); return; }
       if (w < 320 && s.leftOpen) { s.setLeftOpen(false); return; }
       if (w < 320 && s.rightOpen) { s.setRightOpen(false); }
     };

@@ -1,29 +1,11 @@
-// ConfirmDialog content for the two destructive flows (UI spec §5.11). The shell owns where they are called
-// (store.analyze for Replace, TopBar's ⋯ › Reset project for Reset); these helpers give both a structured body that
-// lists exactly what is affected, and Reset gets the P1 [Download backup] action. Both resolve through store.confirm.
+// Reset project (UI spec §5.11): the ConfirmDialog lists exactly what is lost, with the P1 [Download backup] action
+// (the Replace confirm lives in store.analyze). Resolves through store.confirm.
 import type { ReactNode } from 'react';
 import { useStore, type ClientProject } from '../../store';
-import type { ConfirmOptions } from '../ui';
 import '../../styles/dialogs.css';
 
 function List({ items }: { items: ReactNode[] }) {
   return <ul className="confirm-list">{items.map((x, i) => <li key={i}>{x}</li>)}</ul>;
-}
-
-/** Replace on a populated project: [Append instead] [Cancel] [Replace]. Resolves 'replace' | 'append' | null. */
-export function replaceConfirmOptions(p: ClientProject): ConfirmOptions {
-  const inv = p.inventory;
-  const verified = Object.values(p.review ?? {}).filter((r) => r.status === 'verified').length;
-  return {
-    title: 'Replace the inventory?',
-    body: (
-      <div className="confirm-body">
-        <p>Replace {inv.facilities.length.toLocaleString()} facilities and {inv.grounds.length.toLocaleString()} grounds areas? The new read goes to a staging list; your current inventory stays until it finishes and can be restored.</p>
-        {verified > 0 && <p>{verified.toLocaleString()} verified rows keep their marks by building id.</p>}
-      </div>
-    ),
-    actions: [{ id: 'append', label: 'Append instead' }, { id: 'cancel', label: 'Cancel' }, { id: 'replace', label: 'Replace', variant: 'primary' }],
-  };
 }
 
 /** Download the project as JSON (P1 backup before Reset). */

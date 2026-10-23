@@ -9,13 +9,12 @@ import { CATEGORY_DEFAULTS, crewMeta } from '@shared/factors';
 import { DEFAULT_ASSUMPTIONS, groundsAcres, resolveMealsPerDay, diningMealsPerDay } from '@shared/estimate';
 import { FACILITY_CATEGORIES, FACILITY_STATUSES, GROUNDS_KINDS, SERVICE_LEVELS, isInScope, type DiningProfile, type Facility, type GroundsArea, type GroundsUnit, type ScopeItem } from '@shared/types';
 import { n0, n1, n2, signedPct } from '../../fmt';
-import { CONF_COLOR, CONF_GLYPH, CREW_ORDER, crewColor, categoryColor } from '../lib/theme';
+import { CONF_COLOR, CONF_GLYPH, CREW_ORDER, confBand, crewColor, categoryColor, deltaTone } from '../lib/theme';
 import { ISSUE_INFO, sfInExcerpt, type IssueCode } from '../lib/review';
 import { cx } from '../lib/cx';
 import { Button, Chip, Field, Fields, IconButton, NumField, Select, TextField, Tooltip } from '../ui';
 import { CrewBars, Excerpt, FloorMixBar, Section, Workload, closestAreaNumber, useFactorUsage } from './parts';
-import { firstNeedsByImpact, goToRow } from './queue';
-import { nextNeeds, useReviewPosition } from '../inventory/reviewLoop';
+import { nextNeeds, startReview, useReviewPosition } from '../inventory/reviewLoop';
 import '../../styles/inspector.css';
 
 const BAND_WORD = { hi: 'high', mid: 'medium', lo: 'low' } as const;
@@ -64,7 +63,7 @@ function ReviewButtons({ id }: { id: string }) {
 }
 
 function ConfBadge({ c }: { c: number }) {
-  const band = c >= 0.75 ? 'hi' : c >= 0.45 ? 'mid' : 'lo';
+  const band = confBand(c);
   return <span className="insp__conf" style={{ color: CONF_COLOR[band] }} title="Extraction confidence">{CONF_GLYPH[band]} {Math.round(c * 100)}% <span className="insp__conf-word">{BAND_WORD[band]}</span></span>;
 }
 
@@ -375,10 +374,9 @@ function ReviewRing({ value, max }: { value: number; max: number }) {
   );
 }
 
-function deltaTone(d: number) { const a = Math.abs(d); return a <= 0.1 ? 'ok' : a <= 0.25 ? 'warn' : 'bad'; }
 
 function ProjectSummary() {
-  const { counts, est, rowMeta, estById, gestById } = useDerived();
+  const { counts, est, estById, gestById } = useDerived();
   const live = useTopDownLive();
   const project = useStore((s) => s.project);
   const warnings = useStore((s) => s.extraction.warnings);
@@ -391,7 +389,7 @@ function ProjectSummary() {
   const allWarnings = warnings.length ? warnings : docWarnings;
   const crews = est ? [...est.crews].sort((a, b) => CREW_ORDER.indexOf(a.crew) - CREW_ORDER.indexOf(b.crew)).filter((c) => c.fte > 0) : [];
   const totalFte = crews.reduce((s, c) => s + c.fte, 0) || 1;
-  const start = () => { if (!nextNeeds(1, { quiet: true })) goToRow(firstNeedsByImpact(project.inventory, rowMeta, estById, gestById)); };
+  const start = () => { startReview((id) => estById.get(id)?.fte ?? gestById.get(id)?.fte ?? 0); };
   if (empty) {
     return (
       <div className="insp__body panel__scroll insp__summary">

@@ -117,7 +117,7 @@ function PendingList() {
             <ul>{skipped.map((x, i) => <li key={`${x.name}-${i}`}><span className="name" title={x.name}>{x.name}</span><span className="why">{x.reason}</span></li>)}</ul>
             <div className="docs__pop-foot">
               <span className="muted">Accepted: {ACCEPT_LABELS.join(' ')}</span>
-              <Button size="sm" variant="ghost" onClick={() => { useStore.setState({ pendingSkipped: [] }); pop.close(); }}>Clear</Button>
+              <Button size="sm" variant="ghost" onClick={() => { useStore.getState().clearSkipped(); pop.close(); }}>Clear</Button>
             </div>
           </Popover>
         </>

@@ -71,7 +71,8 @@
 .tv-auto{font-style:italic;font-size:var(--fs-xs);color:var(--text-3)}
 .tv-muted{color:var(--text-3)}
 .tv-bad{color:var(--bad-text);font-weight:600}
-.tv-status{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:var(--r-1);background:var(--surface-3);color:var(--text-2);font-size:var(--fs-xs);font-style:normal}
+.tv-status{display:inline-block;max-width:100%;height:18px;padding:0 6px;border-radius:var(--r-1);background:var(--surface-3);color:var(--text-2);font-size:var(--fs-xs);line-height:18px;font-style:normal;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 .tv-dup{text-decoration:underline wavy var(--bad);text-underline-offset:3px;text-decoration-thickness:1px}
 .tv-fte{position:relative;display:inline-block;color:var(--accent);padding-bottom:2px}
 .tv-row.is-out .tv-fte{color:var(--text-3)}

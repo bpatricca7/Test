@@ -19,7 +19,7 @@ const PAD = { normal: 0, hover: 1, selected: 2, dim: 3, recent: 4 } as const;
 /** ZONE_COLORS desaturated 15% */
 export const padColor = (k: GroundsKind) => { const c = new THREE.Color(ZONE_COLORS[k]); const hsl = { h: 0, s: 0, l: 0 }; c.getHSL(hsl); c.setHSL(hsl.h, hsl.s * 0.85, hsl.l); return `#${c.getHexString()}`; };
 
-interface KindBatch { kind: GroundsKind; mesh: THREE.InstancedMesh; zones: ZonePlacement[]; uvs: THREE.InstancedBufferAttribute; state: THREE.InstancedBufferAttribute }
+interface KindBatch { kind: GroundsKind; attached: boolean; mesh: THREE.InstancedMesh; zones: ZonePlacement[]; uvs: THREE.InstancedBufferAttribute; state: THREE.InstancedBufferAttribute }
 
 export const GroundsPads = memo(function GroundsPads() {
   const { layout } = useDerived();
@@ -35,10 +35,13 @@ export const GroundsPads = memo(function GroundsPads() {
 
   const batches = useMemo(() => {
     if (!layout) return [] as KindBatch[];
-    const byKind = new Map<GroundsKind, ZonePlacement[]>();
-    for (const z of layout.zones) { const a = byKind.get(z.kind) ?? []; a.push(z); byKind.set(z.kind, a); }
+    // one batch per kind and attachment: site-wide areas never carry building shadows, so they always use the
+    // cheap unlit material; pads on building lots receive shadows in the High tier
+    const byKind = new Map<string, ZonePlacement[]>();
+    for (const z of layout.zones) { const k = `${z.kind}|${z.facilityId ? 'a' : 'l'}`; const a = byKind.get(k) ?? []; a.push(z); byKind.set(k, a); }
     const out: KindBatch[] = [];
-    for (const [kind, zones] of byKind) {
+    for (const [key, zones] of byKind) {
+      const kind = zones[0].kind; const attached = key.endsWith('|a');
       const geo = new THREE.PlaneGeometry(1, 1); geo.rotateX(-Math.PI / 2);
       const uvs = new THREE.InstancedBufferAttribute(new Float32Array(zones.length * 2), 2);
       const state = new THREE.InstancedBufferAttribute(new Float32Array(zones.length), 1);
@@ -49,15 +52,15 @@ export const GroundsPads = memo(function GroundsPads() {
         m4.compose(v0.set(z.box.x, y, z.box.z), q0, s0.set(z.box.w, 1, z.box.d)); mesh.setMatrixAt(i, m4);
         uvs.setXY(i, Math.max(1, Math.round(z.box.w / 5)), Math.max(1, Math.round(z.box.d / 5)));
       });
-      mesh.receiveShadow = true; mesh.name = `pads-${kind}`; mesh.renderOrder = -2;
+      mesh.receiveShadow = attached; mesh.name = `pads-${kind}`; mesh.renderOrder = -2;
       mesh.userData.ids = zones.map((z) => z.id);
       mesh.computeBoundingSphere();
-      out.push({ kind, mesh, zones, uvs, state });
+      out.push({ kind, attached, mesh, zones, uvs, state });
     }
     return out;
   }, [layout]);
   useEffect(() => () => { for (const b of batches) b.mesh.geometry.dispose(); }, [batches]);
-  useEffect(() => { for (const b of batches) b.mesh.material = padMaterial(b.kind, padColor(b.kind), fast, ZONE_COLORS[b.kind]); invalidate(); }, [batches, fast, invalidate]);
+  useEffect(() => { for (const b of batches) b.mesh.material = padMaterial(b.kind, padColor(b.kind), fast || !b.attached, ZONE_COLORS[b.kind]); invalidate(); }, [batches, fast, invalidate]);
 
   useEffect(() => {
     const selId = selection.kind === 'grounds' ? selection.id : null;
@@ -91,7 +94,7 @@ export const GroundsPads = memo(function GroundsPads() {
 
   return (
     <group>
-      {batches.map((b) => <primitive key={b.kind} object={b.mesh} onPointerMove={onMove} onPointerOut={onOut} onClick={onClick} />)}
+      {batches.map((b) => <primitive key={`${b.kind}-${b.attached}`} object={b.mesh} onPointerMove={onMove} onPointerOut={onOut} onClick={onClick} />)}
     </group>
   );
 });

@@ -166,15 +166,16 @@ function CrewsBody({ onPlay, onSpeed }: { onPlay: () => void; onSpeed: (v: numbe
             const Icon = CREW_ICON[c.crew];
             const on = crewFilter === c.crew;
             const off = c.onShift === 0;
-            const nowText = off ? `Off · ${shiftLabel(meta.shift)}` : c.where.length === 0 ? `${c.traveling} en route` : c.where.slice(0, 2).map((w) => `${w.n} · ${w.target}`).join('\n');
+            const nowText = c.where.length === 0 ? (c.traveling ? `${c.traveling} en route` : 'Standing by') : c.where.slice(0, 2).map((w) => `${w.n} · ${w.target}`).join(' · ');
             return (
               <div key={c.crew} className={cx('bp__card', on && 'is-on', off && 'is-off')} style={{ ['--crew' as string]: crewColor(c.crew), ['--p' as string]: c.heads ? (c.working / c.heads) * 100 : 0 }}>
                 <button type="button" className="bp__card-main" aria-pressed={on} onClick={() => setCrewFilter(on ? null : c.crew)}
-                  title={on ? 'Showing only this crew · click to show all' : 'Show only this crew in the 3D view'}>
+                  title={`${meta.label}: ${c.onShift} of ${c.heads} on shift, ${c.working} working${on ? ' · showing only this crew; click to show all' : ' · click to show only this crew in the 3D view'}`}>
                   <span className="ring" aria-hidden><span>{c.working}</span></span>
                   <span className="txt">
-                    <span className="name"><Icon size={13} strokeWidth={1.75} aria-hidden /><span className="nm">{meta.short}</span><span className="mono cnt">{c.onShift}/{c.heads} on</span></span>
-                    <span className="now">{nowText}</span>
+                    <span className="name"><Icon size={13} strokeWidth={1.75} aria-hidden /><span className="nm">{meta.short}</span></span>
+                    <span className="cnt mono">{off ? `Off · ${shiftLabel(meta.shift)}` : `${c.onShift}/${c.heads} on`}</span>
+                    {!off && <span className="now">{nowText}</span>}
                   </span>
                 </button>
                 {off && <button type="button" className="bp__jump" onClick={() => setTime((meta.shift.start + 0.5) % 24)}>Jump to {fmtTime(meta.shift.start)}</button>}

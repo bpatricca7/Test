@@ -117,3 +117,37 @@ export async function copyText(text: string): Promise<boolean> {
     document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok;
   } catch { return false; }
 }
+
+/** "Estimate detail (CSV)": task lines, crew summary with the project's wages, manning by year (matches the screen). */
+export function estimateCsv(project: ClientProject, est: EstimateResult): string {
+  const rows: Cell[][] = [['Scope', 'Item', 'Building #', 'Task', 'RS Means ref', 'Crew', 'Quantity', 'Unit', 'Freq/yr', 'LH/unit', 'Annual hours']];
+  for (const fe of est.facilities) for (const l of fe.lines) rows.push(['Facility', fe.resolved.name, fe.resolved.buildingNumber, l.name, l.ref, l.crew, l.quantity, l.unit, l.frequencyPerYear, l.lhPerUnit, l.annualHours]);
+  for (const ge of est.grounds) for (const l of ge.lines) rows.push(['Grounds', ge.area.name, ge.area.documentLabel, l.name, l.ref, l.crew, l.quantity, l.unit, l.frequencyPerYear, l.lhPerUnit, l.annualHours]);
+  rows.push([]);
+  rows.push(['Crew summary', 'Crew', '', '', '', '', 'Hours', 'FTE', 'Headcount', 'Wage $/hr', 'Annual labor $']);
+  for (const c of est.crews) rows.push(['', c.label, '', '', '', '', c.hours, c.fte, c.headcount, c.wage, c.annualCost]);
+  rows.push(['', 'Total', '', '', '', '', est.directHours, est.totalFte, est.totalHeadcount, '', est.totalLaborCost]);
+  rows.push([]);
+  rows.push(['Manning by year', 'Year', '', '', '', '', 'Hours', 'FTE', 'Headcount', '', 'Labor $']);
+  for (const y of est.years) rows.push(['', y.label, '', '', '', '', y.hours, y.fte, y.headcount, '', y.laborCost]);
+  rows.push([]);
+  rows.push(['Project', project.name, '', '', '', '', '', '', '', '', '']);
+  return toCsv(rows);
+}
+
+/** TSV of the given rows in order (top bar › Export › Copy visible rows). */
+export function rowsTsv(project: ClientProject, ids: readonly string[], est: EstimateResult | null, rowMeta: ReadonlyMap<string, RowMeta>): string {
+  const estF = new Map(est?.facilities.map((e) => [e.facilityId, e]) ?? []);
+  const estG = new Map(est?.grounds.map((e) => [e.areaId, e]) ?? []);
+  const f = new Map(project.inventory.facilities.map((x) => [x.id, x]));
+  const g = new Map(project.inventory.grounds.map((x) => [x.id, x]));
+  const rows: Cell[][] = [['Type', 'Building # / label', 'Name', 'Campus', 'Category / kind', 'Status', 'Gross SF', 'Cleanable SF', 'Floors', 'Service', 'Quantity', 'Unit', 'Confidence %', 'Review', 'Hrs/yr', 'FTE']];
+  for (const id of ids) {
+    const m = rowMeta.get(id);
+    const fa = f.get(id);
+    if (fa) { const e = estF.get(id); rows.push(['facility', fa.buildingNumber, fa.name, fa.campus, CATEGORY_DEFAULTS[fa.category]?.label ?? fa.category, statusLabel(fa.status), fa.grossSqft, fa.cleanableSqft ?? e?.resolved.cleanableSqft, fa.floors, serviceLabel(fa.serviceLevel), undefined, undefined, Math.round(fa.confidence * 100), m?.review, e?.totalHours, m && !m.inScope ? 0 : e?.fte]); continue; }
+    const ga = g.get(id);
+    if (ga) { const e = estG.get(id); rows.push(['grounds', ga.documentLabel, ga.name, ga.campus, kindLabel(ga.kind), undefined, undefined, undefined, undefined, undefined, ga.quantity, ga.unit, Math.round(ga.confidence * 100), m?.review, e?.totalHours, e?.fte]); }
+  }
+  return toTsv(rows);
+}

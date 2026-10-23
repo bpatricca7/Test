@@ -10,7 +10,7 @@ import * as layoutModule from './three/layout';
 import type { SiteLayout } from './three/layout';
 import { buildRoster, type Agent } from './three/sim';
 import { useStore } from './store';
-import { reviewContext, reviewCounts, rowMetaFor, stableContext, type IssueCode, type ReviewContext, type ReviewCounts, type RowMeta } from './components/lib/review';
+import { reviewContext, reviewCounts, rowMetaFor, stableContext, type ReviewContext, type ReviewCounts, type RowMeta } from './components/lib/review';
 
 export type { IssueCode, RowMeta, ReviewCounts } from './components/lib/review';
 

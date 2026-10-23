@@ -13,9 +13,10 @@ import { compact, n1 } from '../../fmt';
 import { useHotkey, useEscape } from '../lib/keys';
 import { cx } from '../lib/cx';
 import { categoryColor } from '../lib/theme';
-import { sharedContext, type ReviewMap } from '../lib/review';
+import type { ReviewMap } from '../lib/review';
 import { sortPatch, usePublishOrder, useInventoryView, type ExtraSort } from '../lib/query';
-import { copyText, downloadText, inventoryCsv, parseTsv, safeFileName, toTsv, type Cell } from '../lib/csv';
+import { copyText, parseTsv, toTsv, type Cell } from '../lib/csv';
+import { exportInventoryCsv } from '../shell/exports';
 import { redo, undo, useHistory, labelNext } from '../lib/history';
 import { Button, Chip, IconButton, Menu, Meter, Tabs, usePopover, type MenuItem } from '../ui';
 import { QueryChips, QuerySearch, SortMenuButton } from '../inventory/QueryControls';
@@ -229,12 +230,7 @@ export const TableView = memo(function TableView() {
   const shownCount = view.active ? `${rows.length.toLocaleString()} of ${tabTotal.toLocaleString()}` : tabTotal.toLocaleString();
 
   // ---- export (P1) ----
-  const exportCsv = () => {
-    const p = useStore.getState().project; if (!p) return;
-    const ctx = sharedContext(p.inventory.facilities, useStore.getState().extraction.result?.changedIds ?? []);
-    downloadText(`${safeFileName(p.name)} - inventory with review.csv`, inventoryCsv(p, est, rowMeta, ctx));
-    useStore.getState().pushToast({ text: `Downloaded ${p.inventory.facilities.length + p.inventory.grounds.length} rows${counts.needs ? ` · ${counts.needs} still need review` : ''}`, tone: 'ok', ttl: 3000 });
-  };
+  const exportCsv = () => exportInventoryCsv(est, rowMeta, counts.needs);
   const copyVisible = () => {
     const dataCols = cols.filter((c) => c.key !== 'sel');
     const text = toTsv([dataCols.map((c) => c.menuLabel ?? c.label), ...rows.map((r) => dataCols.map((c) => c.text(r, ctxOf(r)) as Cell))]);

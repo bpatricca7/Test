@@ -10,7 +10,7 @@ import { crewMeta, CREWS } from '@shared/factors';
 import { DEFAULT_ASSUMPTIONS, type EstimateResult } from '@shared/estimate';
 import type { ClimateZone, PriorAward, TopDownAssumptions, TopDownEstimate } from '@shared/types';
 import { compact, n0, n1, n2, signedPct, usdCompact } from '../../fmt';
-import { CREW_ORDER, crewColor } from '../lib/theme';
+import { CREW_ORDER, crewColor, deltaTone } from '../lib/theme';
 import { cx } from '../lib/cx';
 import { Button, Field, Fields, IconButton, MoneyInput, NumField, Select, TextField, Tooltip } from '../ui';
 import { CREW_ICON } from '../bottom/crewIcons';
@@ -36,7 +36,6 @@ const WF: { key: keyof TopDownEstimate['priceBreakdown']; label: string; color: 
 /** last store.estimateFocus request already scrolled to (survives tab switches, so a remount does not re-scroll) */
 let handledFocusSeq = 0;
 
-function deltaTone(d: number) { const a = Math.abs(d); return a <= 0.1 ? 'ok' : a <= 0.25 ? 'warn' : 'bad'; }
 
 export const EstimateTab = memo(function EstimateTab() {
   const { est } = useDerived();
@@ -141,7 +140,7 @@ function CrewsTable({ est }: { est: EstimateResult }) {
   const wages = useStore((s) => s.project?.wages);
   const crews = useMemo(() => [...est.crews].sort((a, b) => CREW_ORDER.indexOf(a.crew) - CREW_ORDER.indexOf(b.crew)), [est]);
   const [ref, width] = useWidth<HTMLElement>();
-  const wide = width === 0 || width >= 360; // below a 360 px container Hrs moves into the crew tooltip
+  const wide = width === 0 || width >= 376; // below this container width Hrs moves into the crew tooltip (spec: 360 with narrower columns)
   return (
     <section ref={ref} className="est__sec" id="est-crews">
       <h3>Crews <span className="muted">{n1(est.totalFte)} FTE · {usdCompact(est.totalLaborCost)}/yr</span></h3>

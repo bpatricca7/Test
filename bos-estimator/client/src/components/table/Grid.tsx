@@ -263,7 +263,7 @@ function GridImpl<R extends Row>(p: Props<R>) {
     const focused = focus?.id === r.id;
     mounted.push(
       <GridRow key={r.id} tab={tab} r={r} i={i} cols={cols} template={template} rowH={rowH} stickyLeft={stickyLeft}
-        meta={p.rowMeta.get(r.id)} est={p.estById.get(r.id)} gest={p.gestById.get(r.id)} entry={p.review?.[r.id]} base={base}
+        meta={p.incoming ? undefined : p.rowMeta.get(r.id)} est={p.incoming ? undefined : p.estById.get(r.id)} gest={p.incoming ? undefined : p.gestById.get(r.id)} entry={p.incoming ? undefined : p.review?.[r.id]} base={base}
         focusCol={focused ? focusCol : null} showFocus={kbd} checked={p.checked.has(r.id)} incoming={p.incoming}
         editing={editing && editing.id === r.id ? editing : null} onFinish={onFinish} onCancel={onCancel} />,
     );
