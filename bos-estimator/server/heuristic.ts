@@ -303,8 +303,8 @@ const DELETION_SCOPE = /^\s*(?:(?:(?:from|in)\s+(?:the\s+|this\s+|its\s+|their\s
  *  is no locator. */
 const LOC_ID = '(?:(?=[\\w.-]{0,9}\\d)[A-Z0-9][\\w.-]{0,8}|[A-Z](?![A-Z0-9]))';
 /** Pieces that may open the clause of a deletion before the building reference, each tried at the current position:
- *  numbering, "Per Amendment 0002,", where the building is listed ("TE-1 Item 14, TE-2 Item 14 and TE-4 Item 14,", "Exhibit
- *  B,") and where it is ("North Campus,", "Fergus Falls USARC,"). A place name is capitalised: it is matched with case. */
+ *  numbering, "Per Amendment 0002,", where the building is listed ("Table 2 Item 9, Table 4 Item 9 and Table 5 Item 9,", "Exhibit
+ *  B,") and where it is ("North Campus,", "Lakeview Reserve Center,"). A place name is capitalised: it is matched with case. */
 const OPENER_PARTS: RegExp[] = [
   /(?:amendment|addendum|modification)\s*(?:no\.?|number|#)?\s*\d{1,4}\s*[.:)\-–]?\s*/iy,
   /(?:item|line|para(?:graph)?|no\.?|change|question|answer|response|q|a)\s*\d[\w.-]{0,6}[.:)\-–]?\s+/iy,
@@ -337,12 +337,12 @@ function deletionSubject(s: string, segStart: number, targets: Ref[], vi: number
   const pre = s.slice(segStart, Math.min(...targets.map((r) => r.at)));
   const mid = s.slice(Math.max(...targets.map((r) => r.end)), vi);
   if (pre.length > 160 || NON_BUILDING.test(pre) || TASK_NOUN.test(pre) || !openerOnly(pre)) return false;
-  // (a capitalised name set off by commas after the reference, ", Vehicle Maintenance Shop (4,980 GSF),", is the
+  // (a capitalised name set off by commas after the reference, ", Vehicle Wash Building (2,000 GSF),", is the
   // building's own name, whatever nouns it holds)
   const appositive = /^\s*,\s*[A-Z0-9][^;:]{0,149}?,\s*$/.test(mid.replace(/\s*\([^)]*\)\s*/g, ' '));
   if (mid.length > 170 || (!appositive && NON_BUILDING.test(mid.replace(/\([^)]*\)/g, ' ')))) return false;
   if (/\b(?:shall|will|was|were|has|have|had|must|should)\b/i.test(mid.replace(/\([^)]*\)/g, ' '))) return false;
-  // (a parenthesis after the name, "(4,980 GSF; 910 Custodial SF)", only describes it)
+  // (a parenthesis after the name, "(2,100 GSF; 300 CSF)", only describes it)
   return /^\s*(?:,[^;:]{0,150}?,\s*|,\s*|\s*[-–—]\s*[^;:]{1,80}?\s*[-–—]\s*|\s+(?:at|on|in|located (?:at|on|in))\s+(?:the\s+)?[^,;:]{1,60}?\s*(?:,[^;:]{0,100}?,\s*)?)?(?:(?:is|are)\s+[^,;:]{1,80}?\s+and\s+)?$/i.test(mid.replace(/\s*\([^)]*\)\s*/g, ' '));
 }
 /** The text names this campus ("Building 0012 at North Annex"). */
@@ -415,6 +415,8 @@ const TOTAL_RE = /^(?:grand\s+)?(?:sub-?\s*)?totale?s?\b|\bsub-?\s*totale?s?\b|\
 const NOT_TOTAL = /\b(?:in|into|from|toward|towards|to)\s+(?:the\s+|any\s+)?(?:[a-z]+\s+){0,2}totals?\b/i;
 const isTotal = (c: string) => TOTAL_RE.test(c.replace(new RegExp(NOT_TOTAL.source, 'gi'), ' '));
 const isTotalRow = (cells: string[]) => cells.map(clean).filter(Boolean).slice(0, 3).some(isTotal);
+/** A label of the base requirement's block ("BASE SITES", "Base requirement – North Region"); "Joint Base Lewis" is a site name. */
+const BASE_BLOCK = /^base\b|\bbase\s+(?:sites?|facilities|buildings|locations?|installations?|requirements?|contract|period|year|bid|scope)\b/i;
 /** A status banner over a block of several sites or buildings ("OPTIONAL SITES", "FACILITIES NOT IN THE BASE CONTRACT"). */
 const BLOCK_BANNER = /\b(?:sites|facilities|buildings|bldgs|locations|centers|centres|installations|campuses|properties|stations|areas)\b/i;
 /** A group label that puts the rows under it in a status ("Optional site – not included in base totals", "Reference only –
@@ -497,7 +499,7 @@ function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   const u = unitOf(h);
   const meal = h.match(MEAL_RE);
   if (meal && !/\b(?:time|hours?|serving|window|schedule)\b/.test(h)) {
-    // the days a headcount is for, leaving out the days it excludes ("MONDAY – FRIDAY (EXCLUDING FEDERAL HOLIDAYS)")
+    // the days a headcount is for, leaving out the days it excludes ("WEEKDAYS (MON-FRI, NOT INCLUDING HOLIDAYS)")
     const d = h.replace(/[(,]\s*(?:excluding|excludes|except|not including|excl\.?|other than)\b[^)]*\)?/g, ' ');
     return { role: 'meal', meal: mealName(meal[1]), weekend: /weekend|\bsat|\bsun|holiday/.test(d) ? true : /weekday|\bmon|m-f|week day/.test(d) ? false : undefined };
   }
@@ -528,10 +530,9 @@ function roleOf(cell: string): Omit<Col, 'i' | 'text'> | null {
   if (/wood floor|glass|window|capacity|enroll|population|occupan|price|\$|cost|rate\b|amount\b|definition|height|standard|requirement|dimension|\bsize\b/.test(h)) return { role: 'info' };
   if (/mows?\s*\/\s*(?:yr|year)|mows per|mowings|cuts per|sfalci|cycles? per (?:yr|year|season)/.test(h)) return { role: 'mows' };
   if (/(?:facilities|buildings|bldgs?|areas?) served|edifici serviti|served facilities/.test(h)) return { role: 'served' };
-  // paved and snow-removal areas: the most specific noun decides ("Paved Areas – POV Parking (SY)" and "Roads & Drives
-  // (SY)" are paved vehicle areas, "Shovel / Blow Walks, Ramps, Slabs" is walks); an area named for the snow work itself
-  // ("Plow Area", "Snow Removal Area": the lots and roads it clears, which the paved columns already give) is neither a
-  // grounds kind nor a building's area
+  // paved and snow-removal areas: the most specific noun decides ("Asphalt Parking (SY)" and "Access Roads (SY)" are paved
+  // vehicle areas, "Walks & Steps (SF)" is walks); an area named for the snow work itself ("Plowing Area", "Snow Removal
+  // Area": the lots and roads it clears) is neither a grounds kind nor a building's area
   // (an area in acres, or one of mowed road shoulders and medians, is turf, not paving)
   const pavedArea = (u === 'sf' || u === 'sm' || u === 'sy' || (/\barea\b/.test(h) && u !== 'ac' && u !== 'ha')) && !/\b(?:mow\w*|turf|grass|lawns?|shoulders?|medians?)\b/.test(h);
   // (a paved area under a snow-work title, "Snow Removal – Parking Lots (SY)", is marked: it gives way to the same kind of
@@ -722,7 +723,7 @@ function groupedSubs(cells: string[]): string[] | undefined {
   return any ? out : undefined;
 }
 
-/** Facilities the Government furnishes to the Contractor for its own use ("Table 3-1. Government-Furnished Facilities",
+/** Facilities the Government furnishes to the Contractor for its own use ("Table 2-1. Government-Furnished Facilities",
  *  "Contractor-Occupied Government Facilities"): the Contractor's offices, shops and yards, not the workload. */
 const CONTRACTOR_SPACE = /\bgovernment[- ]furnished\s+(?:facilit\w*|buildings?|(?:office\s+|work\s*)?space|offices?)\b|\bcontractor[- ](?:occupied|used|use)\s+(?:\w+\s+)?(?:facilit\w*|buildings?|space)\b|\b(?:facilities|buildings|space)\s+(?:provided|furnished|made available)\s+(?:to|for)\s+(?:the\s+)?contractor\b/i;
 /** The title of a table: from the last "Table … / Exhibit …" in the lines above it to where a sentence starts ("Exhibit 2.
@@ -773,11 +774,11 @@ function notesAfter(lines: string[], from: number): Map<string, string> {
   starts.forEach((st, k) => out.set(String(st.n), clean(text.slice(st.at + st.len, k + 1 < starts.length ? starts[k + 1].at : undefined)).slice(0, 600)));
   return out;
 }
-/** Footnote markers on a column title: "MEP (SY)[^4]", "Gross Sq Ft (2)". */
+/** Footnote markers on a column title: "Lot Area (AC)[^1]", "Gross Sq Ft (2)". */
 const noteMarks = (cell: string): string[] => [...cell.matchAll(/\[\^(\d{1,2})\]/g)].map((m) => m[1]).concat(cell.match(/\((\d{1,2})\)\s*$/)?.[1] ?? []);
 /** A column note that makes a column information only ("shown for information only", "not an additional area"). */
 const INFO_NOTE = /\b(?:for\s+)?(?:information(?:al)?|reference)(?:\s+purposes)?\s+only\b|\b(?:shown|listed|provided|given)\s+for\s+(?:information|reference)\b|\bnot\s+an\s+additional\s+area\b/i;
-/** …and for a grounds quantity, a note that the area is not worked under the contract ("MEP is not swept, plowed or
+/** …and for a grounds quantity, a note that the area is not worked under the contract ("tactical parking is not swept, plowed or
  *  otherwise maintained under this contract"). */
 const NOT_WORKED_NOTE = /\bnot\s+(?:\w+,?\s+){0,4}?(?:maintained|mowed|swept|plowed|serviced)\b[^.;]{0,40}\b(?:under|in|by)\s+(?:this|the)\s+(?:contract|requirement|pws|sow)\b|\bnot\s+part\s+of\s+(?:this|the)\s+(?:contract|requirement|work)\b/i;
 /** A column note that defines the area as the area cleaned ("the interior area in which the Contractor performs … sanitation"). */
@@ -795,8 +796,8 @@ function noteSays(note: string, re: RegExp): boolean {
   }
   return false;
 }
-/** A column note that defines the column as the sum of other columns of the table ("Plow Area = POV Parking + Roads and
- *  Drives", "Column 12 = column 9 + column 10 + column 11", "C = A + B"); a definition by things the table does not list
+/** A column note that defines the column as the sum of other columns of the table ("Plowing Area = Asphalt Parking + Access
+ *  Roads", "Column 12 = column 9 + column 10 + column 11", "C = A + B"); a definition by things the table does not list
  *  ("Improved = lawns + cemetery") is not one. */
 function sumOfColumns(note: string, cells: string[], i: number): boolean {
   const words = (s: string) => nameKey(s.replace(/\([^)]*\)/g, ' ')).split(' ').filter((w) => w.length >= 2 && !/^(?:and|the|of|for|all|plus|sf|sy|ac|lf|sq|ft)$/.test(w));
@@ -859,14 +860,14 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
     }
   }
   // a building list with a number column and no name column: the column right after the number, under a title the reader
-  // does not know ("Bldg | Mess Hall | …", "Fac No. | Galley | …"), holding distinct names, holds the facility names
+  // does not know ("Bldg | Dining Hall | …", "Fac No. | Galley | …"), holding distinct names, holds the facility names
   {
     const ni = roles.findIndex((r) => r?.role === 'number' || r?.role === 'numberWeak');
     const k = ni + 1;
     if (ni >= 0 && !roles.some((r) => r?.role === 'name' && !r.bareArea) && k < cells.length && !roles[k] && clean(cells[k]) && !/\d/.test(clean(cells[k])) && clean(cells[k]).length <= 30 && !PART_TITLE.test(normHeader(cells[k]))
       && roles.some((r, i) => r && ['gross', 'cleanable', 'area', 'meal'].includes(r.role) && (r.role === 'meal' || figuresIn(i)))) {
       const vs = colText(k);
-      // (names, not codes: "Wolf Creek Mess Hall", not an organisation code "DPW" / "MWR")
+      // (names, not codes: "North Shore Galley", not an organisation code "DPW" / "MWR")
       if (vs.length >= 2 && new Set(vs).size >= 0.8 * vs.length && vs.filter((v) => /[a-z]{3}/i.test(v) && !isNumericCell(v)).length >= 0.8 * vs.length && vs.filter((v) => /\s/.test(v) || v.length >= 8).length >= 0.5 * vs.length) roles[k] = { role: 'name' };
     }
   }
@@ -897,8 +898,8 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
       else if (r.role === 'area' && (noteSays(note, INFO_NOTE) || sumOfColumns(note, cells, i)) && areaCols() > 1) roles[i] = { role: 'info' };
     });
   }
-  // a paved area under a snow-work title repeats the table's own paved column of that kind ("Paved Areas – POV Parking"
-  // and "Snow Removal – Parking Lots"); with no such column it is the only figure for that paving and stays
+  // a paved area under a snow-work title repeats the table's own paved column of that kind ("Asphalt Parking" and
+  // "Snow Removal – Parking Lots"); with no such column it is the only figure for that paving and stays
   roles.forEach((r, i) => {
     if (r?.role === 'gQty' && r.snow && roles.some((o, k) => k !== i && o?.role === 'gQty' && !o.snow && o.kind === r.kind)) roles[i] = { role: 'info' };
   });
@@ -911,7 +912,7 @@ function buildMap(cells: string[], id: string, caption: string, above: string[][
     for (const l of body.slice(0, 60)) { const v = clean(splitPipe(l)[i]); if (!v || isBlankish(v)) continue; if (isNumericCell(v)) figures++; else words++; }
     if (otherName || figures > words) roles[i] = { role: 'area', unit: undefined };
   });
-  // an area column that holds words, not figures ("FACILITY IDENTIFICATION Area": Mainside, Tarrant Creek) is where
+  // an area column that holds words, not figures ("Area": Waterfront, Airfield) is where
   // the building is, not its size
   roles.forEach((r, i) => {
     if (!r || r.role !== 'area' || r.unit) return;
@@ -1165,7 +1166,7 @@ function splitSentences(text: string): string[] {
   for (let m = re.exec(text); m; m = re.exec(text)) {
     const head = text.slice(start, m.index + 1);
     if (m[0] === '.' && ABBR.test(head)) continue;
-    // (a semicolon or period inside a parenthesis, "(4,980 GSF; 910 Custodial SF)", does not end the sentence)
+    // (a semicolon or period inside a parenthesis, "(2,100 GSF; 300 CSF)", does not end the sentence)
     const near = head.slice(-160);
     if ((near.match(/\(/g)?.length ?? 0) > (near.match(/\)/g)?.length ?? 0)) continue;
     out.push(head.trim());
@@ -1392,7 +1393,7 @@ class Reader {
     const holdBanner = (g: string | undefined) => (g && bannerStatus(g) ? { text: g, rows: 0, block: BLOCK_BANNER.test(g) } : undefined);
     const setGroup = (g: string) => {
       const next = holdBanner(g);
-      if (held && (next || (held.rows > 0 && (!held.block || /\bbase\b/i.test(g))))) held = undefined;
+      if (held && (next || (held.rows > 0 && (!held.block || BASE_BLOCK.test(g))))) held = undefined;
       if (next) held = next;
       group = g; groupFresh = true;
     };
@@ -1660,8 +1661,18 @@ class Reader {
     // a figure followed by a unit ("42.5 acres improved", "45,200 SF") is data, not a column title
     if (hcells.some((c) => /^[~±≈]?\s*(?:approx\.?\s*)?\d[\d,.]*\s*(?:acres?|ac|sf|gsf|sq\.?\s*ft|sy|ha|m²|trees|fixtures|floors?)\b/i.test(clean(c)))) return null;
     const body: string[] = [];
-    // (a short table's sample stops at the next table's title, so that table's column titles and figures are not read as its own)
-    for (let k = i + 1 + extra; k < lines.length && body.length < 300; k++) { const l = lines[k]; if (!l.includes('|')) { if (l.trim() && !/^--- page/.test(l.trim()) && (body.length > 3 || (body.length && /^(?:table|exhibit|technical exhibit|attachment|appendix|annex|figure|notes?\b|te[- ]?\d)/i.test(l.trim())))) break; continue; } body.push(l); }
+    // (a short table's sample stops at the next table, at its title or at rows of another width after text, so that
+    // table's column titles and figures are not read as its own)
+    let text = false;
+    for (let k = i + 1 + extra; k < lines.length && body.length < 300; k++) {
+      const l = lines[k];
+      if (!l.includes('|')) {
+        if (l.trim() && !/^--- page/.test(l.trim())) { if (body.length > 3 || (body.length && /^(?:table|exhibit|technical exhibit|attachment|appendix|annex|figure|notes?\b|te[- ]?\d)/i.test(l.trim()))) break; text = true; }
+        continue;
+      }
+      if (text && body.length && Math.abs(splitPipe(l).length - hcells.length) > 1) break;
+      body.push(l);
+    }
     const key = `${docName}\u0000${hcells.map(normHeader).join('|')}`;
     const seen = this.bodiesByHeader.get(key) ?? [];
     // footnote markers on the column titles are read against the notes printed under the table
@@ -1695,7 +1706,7 @@ class Reader {
     const numCol = map.get('number');
     const nameCol = map.get('name');
     let rawBn = cell(numCol);
-    // a revision table repeats the building with the old and the new figures: "D-450 (was)" / "D-450 (revised)"; in the
+    // a revision table repeats the building with the old and the new figures: "1250 (as issued)" / "1250 (revised)"; in the
     // base documents "1201 (New)" / "T-100 (Old)" only describe the building
     const qual = clean(rawBn).match(/^(.+?)\s*[([]\s*(was|old|previous(?:ly)?|prior|original(?:ly)?|as issued|existing|before|is|new|revised|corrected|amended|now|after)\s*[)\]]$/i);
     if (qual) { if ((ctx.amendLike || ctx.inAmend) && /^(?:was|old|previous|prior|original|as issued|existing|before)/i.test(qual[2])) return true; rawBn = qual[1]; }
@@ -1881,7 +1892,7 @@ class Reader {
     const tk = typeTxt && !isBlankish(typeTxt) ? (typeKind(` ${typeTxt.toLowerCase()} `) ?? groundsKindFromText(typeTxt)) : undefined;
     const lk = kindFromLevel(cell(map.get('svcLvl'))) ?? kindFromCycle(cell(map.get('cycle')));
     // what the row's own label is (the words before "excluding …" / "not including …" name what is left out); the table's
-    // title ("Table 6-2. Athletic Fields") gives the kind of rows whose label names none
+    // title ("Table 4. Sports Fields") gives the kind of rows whose label names none
     const kindLabel = label.replace(/(?:,\s*|\s+|\()(?:excluding|excludes|except(?:\s+for)?|not including|other than|less|without)\b.*$/i, '');
     const capKind = captionKind(map.caption);
     const campus = clean(cell(map.get('campus'))) || (group && CAMPUS_WORD.test(group) ? group : undefined);
@@ -1904,7 +1915,7 @@ class Reader {
       const qTxt = clean(cells[qCol.i]);
       const v = parseNumberCell(qTxt, eu);
       const u = unitOf(` ${clean(cell(map.get('unit')))} `) ?? cellUnit(qTxt) ?? qCol.unit ?? map.unit;
-      // a length is never an area: edging, trimming and fence lines in LF are task lengths ("Edging – walks and curbs, 54,600 LF")
+      // a length is never an area: edging, trimming and fence lines in LF are task lengths ("Curb and walk edging, 8,000 LF")
       const taskLength = u === 'lf' && /\bedg(?:e|es|ed|ing)\b|\btrim(?:med|ming)?\b|fence|curb line/i.test(label);
       if (v && v > 0 && u && u !== 'other' && !taskLength) {
         const lk2 = groundsKindFromText(`${kindLabel} ${qTxt.replace(/[\d.,]+/g, ' ')}`);
@@ -2201,7 +2212,8 @@ class Reader {
       if (size && !/^\s*(?:of\s+)?(?:improved|semi|unimproved|turf|lawns?|grass|mowed|mown|maintained|landscaped|rough|athletic|ball)/i.test(clause.slice(sizeEnd))) clause = clause.slice(sizeEnd);
       // summaries ("a total of …", "total improved acreage …", "in all") would double count listed areas
       if (/\b(?:grand |sub)?total\s+(?:of\s+)?(?:all\s+)?(?:improved|semi|unimproved|grounds|acre|area|site|turf|mowed|maintained)|\btotals?\s*[:=]|\bin all\b|\baltogether\b|\bcombined\b|site area|total site|\ba total of\b/i.test(clause)) continue;
-      if (/not (?:maintained|included|in scope|part)|exclud|by others|maintained by (?!the contractor)|information only|not mowed/i.test(clause)) continue;
+      // (an area worked by someone else, "the parking lot … is swept by the tenant", is not the Contractor's)
+      if (/not (?:maintained|included|in scope|part)|exclud|by others|\b(?:maintained|swept|mowed|plowed|policed|cleared|cleaned|serviced|performed)\s+by\s+(?!(?:the\s+)?contractor\b)|information only|not mowed/i.test(clause)) continue;
       if (/\brevis|\bchang|\bcorrect|\bdelet|\bfrom\s+[\d.,]+\s*(?:\w+\s+)?to\s+[\d.,]/i.test(clause)) continue;
       if (/\(\s*(?:approx(?:imately)?\.?|about|ca\.|i\.e\.|or|≈)?\s*\d[\d,.]*\s*(?:acres?|ac|ha|sf|sq\.?\s*ft|sy)\b[^)]*\)/i.test(clause)) continue;
       const q = clause.replace(/^\s*(?:\d+(?:\.\d+)+|[a-z]\.|\(\w\))\s+/i, '').match(/(\d[\d,]*(?:\.\d+)?)\s*(acres?|ac\.?|hectares?|ha|sf|square feet|sq\.?\s*ft\.?|sy|square yards|trees)\b/i);
@@ -2301,7 +2313,7 @@ class Reader {
           this.addFacility(target.id, nm.length > 3 && nm.length < 100 && !/\d{2,}/.test(nm) && /[A-Z]/.test(nm[0] ?? '') ? nm : undefined, `${s.slice(addCmd[0].length)} ${p.context ?? ''}`, ctx, { file: ctx.doc.name, page: p.page, excerpt: s.slice(0, 200) });
         }
       }
-      // a schedule change ("routine frequency is revised from 3/W to 5/W (Monday through Friday)", "service frequency changed
+      // a schedule change ("the cleaning frequency is changed from 2X to 5X (Monday through Friday)", "service frequency changed
       // from two days per week to three days per week"): the new schedule, read like a frequency cell, for the one building
       // the sentence (or its paragraph) names
       if (amend) {
@@ -2777,7 +2789,7 @@ function extractSite(ordered: { doc: DocInput }[]): SiteInfo {
 
 /** Chemical and pest treatments of grounds listed elsewhere (their acres are treatment areas). */
 const TREATMENT = /\b(?:herbicides?|pesticides?|insecticides?|fungicides?|fertiliz\w*|pre-?emergents?|post-?emergents?|weed control|vegetation control|larvicid\w*|fire ants?|mosquito\w*|spraying|(?:chemical|pest|insect|turf) treatments?)\b/i;
-/** Grounds kind named by a table's title line ("Table 6-2. Athletic Fields", "Exhibit G-3 – Shrub Beds"). */
+/** Grounds kind named by a table's title line ("Table 4. Sports Fields", "Exhibit G-3 – Shrub Beds"). */
 function captionKind(caption: string | undefined): GroundsKind | undefined {
   const last = clean(caption ?? '').split(/(?<=[.:;])\s+(?=[A-Z])/).filter(Boolean).slice(-1)[0] ?? '';
   const t = clean(caption ?? '').length <= 100 ? clean(caption ?? '') : last;
@@ -2856,8 +2868,8 @@ function monthsOf(s: string): number | undefined {
   return undefined;
 }
 
-/** Award facts in a label / value block ("Contract number | W9131B-22-C-0003", "Contractor | Northwoods …, LLC",
- *  "Date of award | 27 June 2022", "Total contract value … | $38,947,260"): a block of two-cell rows under a heading about
+/** Award facts in a label / value block ("Contract number | W912XY-21-C-0042", "Contractor | Prairie Facility Services,
+ *  Inc.", "Date of award | 15 June 2021", "Total contract value … | $12,345,678"): a block of two-cell rows under a heading about
  *  the current, incumbent or previous contract, or one that names both the contractor and the contract number. */
 function awardTables(text: string, file: string): PriorAward | undefined {
   const lines = normalizeRows(text);

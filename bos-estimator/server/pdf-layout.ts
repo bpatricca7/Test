@@ -363,7 +363,7 @@ const proseRegion = (L: Line): Region => ({ prose: true, lines: [L], x0: L.x0, x
 
 /** The line lies inside the ruled frame of the table read so far: one vertical border at or left of both the line and the
  *  table, and one at or right of both, each running unbroken from the table's last line down through this line. A
- *  banner row of a ruled table ("NORTH DAKOTA (3 SITES)", "MN012 · WILLMAR USARC …", "ZONE 2 – SUPPORT AREA") is a cell
+ *  banner row of a ruled table ("EAST REGION (4 SITES)", "SITE 3 · LAKEVIEW RESERVE CENTER …", "ZONE 2 – SUPPORT AREA") is a cell
  *  spanning the whole row, so no inner border crosses it, but the frame does. */
 function insideFrame(L: Line, R: Region, rules: Rule[]): boolean {
   const prev = R.lines[R.lines.length - 1];

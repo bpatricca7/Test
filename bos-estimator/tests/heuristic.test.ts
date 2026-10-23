@@ -1368,6 +1368,19 @@ test('paved and snow columns: mowed road shoulders in acres are turf, a parking 
   near(sqft(both.grounds, 'parking'), 13500);
 });
 
+test('prose: a parking lot or lawn worked by someone else is not a grounds area; one the Contractor works is', () => {
+  const inv = read(lines('C.4 The parking lot at Building 300 is approximately 4,500 square feet and is swept by the tenant.',
+    'The north lawn is approximately 3 acres of improved turf and is mowed by the Contractor every week.'));
+  assert.equal(sqft(inv.grounds, 'parking'), 0);
+  near(acres(inv.grounds, 'improved_turf'), 3);
+});
+
+test('a short table\'s column roles are read from its own rows, not from the next table after the text under it', () => {
+  const inv = read(lines('Facility | Dining Facility | Seats | Wkday Bfast | Wkday Lunch | Wkend/Hol Brunch', '1310 | Raptor Dining Facility | 400 | 250 | 520 | 280', '1320 | Flight Kitchen | 40 | 30 | 45 | 30', '',
+    '1.2 The dining facilities are open every day.', '', 'ACQUISITION SUMMARY', 'Solicitation number | FA4890-27-R-0003', 'Contract type | Firm-fixed-price', 'Anticipated award date | March 2027'));
+  assert.deepEqual(['1310', '1320'].map((b) => fac(inv, b).name), ['Raptor Dining Facility', 'Flight Kitchen']);
+});
+
 test('prior award: a label / value table of another contract (another number, another contractor) adds nothing to the current one', () => {
   const pa = heuristicPriorAward([doc('1.2 The current contract (47PL0021C0007) with Cascade Building Services Inc. expires 30 September 2027.'),
     doc(lines('Previous Contract (Grounds)', 'Contractor | Evergreen Landscape Group LLC', 'Contract No. | 47PL0018C0003', 'Total contract value | $2,900,000', 'Award date | 2018'), 1)]);
