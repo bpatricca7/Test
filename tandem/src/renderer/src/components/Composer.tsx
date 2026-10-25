@@ -87,6 +87,10 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
         void openTerminal({ title: `Claude · ${s.title}`, cwd: s.cwd, agent: 'claude', purpose: 'claude-interactive', model: s.model, policy: s.policy, computerUse: true } as never)
       }
     }
+    if (key === 'browserUse' && next) {
+      const acct = accounts[s.agent]
+      toast('info', acct.browserUseNote ?? (s.agent === 'claude' ? 'Claude in Chrome tools load on the next message.' : 'Codex gets Chrome DevTools browser tools on the next turn.'))
+    }
     void setCapabilities(s.id, { [key]: next })
   }
 

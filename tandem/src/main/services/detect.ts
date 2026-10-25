@@ -89,6 +89,10 @@ export async function detectClaude(binary: string | undefined, cwd: string, cach
     : !planOk
       ? 'Claude computer use needs a Pro or Max plan.'
       : 'Computer use runs in an interactive Claude session (Terminal tab). Tandem enables the computer-use server for the project automatically.'
+  base.browserUseNote =
+    base.authMethod && base.authMethod !== 'oauth_token'
+      ? 'Claude in Chrome needs a claude.ai login (Pro, Max, Team or Enterprise); it is off with API-key auth.'
+      : 'Uses the Claude in Chrome extension (Chrome, Edge, Brave, Arc…) signed in to the same claude.ai account. Needs Pro, Max, Team or Enterprise.'
   return base
 }
 
@@ -129,6 +133,7 @@ export async function detectCodex(binary: string | undefined, server: CodexServe
   const isMac = process.platform === 'darwin'
   base.computerUseAvailable = isMac && base.loggedIn
   base.computerUseNote = isMac ? 'Codex computer use controls allowed macOS apps. Allow or deny apps under computer_use.macos.bundle_ids in ~/.codex/config.toml.' : 'Codex computer use is macOS only (Windows in the Codex desktop app).'
+  base.browserUseNote = 'Codex’s native Browser only works inside the Codex desktop app, so Tandem gives Codex a Chrome DevTools MCP bridge (needs Node/npx; opens its own Chrome window).'
   return base
 }
 

@@ -68,6 +68,7 @@ export interface AccountState {
   problem?: string
   computerUseAvailable: boolean
   computerUseNote?: string
+  browserUseNote?: string
 }
 
 export type SessionStatus = 'idle' | 'starting' | 'running' | 'waiting-approval' | 'error' | 'closed'

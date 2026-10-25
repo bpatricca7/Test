@@ -43,6 +43,9 @@ function categorizeCodex(item: Json): ToolItem['category'] {
   return 'other'
 }
 
+/** Chrome DevTools MCP (github.com/ChromeDevTools/chrome-devtools-mcp): navigate, click, fill, screenshot, console, network. */
+export const CHROME_DEVTOOLS_MCP = { command: 'npx', args: ['-y', 'chrome-devtools-mcp@latest'] }
+
 export class CodexSession implements AgentSessionHandle {
   readonly agent = 'codex' as const
   readonly sessionId: string
@@ -79,12 +82,15 @@ export class CodexSession implements AgentSessionHandle {
   private threadConfig(): Json {
     const caps = this.meta.capabilities
     const features: Json = {}
-    if (caps.computerUse) features.computer_use = true
+    features.computer_use = caps.computerUse
+    features.browser_use = caps.browserUse
+    const cfg: Json = { features }
     if (caps.browserUse) {
-      features.browser_use = true
+      // Codex's native Browser backend is granted only to the Codex desktop app (code-signed native
+      // pipe), so app-server clients get "Browser is not available: extension". Bridge Codex to a
+      // real Chrome through Google's Chrome DevTools MCP server instead.
+      cfg.mcp_servers = { chrome_devtools: CHROME_DEVTOOLS_MCP }
     }
-    const cfg: Json = {}
-    if (Object.keys(features).length) cfg.features = features
     if (!caps.webAccess) cfg.web_search = 'disabled'
     return cfg
   }
@@ -93,7 +99,10 @@ export class CodexSession implements AgentSessionHandle {
     const caps = this.meta.capabilities
     const bits: string[] = []
     if (caps.computerUse) bits.push('The user has explicitly enabled computer use for this session. When a task needs a GUI (native apps, visual checks, anything without a CLI or API), use the computer-use tools to see and control the screen instead of saying you cannot.')
-    if (caps.browserUse) bits.push('The user has enabled browser use. Prefer the browser tools for web pages, web apps and anything that needs a real browser.')
+    if (caps.browserUse)
+      bits.push(
+        'The user has enabled browser use. Your built-in Browser tool is not available in this host; use the chrome_devtools MCP tools instead (navigate_page, take_snapshot, take_screenshot, click, fill, press_key, evaluate_script, list_console_messages, list_network_requests). They control a real Chrome window on the user\'s machine.'
+      )
     return bits.length ? bits.join('\n') : undefined
   }
 

@@ -117,7 +117,7 @@ export function NewSessionDialog(): React.JSX.Element | null {
           <div className="toggle-row">
             <div>
               <div className="t">Browser use</div>
-              <div className="d">Claude in Chrome / Codex browser tools for web apps and sites.</div>
+              <div className="d">Claude: the Claude in Chrome extension (your logged-in browser). Codex: a Chrome DevTools bridge, since Codex’s own Browser mode is desktop-app only.</div>
             </div>
             <Switch on={browser} onChange={setBrowser} />
           </div>

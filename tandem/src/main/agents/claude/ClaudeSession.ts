@@ -420,11 +420,21 @@ export class ClaudeSession implements AgentSessionHandle {
         /* ignore */
       }
     }
-    // Flags that only apply at spawn time take effect on the next (re)start.
-    if (this.proc && (caps.browserUse !== before.browserUse || caps.webAccess !== before.webAccess || caps.computerUse !== before.computerUse)) {
-      this.status('info', 'Capability change applies when this session restarts (it restarts automatically on your next message after an idle close).')
+    // --chrome and the web-tool allowlist are spawn-time flags. Recycle the process when idle;
+    // the next message relaunches with --resume so the conversation continues.
+    const spawnTimeChange = caps.browserUse !== before.browserUse || caps.webAccess !== before.webAccess || caps.computerUse !== before.computerUse
+    if (this.proc && spawnTimeChange) {
+      if (this.turnActive || this.approvals.size) {
+        this.status('info', 'Capability change applies after the current turn finishes.')
+        this.pendingRecycle = true
+        return
+      }
+      await this.close()
+      this.closedByUs = false
+      this.status('info', caps.browserUse && !before.browserUse ? 'Browser use on: Claude in Chrome tools load on your next message.' : 'Session relaunches with the new capabilities on your next message.')
     }
   }
+  private pendingRecycle = false
 
   // ---------------------------------------------------------------------
   // protocol plumbing
@@ -746,6 +756,12 @@ export class ClaudeSession implements AgentSessionHandle {
       lastError: ok ? undefined : item.summary,
       totalCostUsd: Number(msg.total_cost_usd ?? this.meta.totalCostUsd ?? 0)
     })
+    if (this.pendingRecycle) {
+      this.pendingRecycle = false
+      void this.close().then(() => {
+        this.closedByUs = false
+      })
+    }
   }
 
   private handleControlRequest(msg: Json): void {

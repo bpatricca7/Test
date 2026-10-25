@@ -17,7 +17,7 @@ Tandem is a one-time purchase that makes them work as a team.
 | Permission posture (Ask / Auto-edit / Full auto / Plan) | `--permission-mode` + `set_permission_mode` | `approvalPolicy` + `sandboxPolicy` on `turn/start` |
 | Model and effort switching | `set_model`, `--effort` | `model` / `effort` on `turn/start`, `model/list` |
 | Computer use (see and control the screen) | interactive CLI in the built-in terminal; Tandem enables the `computer-use` MCP server for the project | `features.computer_use` on the thread + a developer instruction |
-| Browser use | `--chrome` (Claude in Chrome) | `features.browser_use` |
+| Browser use | `--chrome` → Claude in Chrome extension tools (works in `-p` mode) | Chrome DevTools MCP bridge injected per thread (Codex's native Browser is desktop-app only) |
 | Resume conversations | `--resume <session id>` | `thread/resume` |
 | Sign-in detection | `claude auth status`, `~/.claude.json`, SDK `initialize` → account | `account/read`, `account/login/start` (opens the ChatGPT OAuth page), `account/rateLimits/read` |
 | Usage meters | rate-limit events | 5-hour / weekly windows from `account/rateLimits/read` |
@@ -57,6 +57,24 @@ agent runs as the official CLI, signed in with your own account:
   `projects[cwd].enabledMcpServers` in `~/.claude.json`) and opens an interactive `claude` session in
   the embedded terminal when you turn the toggle on. macOS will ask for Accessibility and Screen
   Recording permission the first time.
+
+### Browser use, honestly
+
+- **Claude Code**: `--chrome` works in Tandem's headless mode. The CLI loads the `claude-in-chrome`
+  MCP server with `navigate`, `read_page`, `find`, `form_input`, `computer`, `read_console_messages`,
+  `read_network_requests`, `gif_creator` and friends, and drives the Chrome you are logged into
+  through the [Claude in Chrome](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn)
+  extension (v1.0.36+). Requirements: Chrome/Edge/Brave/Arc with the extension signed in to the same
+  claude.ai account, and a direct Anthropic plan (Pro, Max, Team, Enterprise). API-key auth turns it
+  off. Per-site "Claude in Chrome wants to…" prompts arrive as ordinary approval cards.
+- **Codex**: OpenAI's Browser feature and the Codex Chrome extension are granted only to the Codex
+  desktop app through a code-signed native pipe; every other app-server client gets
+  "Browser is not available: extension" (openai/codex#26820, open). When you turn Browser on for a
+  Codex session, Tandem instead injects Google's
+  [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) server into the
+  thread (`mcp_servers.chrome_devtools = npx -y chrome-devtools-mcp@latest`) and tells the model to
+  use it. That needs Node/npx on the Mac and opens its own Chrome window. It is a bridge, not
+  OpenAI's native integration.
 
 ## Development
 
