@@ -29,6 +29,7 @@ export interface SessionManagerDeps {
   defaultPolicy: () => PolicyMode
   defaultModel: (agent: AgentKind) => string | undefined
   defaultEffort: (agent: AgentKind) => string | undefined
+  browserMcp: () => { url: string; token: string } | undefined
 }
 
 export class SessionManager {
@@ -109,11 +110,11 @@ export class SessionManager {
     if (meta.agent === 'claude') {
       const binary = this.deps.claudeBinary()
       if (!binary) throw new Error('Claude Code CLI not found')
-      h = new ClaudeSession({ binary, meta, emit: this.emitItem, onMeta })
+      h = new ClaudeSession({ binary, meta, emit: this.emitItem, onMeta, mcp: this.deps.browserMcp() })
     } else {
       const server = this.deps.codexServer()
       if (!server) throw new Error('Codex CLI not found')
-      h = new CodexSession({ server, meta, emit: this.emitItem, onMeta })
+      h = new CodexSession({ server, meta, emit: this.emitItem, onMeta, mcp: this.deps.browserMcp() })
     }
     this.live.set(sessionId, h)
     return h

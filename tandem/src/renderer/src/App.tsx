@@ -77,6 +77,11 @@ export function App(): React.JSX.Element {
         e.preventDefault()
         toggleTerminal()
       }
+      if (mod && e.key.toLowerCase() === 'b') {
+        e.preventDefault()
+        const st = useStore.getState()
+        void (st.browserOpen ? st.closeBrowser() : st.openBrowser())
+      }
       if (mod && e.key === ',') {
         e.preventDefault()
         useStore.getState().openSettings()

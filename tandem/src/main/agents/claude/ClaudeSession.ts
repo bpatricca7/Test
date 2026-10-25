@@ -41,6 +41,8 @@ export interface ClaudeSessionOptions {
   emit: AdapterEmit
   /** Called when the CLI reports init so the manager can persist the native id. */
   onMeta: (patch: Partial<SessionMeta>) => void
+  /** Tandem's in-app browser MCP endpoint (always available once the app is up). */
+  mcp?: { url: string; token: string }
 }
 
 const CLAUDE_TOOL_CATEGORY: Record<string, ToolItem['category']> = {
@@ -61,7 +63,7 @@ const CLAUDE_TOOL_CATEGORY: Record<string, ToolItem['category']> = {
 
 function categorize(tool: string): ToolItem['category'] {
   if (tool.startsWith('mcp__computer-use__')) return 'computer'
-  if (tool.startsWith('mcp__claude-in-chrome__') || /chrome|browser/i.test(tool)) return 'browser'
+  if (tool.startsWith('mcp__claude-in-chrome__') || tool.startsWith('mcp__tandem-browser__') || /chrome|browser/i.test(tool)) return 'browser'
   if (tool.startsWith('mcp__')) return 'mcp'
   return CLAUDE_TOOL_CATEGORY[tool] ?? 'other'
 }
@@ -162,6 +164,7 @@ export class ClaudeSession implements AgentSessionHandle {
   private readonly emit: AdapterEmit
   private readonly onMeta: (patch: Partial<SessionMeta>) => void
   private readonly binary: string
+  private readonly mcp?: { url: string; token: string }
   private pending = new Map<string, Pending>()
   private lines = new LineBuffer()
   private ready?: Promise<void>
@@ -185,6 +188,7 @@ export class ClaudeSession implements AgentSessionHandle {
     this.sessionId = opts.meta.id
     this.emit = opts.emit
     this.onMeta = opts.onMeta
+    this.mcp = opts.mcp
   }
 
   // ---------------------------------------------------------------------
@@ -212,6 +216,10 @@ export class ClaudeSession implements AgentSessionHandle {
     if (this.meta.effort) args.push('--effort', this.meta.effort)
     if (this.meta.capabilities.browserUse) args.push('--chrome')
     if (!this.meta.capabilities.webAccess) args.push('--disallowedTools', 'WebFetch', 'WebSearch')
+    if (this.meta.capabilities.inAppBrowser && this.mcp) {
+      args.push('--mcp-config', JSON.stringify({ mcpServers: { 'tandem-browser': { type: 'http', url: this.mcp.url, headers: { Authorization: `Bearer ${this.mcp.token}` } } } }))
+      args.push('--append-system-prompt', 'The user has opened Tandem\'s built-in browser pane next to this chat. For anything that needs a browser (web apps, sites, visual checks, forms), use the tandem-browser MCP tools: navigate, snapshot, click, type, screenshot. The user watches it live.')
+    }
     return args
   }
 
@@ -422,7 +430,7 @@ export class ClaudeSession implements AgentSessionHandle {
     }
     // --chrome and the web-tool allowlist are spawn-time flags. Recycle the process when idle;
     // the next message relaunches with --resume so the conversation continues.
-    const spawnTimeChange = caps.browserUse !== before.browserUse || caps.webAccess !== before.webAccess || caps.computerUse !== before.computerUse
+    const spawnTimeChange = caps.browserUse !== before.browserUse || caps.webAccess !== before.webAccess || caps.computerUse !== before.computerUse || caps.inAppBrowser !== before.inAppBrowser
     if (this.proc && spawnTimeChange) {
       if (this.turnActive || this.approvals.size) {
         this.status('info', 'Capability change applies after the current turn finishes.')
@@ -431,7 +439,7 @@ export class ClaudeSession implements AgentSessionHandle {
       }
       await this.close()
       this.closedByUs = false
-      this.status('info', caps.browserUse && !before.browserUse ? 'Browser use on: Claude in Chrome tools load on your next message.' : 'Session relaunches with the new capabilities on your next message.')
+      this.status('info', caps.inAppBrowser && !before.inAppBrowser ? 'Tandem browser on: its tools load on your next message.' : caps.browserUse && !before.browserUse ? 'Browser use on: Claude in Chrome tools load on your next message.' : 'Session relaunches with the new capabilities on your next message.')
     }
   }
   private pendingRecycle = false

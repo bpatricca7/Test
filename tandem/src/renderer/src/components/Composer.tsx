@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { AgentKind, PolicyMode, SessionMeta } from '@shared/types'
 import { POLICY_LABEL } from '@shared/types'
-import { ArrowUp, Compass, Globe, ImagePlus, Monitor, Square, TerminalSquare, Shield, Cpu, Gauge } from 'lucide-react'
+import { ArrowUp, AppWindow, Compass, Globe, ImagePlus, Monitor, Square, TerminalSquare, Shield, Cpu, Gauge } from 'lucide-react'
 import { useStore } from '../store'
 import { Dropdown } from './ui'
 
@@ -25,6 +25,7 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
   const loadModels = useStore((s) => s.loadModels)
   const accounts = useStore((s) => s.accounts)
   const openTerminal = useStore((s) => s.openTerminal)
+  const openBrowser = useStore((s) => s.openBrowser)
   const toast = useStore((s) => s.toast)
   const isPair = sessions.length > 1
   const running = sessions.some((s) => s.status === 'running' || s.status === 'starting')
@@ -75,7 +76,7 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
     input.click()
   }
 
-  const toggleCap = (s: SessionMeta, key: 'computerUse' | 'browserUse' | 'webAccess'): void => {
+  const toggleCap = (s: SessionMeta, key: 'computerUse' | 'browserUse' | 'webAccess' | 'inAppBrowser'): void => {
     const next = !s.capabilities[key]
     if (key === 'computerUse' && next) {
       const acct = accounts[s.agent]
@@ -86,6 +87,10 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
         toast('info', 'Claude computer use runs in an interactive session. Opening a Claude terminal for this project with computer-use enabled; type your task there.')
         void openTerminal({ title: `Claude · ${s.title}`, cwd: s.cwd, agent: 'claude', purpose: 'claude-interactive', model: s.model, policy: s.policy, computerUse: true } as never)
       }
+    }
+    if (key === 'inAppBrowser' && next) {
+      void openBrowser()
+      toast('info', `${s.agent === 'claude' ? 'Claude' : 'Codex'} gets the Tandem browser tools on the next message.`)
     }
     if (key === 'browserUse' && next) {
       const acct = accounts[s.agent]
@@ -172,8 +177,11 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
               <button type="button" className={`chip ${s.capabilities.computerUse ? 'on' : ''}`} title={`${s.agent === 'claude' ? 'Claude' : 'Codex'} computer use: let it see and control your screen (macOS)`} onClick={() => toggleCap(s, 'computerUse')}>
                 <Monitor size={12} /> {isPair ? (s.agent === 'claude' ? 'C' : 'X') + ' ' : ''}Computer
               </button>
-              <button type="button" className={`chip ${s.capabilities.browserUse ? 'on' : ''}`} title="Browser use" onClick={() => toggleCap(s, 'browserUse')}>
-                <Compass size={12} /> {isPair ? (s.agent === 'claude' ? 'C' : 'X') + ' ' : ''}Browser
+              <button type="button" className={`chip ${s.capabilities.inAppBrowser ? 'on' : ''}`} title="Tandem browser: a browser pane inside this window that the agent can drive" onClick={() => toggleCap(s, 'inAppBrowser')}>
+                <AppWindow size={12} /> {isPair ? (s.agent === 'claude' ? 'C' : 'X') + ' ' : ''}Tandem browser
+              </button>
+              <button type="button" className={`chip ${s.capabilities.browserUse ? 'on' : ''}`} title={s.agent === 'claude' ? 'Claude in Chrome (your Chrome, with the extension)' : 'Chrome DevTools bridge (external Chrome)'} onClick={() => toggleCap(s, 'browserUse')}>
+                <Compass size={12} /> {isPair ? (s.agent === 'claude' ? 'C' : 'X') + ' ' : ''}Chrome
               </button>
               <button type="button" className={`chip ${s.capabilities.webAccess ? 'on' : ''}`} title="Web access / network" onClick={() => toggleCap(s, 'webAccess')}>
                 <Globe size={12} />

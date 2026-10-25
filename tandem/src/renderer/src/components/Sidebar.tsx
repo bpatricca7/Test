@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import type { AccountState, AgentKind, SessionMeta } from '@shared/types'
-import { ExternalLink, LogIn, MoreHorizontal, Plus, RefreshCw, Settings as SettingsIcon, TerminalSquare, Trash2, Pencil, LogOut, Columns2 } from 'lucide-react'
+import { AppWindow, ExternalLink, LogIn, MoreHorizontal, Plus, RefreshCw, Settings as SettingsIcon, TerminalSquare, Trash2, Pencil, LogOut, Columns2 } from 'lucide-react'
 import { useStore } from '../store'
 import { relTime, shortPath } from './ui'
 
@@ -155,6 +155,9 @@ export function Sidebar(): React.JSX.Element {
   const openSettings = useStore((s) => s.openSettings)
   const goHome = useStore((s) => s.goHome)
   const toggleTerminal = useStore((s) => s.toggleTerminalPane)
+  const browserOpen = useStore((s) => s.browserOpen)
+  const openBrowser = useStore((s) => s.openBrowser)
+  const closeBrowser = useStore((s) => s.closeBrowser)
   const list = Object.values(sessions).sort((a, b) => b.updatedAt - a.updatedAt)
   const seenPairs = new Set<string>()
   const rows: { s: SessionMeta; pair: SessionMeta[] }[] = []
@@ -190,8 +193,11 @@ export function Sidebar(): React.JSX.Element {
         ))}
       </div>
       <div className="sidebar-bottom">
-        <button type="button" className="btn sm ghost" onClick={() => toggleTerminal()} title="Toggle terminal pane">
+        <button type="button" className="btn sm ghost" onClick={() => toggleTerminal()} title="Toggle terminal pane (⌘`)">
           <TerminalSquare size={14} /> Terminal
+        </button>
+        <button type="button" className={`btn sm ghost ${browserOpen ? 'on' : ''}`} onClick={() => void (browserOpen ? closeBrowser() : openBrowser())} title="Toggle the in-app browser (⌘B)">
+          <AppWindow size={14} /> Browser
         </button>
         <span style={{ flex: 1 }} />
         <button type="button" className="btn sm ghost" onClick={openSettings}>

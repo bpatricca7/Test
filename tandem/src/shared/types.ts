@@ -32,12 +32,26 @@ export interface Capabilities {
   browserUse: boolean
   /** Let the agent reach the network from its sandbox (Codex) / web tools (Claude). */
   webAccess: boolean
+  /** Give the agent Tandem's own browser pane (an MCP tool server over localhost). */
+  inAppBrowser: boolean
 }
 
 export const DEFAULT_CAPABILITIES: Capabilities = {
   computerUse: false,
   browserUse: false,
-  webAccess: true
+  webAccess: true,
+  inAppBrowser: false
+}
+
+export interface BrowserState {
+  open: boolean
+  url: string
+  title: string
+  loading: boolean
+  canGoBack: boolean
+  canGoForward: boolean
+  /** Set while an agent tool call is driving the page, e.g. "click e12". */
+  busy?: string
 }
 
 export interface AgentModel {
@@ -211,6 +225,7 @@ export type TimelineEvent =
   | { type: 'accounts'; accounts: Record<AgentKind, AccountState> }
   | { type: 'terminal-data'; termId: string; data: string }
   | { type: 'terminal-exit'; termId: string; code: number }
+  | { type: 'browser-state'; state: BrowserState }
   | { type: 'toast'; level: 'info' | 'warn' | 'error'; text: string }
 
 export interface ApprovalResponse {

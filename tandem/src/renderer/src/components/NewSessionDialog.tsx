@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import type { PolicyMode } from '@shared/types'
 import { POLICY_LABEL } from '@shared/types'
-import { Columns2, FolderOpen, Monitor } from 'lucide-react'
+import { AppWindow, Columns2, FolderOpen, Monitor } from 'lucide-react'
 import { useStore, type Target } from '../store'
 import { Switch, shortPath } from './ui'
 
@@ -17,6 +17,7 @@ export function NewSessionDialog(): React.JSX.Element | null {
   const [policy, setPolicy] = useState<PolicyMode>(settings?.defaultPolicy ?? 'ask')
   const [computer, setComputer] = useState(false)
   const [browser, setBrowser] = useState(false)
+  const [inApp, setInApp] = useState(true)
   const [prompt, setPrompt] = useState('')
   const [busy, setBusy] = useState(false)
   useEffect(() => {
@@ -27,6 +28,7 @@ export function NewSessionDialog(): React.JSX.Element | null {
       setPrompt('')
       setComputer(false)
       setBrowser(false)
+      setInApp(true)
     }
   }, [open])
   useEffect(() => {
@@ -44,7 +46,7 @@ export function NewSessionDialog(): React.JSX.Element | null {
     if (!cwd || !targetOk) return
     setBusy(true)
     try {
-      await create({ cwd, policy, capabilities: { computerUse: computer, browserUse: browser, webAccess: true } }, target, prompt)
+      await create({ cwd, policy, capabilities: { computerUse: computer, browserUse: browser, webAccess: true, inAppBrowser: inApp } }, target, prompt)
     } finally {
       setBusy(false)
     }
@@ -116,7 +118,17 @@ export function NewSessionDialog(): React.JSX.Element | null {
           </div>
           <div className="toggle-row">
             <div>
-              <div className="t">Browser use</div>
+              <div className="t">
+                <AppWindow size={13} style={{ verticalAlign: -2, marginRight: 6 }} />
+                Tandem browser
+              </div>
+              <div className="d">A browser pane inside Tandem that the agent can navigate, click, type in and screenshot. Works for both agents; you watch it live.</div>
+            </div>
+            <Switch on={inApp} onChange={setInApp} />
+          </div>
+          <div className="toggle-row">
+            <div>
+              <div className="t">External Chrome</div>
               <div className="d">Claude: the Claude in Chrome extension (your logged-in browser). Codex: a Chrome DevTools bridge, since Codex’s own Browser mode is desktop-app only.</div>
             </div>
             <Switch on={browser} onChange={setBrowser} />

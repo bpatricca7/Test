@@ -10,6 +10,8 @@ import { SessionManager } from './services/sessions'
 import { SettingsStore } from './services/settings'
 import { SessionStore } from './services/store'
 import { TerminalManager } from './services/terminal'
+import { InAppBrowser } from './services/inAppBrowser'
+import { BrowserMcpServer } from './services/browserMcp'
 import { claudePermissionMode } from '@shared/policy'
 import { setClaudeComputerUseEnabled } from './agents/claude/ClaudeSession'
 
@@ -60,6 +62,20 @@ function getCodexServer(): CodexServer | undefined {
   return codexServer
 }
 
+let browser: InAppBrowser | undefined
+function ensureBrowser(): InAppBrowser {
+  if (!browser) {
+    browser = new InAppBrowser((state) => emit({ type: 'browser-state', state }))
+    if (win && !win.isDestroyed()) browser.attach(win)
+  }
+  return browser
+}
+const browserMcp = new BrowserMcpServer(async () => {
+  const b = ensureBrowser()
+  if (!b.isOpen) b.openPane()
+  return b
+}, app.getVersion())
+
 const terminals = new TerminalManager({
   onData: (termId, data) => emit({ type: 'terminal-data', termId, data }),
   onExit: (termId, code) => emit({ type: 'terminal-exit', termId, code })
@@ -72,7 +88,8 @@ const sessions = new SessionManager({
   codexServer: getCodexServer,
   defaultPolicy: () => settings.get().defaultPolicy,
   defaultModel: (agent) => (agent === 'claude' ? settings.get().claudeModel : settings.get().codexModel),
-  defaultEffort: (agent) => (agent === 'codex' ? settings.get().codexEffort : undefined)
+  defaultEffort: (agent) => (agent === 'codex' ? settings.get().codexEffort : undefined),
+  browserMcp: () => (browserMcp.port ? browserMcp.endpoint : undefined)
 })
 
 let refreshing: Promise<Record<AgentKind, AccountState>> | undefined
@@ -123,6 +140,7 @@ function createWindow(): void {
   })
   if (isDev && process.env.ELECTRON_RENDERER_URL) void win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else void win.loadFile(join(__dirname, '../renderer/index.html'))
+  if (browser) browser.attach(win)
   win.on('closed', () => (win = undefined))
 }
 
@@ -237,6 +255,16 @@ function registerIpc(): void {
   ipcMain.handle(IPC.terminalClose, (_e, id: string) => terminals.close(id))
   ipcMain.handle(IPC.terminalList, () => terminals.list())
 
+  ipcMain.handle(IPC.browserOpen, (_e, url?: string) => ensureBrowser().openPane(url))
+  ipcMain.handle(IPC.browserClose, () => browser?.closePane())
+  ipcMain.handle(IPC.browserSetBounds, (_e, rect: { x: number; y: number; width: number; height: number }) => ensureBrowser().setBounds(rect))
+  ipcMain.handle(IPC.browserSetVisible, (_e, v: boolean) => ensureBrowser().setVisible(v))
+  ipcMain.handle(IPC.browserNavigate, (_e, url: string) => ensureBrowser().navigate(url))
+  ipcMain.handle(IPC.browserBack, () => ensureBrowser().back())
+  ipcMain.handle(IPC.browserForward, () => ensureBrowser().forward())
+  ipcMain.handle(IPC.browserReload, () => ensureBrowser().reload())
+  ipcMain.handle(IPC.browserState, () => (browser ? browser.state() : { open: false, url: '', title: '', loading: false, canGoBack: false, canGoForward: false }))
+
   ipcMain.handle(IPC.settingsGet, () => settings.get())
   ipcMain.handle(IPC.settingsSet, (_e, patch: Partial<Settings>) => {
     const next = settings.set(patch)
@@ -257,6 +285,11 @@ if (process.platform === 'darwin') app.setAboutPanelOptions({ applicationName: '
 
 void app.whenReady().then(async () => {
   nativeTheme.themeSource = settings.get().theme
+  try {
+    await browserMcp.start()
+  } catch (e) {
+    console.error('[tandem] browser MCP server failed to start:', (e as Error).message)
+  }
   registerIpc()
   createWindow()
   void refreshAccounts(true)
@@ -279,6 +312,7 @@ app.on('before-quit', (e) => {
       terminals.closeAll()
       await sessions.shutdown()
       await codexServer?.stop()
+      await browserMcp.stop()
     } finally {
       app.exit(0)
     }

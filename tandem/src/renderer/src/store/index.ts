@@ -5,6 +5,7 @@ import type {
   AgentModel,
   AppInfo,
   ApprovalResponse,
+  BrowserState,
   Capabilities,
   LicenseState,
   NewSessionInput,
@@ -41,6 +42,8 @@ interface State {
   terminals: TerminalSpec[]
   activeTermId?: string
   terminalOpen: boolean
+  browserOpen: boolean
+  browser?: BrowserState
   toasts: Toast[]
   newSessionOpen: boolean
   newSessionTarget: Target
@@ -70,6 +73,8 @@ interface State {
   closeTerminal(id: string): Promise<void>
   setActiveTerm(id?: string): void
   toggleTerminalPane(open?: boolean): void
+  openBrowser(url?: string): Promise<void>
+  closeBrowser(): Promise<void>
   updateSettings(patch: Partial<Settings>): Promise<void>
   activateLicense(key: string): Promise<LicenseState>
   toast(level: Toast['level'], text: string): void
@@ -100,6 +105,7 @@ export const useStore = create<State>((set, get) => ({
   view: 'home',
   terminals: [],
   terminalOpen: false,
+  browserOpen: false,
   toasts: [],
   newSessionOpen: false,
   newSessionTarget: 'claude',
@@ -160,6 +166,9 @@ export const useStore = create<State>((set, get) => ({
       case 'terminal-exit':
         set({ terminals: get().terminals.filter((t) => t.id !== ev.termId) })
         return
+      case 'browser-state':
+        set({ browser: ev.state, browserOpen: ev.state.open ? true : get().browserOpen && ev.state.open })
+        return
       case 'toast':
         if (ev.text) get().toast(ev.level, ev.text)
         return
@@ -185,6 +194,7 @@ export const useStore = create<State>((set, get) => ({
   async openSession(id) {
     set({ activeId: id, view: 'session' })
     const pair = get().pairOf(id)
+    if (pair.some((s) => s.capabilities.inAppBrowser) && !get().browserOpen) void get().openBrowser()
     for (const s of pair) {
       if (!get().loaded[s.id]) {
         const items = await api().sessionItems(s.id)
@@ -313,6 +323,16 @@ export const useStore = create<State>((set, get) => ({
 
   toggleTerminalPane(open) {
     set({ terminalOpen: open ?? !get().terminalOpen })
+  },
+
+  async openBrowser(url) {
+    const state = await api().browserOpen(url)
+    set({ browser: state, browserOpen: true })
+  },
+
+  async closeBrowser() {
+    await api().browserClose()
+    set({ browserOpen: false })
   },
 
   async updateSettings(patch) {

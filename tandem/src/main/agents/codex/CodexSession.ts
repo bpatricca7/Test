@@ -27,6 +27,7 @@ export interface CodexSessionOptions {
   meta: SessionMeta
   emit: AdapterEmit
   onMeta: (patch: Partial<SessionMeta>) => void
+  mcp?: { url: string; token: string }
 }
 
 function categorizeCodex(item: Json): ToolItem['category'] {
@@ -37,6 +38,7 @@ function categorizeCodex(item: Json): ToolItem['category'] {
   if (t === 'collabAgentToolCall' || t === 'subAgentActivity') return 'agent'
   if (t === 'imageView') return 'read'
   const name = `${String(item.server ?? '')}/${String(item.tool ?? '')}/${String(item.namespace ?? '')}`.toLowerCase()
+  if (/tandem_browser|browser|chrome/.test(name)) return 'browser'
   if (/computer|screen|desktop|click|keyboard|mouse|gui/.test(name)) return 'computer'
   if (/browser|chrome|page|tab|navigate/.test(name)) return 'browser'
   if (t === 'mcpToolCall') return 'mcp'
@@ -53,6 +55,7 @@ export class CodexSession implements AgentSessionHandle {
   private readonly server: CodexServer
   private readonly emit: AdapterEmit
   private readonly onMeta: (patch: Partial<SessionMeta>) => void
+  private readonly mcp?: { url: string; token: string }
   private threadId?: string
   private activeTurnId?: string
   private started = false
@@ -77,6 +80,7 @@ export class CodexSession implements AgentSessionHandle {
     this.sessionId = opts.meta.id
     this.emit = opts.emit
     this.onMeta = opts.onMeta
+    this.mcp = opts.mcp
   }
 
   private threadConfig(): Json {
@@ -91,6 +95,9 @@ export class CodexSession implements AgentSessionHandle {
       // real Chrome through Google's Chrome DevTools MCP server instead.
       cfg.mcp_servers = { chrome_devtools: CHROME_DEVTOOLS_MCP }
     }
+    if (caps.inAppBrowser && this.mcp) {
+      cfg.mcp_servers = { ...((cfg.mcp_servers as Json | undefined) ?? {}), tandem_browser: { url: this.mcp.url, http_headers: { Authorization: `Bearer ${this.mcp.token}` }, startup_timeout_sec: 20, tool_timeout_sec: 120 } }
+    }
     if (!caps.webAccess) cfg.web_search = 'disabled'
     return cfg
   }
@@ -103,6 +110,7 @@ export class CodexSession implements AgentSessionHandle {
       bits.push(
         'The user has enabled browser use. Your built-in Browser tool is not available in this host; use the chrome_devtools MCP tools instead (navigate_page, take_snapshot, take_screenshot, click, fill, press_key, evaluate_script, list_console_messages, list_network_requests). They control a real Chrome window on the user\'s machine.'
       )
+    if (caps.inAppBrowser) bits.push("The user has opened Tandem's built-in browser pane next to this chat. For anything that needs a browser (web apps, sites, visual checks, forms), use the tandem_browser MCP tools: navigate, snapshot, click, type, screenshot. The user watches it live.")
     return bits.length ? bits.join('\n') : undefined
   }
 

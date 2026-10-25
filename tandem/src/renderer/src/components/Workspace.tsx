@@ -6,6 +6,7 @@ import { useStore } from '../store'
 import { Timeline } from './Timeline'
 import { Composer } from './Composer'
 import { TerminalPane } from './TerminalPane'
+import { BrowserPane } from './BrowserPane'
 import { AgentAvatar, fmtTokens, shortPath } from './ui'
 
 const EMPTY: never[] = []
@@ -65,6 +66,8 @@ export function Workspace({ sessionId }: { sessionId: string }): React.JSX.Eleme
       .sort((a, b) => (a.agent === 'claude' ? -1 : 1) - (b.agent === 'claude' ? -1 : 1))
   }, [sessions, sessionId])
   const terminalOpen = useStore((st) => st.terminalOpen)
+  const browserOpen = useStore((st) => st.browserOpen)
+  const dock = terminalOpen || browserOpen
   const primary = pair[0]
   if (!primary) return <div className="empty">Session not found.</div>
   const split = pair.length > 1
@@ -81,11 +84,16 @@ export function Workspace({ sessionId }: { sessionId: string }): React.JSX.Eleme
           <span className="chip">{POLICY_LABEL[primary.policy]}</span>
         </div>
       </div>
-      <div className={`workspace ${split ? 'split' : ''} ${terminalOpen ? 'with-terminal' : ''}`}>
+      <div className={`workspace ${split ? 'split' : ''} ${dock ? 'with-dock' : ''}`}>
         {pair.map((s) => (
           <Pane key={s.id} s={s} split={split} />
         ))}
-        {terminalOpen && <TerminalPane />}
+        {dock && (
+          <div className="dock">
+            {browserOpen && <BrowserPane />}
+            {terminalOpen && <TerminalPane />}
+          </div>
+        )}
       </div>
       <Composer sessions={pair} primary={primary} />
     </div>

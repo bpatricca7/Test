@@ -17,13 +17,15 @@ Tandem is a one-time purchase that makes them work as a team.
 | Permission posture (Ask / Auto-edit / Full auto / Plan) | `--permission-mode` + `set_permission_mode` | `approvalPolicy` + `sandboxPolicy` on `turn/start` |
 | Model and effort switching | `set_model`, `--effort` | `model` / `effort` on `turn/start`, `model/list` |
 | Computer use (see and control the screen) | interactive CLI in the built-in terminal; Tandem enables the `computer-use` MCP server for the project | `features.computer_use` on the thread + a developer instruction |
-| Browser use | `--chrome` → Claude in Chrome extension tools (works in `-p` mode) | Chrome DevTools MCP bridge injected per thread (Codex's native Browser is desktop-app only) |
+| In-app browser (Tandem's own pane) | `--mcp-config` → `tandem-browser` HTTP MCP server | `mcp_servers.tandem_browser` on the thread |
+| External Chrome | `--chrome` → Claude in Chrome extension tools (works in `-p` mode) | Chrome DevTools MCP bridge injected per thread (Codex's native Browser is desktop-app only) |
 | Resume conversations | `--resume <session id>` | `thread/resume` |
 | Sign-in detection | `claude auth status`, `~/.claude.json`, SDK `initialize` → account | `account/read`, `account/login/start` (opens the ChatGPT OAuth page), `account/rateLimits/read` |
 | Usage meters | rate-limit events | 5-hour / weekly windows from `account/rateLimits/read` |
 
 Plus:
 
+- **In-app browser.** A real Chromium pane docked inside Tandem that either agent can navigate, snapshot, click, type in and screenshot, while you watch (and can take over with the mouse). Logins persist in Tandem's own browser profile.
 - **Side-by-side mode.** Send the same prompt to both agents and compare them in split view.
 - **Hand-off.** One click sends the task, the original request, and the last update to the other agent in a fresh session in the same folder.
 - **Embedded terminal.** Open the raw `claude` or `codex` TUI in a tab when you want the native experience (and for Claude computer use, which the CLI only offers interactively).
@@ -58,7 +60,19 @@ agent runs as the official CLI, signed in with your own account:
   the embedded terminal when you turn the toggle on. macOS will ask for Accessibility and Screen
   Recording permission the first time.
 
-### Browser use, honestly
+### The in-app browser
+
+Tandem hosts a `WebContentsView` (Chromium, isolated `persist:tandem-browser` profile) docked next to
+the chat and exposes it as an MCP server on `127.0.0.1` with a per-launch bearer token
+(`src/main/services/browserMcp.ts`, Streamable HTTP transport). Claude Code gets it through
+`--mcp-config` as `tandem-browser`; Codex gets it through `mcp_servers.tandem_browser` in its thread
+config. Tools: `navigate`, `snapshot` (interactive elements with refs like `[e12] button "Sign in"`
+plus page text), `click`, `type`, `press_key`, `scroll`, `select_option`, `screenshot`, `get_text`,
+`evaluate`, `console_messages`, `network_requests`, `wait_for`, `go_back`, `go_forward`, `reload`.
+The pane shows an "agent driving" badge while a tool call runs, and the URL bar, back/forward and
+reload stay usable by you. Toggle it per session with the **Tandem browser** chip or ⌘B.
+
+### External browser use, honestly
 
 - **Claude Code**: `--chrome` works in Tandem's headless mode. The CLI loads the `claude-in-chrome`
   MCP server with `navigate`, `read_page`, `find`, `form_input`, `computer`, `read_console_messages`,

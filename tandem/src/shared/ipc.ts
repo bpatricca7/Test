@@ -13,7 +13,8 @@ import type {
   TerminalSpec,
   TimelineEvent,
   TimelineItem,
-  Capabilities
+  Capabilities,
+  BrowserState
 } from './types'
 
 export const IPC = {
@@ -47,6 +48,16 @@ export const IPC = {
   terminalResize: 'terminal:resize',
   terminalClose: 'terminal:close',
   terminalList: 'terminal:list',
+  // in-app browser
+  browserOpen: 'browser:open',
+  browserClose: 'browser:close',
+  browserSetBounds: 'browser:set-bounds',
+  browserSetVisible: 'browser:set-visible',
+  browserNavigate: 'browser:navigate',
+  browserBack: 'browser:back',
+  browserForward: 'browser:forward',
+  browserReload: 'browser:reload',
+  browserState: 'browser:state',
   // settings / license
   settingsGet: 'settings:get',
   settingsSet: 'settings:set',
@@ -87,6 +98,16 @@ export interface TandemApi {
   terminalResize(termId: string, cols: number, rows: number): Promise<void>
   terminalClose(termId: string): Promise<void>
   terminalList(): Promise<TerminalSpec[]>
+
+  browserOpen(url?: string): Promise<BrowserState>
+  browserClose(): Promise<void>
+  browserSetBounds(rect: { x: number; y: number; width: number; height: number }): Promise<void>
+  browserSetVisible(visible: boolean): Promise<void>
+  browserNavigate(url: string): Promise<BrowserState>
+  browserBack(): Promise<BrowserState>
+  browserForward(): Promise<BrowserState>
+  browserReload(): Promise<BrowserState>
+  browserState(): Promise<BrowserState>
 
   settingsGet(): Promise<Settings>
   settingsSet(patch: Partial<Settings>): Promise<Settings>
