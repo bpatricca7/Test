@@ -1,0 +1,288 @@
+{
+ "sessions": [
+  {
+   "id": "demo-claude",
+   "agent": "claude",
+   "cwd": "/Users/you/Projects/acme-app",
+   "createdAt": 1792966211156,
+   "updatedAt": 1792969751156,
+   "policy": "ask",
+   "capabilities": {
+    "computerUse": false,
+    "browserUse": false,
+    "webAccess": true
+   },
+   "title": "Fix flaky checkout tests",
+   "status": "idle",
+   "model": "claude-opus-5-5",
+   "pairId": "pair-demo",
+   "tokensIn": 48210,
+   "tokensOut": 2210,
+   "totalCostUsd": 0.42
+  },
+  {
+   "id": "demo-codex",
+   "agent": "codex",
+   "cwd": "/Users/you/Projects/acme-app",
+   "createdAt": 1792966211156,
+   "updatedAt": 1792969751156,
+   "policy": "ask",
+   "capabilities": {
+    "computerUse": true,
+    "browserUse": false,
+    "webAccess": true
+   },
+   "title": "Fix flaky checkout tests",
+   "status": "waiting-approval",
+   "model": "gpt-6.1-sol",
+   "effort": "high",
+   "pairId": "pair-demo",
+   "tokensIn": 39110,
+   "tokensOut": 1830,
+   "contextPercent": 14
+  },
+  {
+   "id": "demo-solo",
+   "agent": "claude",
+   "cwd": "/Users/you/Projects/acme-app",
+   "createdAt": 1792966211156,
+   "updatedAt": 1792962611156,
+   "policy": "ask",
+   "capabilities": {
+    "computerUse": false,
+    "browserUse": false,
+    "webAccess": true
+   },
+   "title": "Add dark mode to settings page",
+   "status": "idle",
+   "model": "claude-sonnet-5-5"
+  }
+ ],
+ "items": {
+  "demo-claude": [
+   {
+    "id": "demo-claude-user-bpll9o",
+    "sessionId": "demo-claude",
+    "agent": "claude",
+    "ts": 1792969211156,
+    "kind": "user",
+    "text": "The checkout tests in `tests/checkout.spec.ts` fail about 1 in 5 runs on CI. Find the race and fix it without weakening the assertions."
+   },
+   {
+    "id": "demo-claude-reasoning-d4qhtq",
+    "sessionId": "demo-claude",
+    "agent": "claude",
+    "ts": 1792969212156,
+    "kind": "reasoning",
+    "text": "Flaky 1-in-5 suggests a timing race rather than a logic bug. Start by reading the spec and the component it exercises, then look for unawaited promises or state updates after navigation.",
+    "streaming": false
+   },
+   {
+    "id": "demo-claude-tool-igwr10",
+    "sessionId": "demo-claude",
+    "agent": "claude",
+    "ts": 1792969213156,
+    "kind": "tool",
+    "tool": "Read",
+    "category": "read",
+    "summary": "tests/checkout.spec.ts",
+    "status": "done",
+    "durationMs": 120,
+    "output": "…142 lines…"
+   },
+   {
+    "id": "demo-claude-tool-dp0r7n",
+    "sessionId": "demo-claude",
+    "agent": "claude",
+    "ts": 1792969214156,
+    "kind": "tool",
+    "tool": "Grep",
+    "category": "search",
+    "summary": "applyCoupon in src",
+    "status": "done",
+    "durationMs": 90,
+    "output": "src/checkout/CouponField.tsx:41\nsrc/checkout/useCart.ts:88"
+   },
+   {
+    "id": "demo-claude-assistant-nlf3ob",
+    "sessionId": "demo-claude",
+    "agent": "claude",
+    "ts": 1792969216156,
+    "kind": "assistant",
+    "text": "Found it. `applyCoupon` fires a cart refetch and the test asserts on the total **before** the refetch resolves. On a slow CI runner the stale total wins the race.\n\nThe fix is in the hook, not the test: `useCart` should return the optimistic total only after the mutation settles.",
+    "streaming": false,
+    "model": "claude-opus-5-5"
+   },
+   {
+    "id": "demo-claude-tool-7pmjlo",
+    "sessionId": "demo-claude",
+    "agent": "claude",
+    "ts": 1792969217656,
+    "kind": "tool",
+    "tool": "Edit",
+    "category": "edit",
+    "summary": "src/checkout/useCart.ts",
+    "status": "done",
+    "durationMs": 60,
+    "diff": "--- a/src/checkout/useCart.ts\n+++ b/src/checkout/useCart.ts\n@@ edit @@\n-  applyCoupon(code)\n-  refetch()\n+  await applyCoupon(code)\n+  await refetch()"
+   },
+   {
+    "id": "demo-claude-tool-kinwxd",
+    "sessionId": "demo-claude",
+    "agent": "claude",
+    "ts": 1792969219156,
+    "kind": "tool",
+    "tool": "Bash",
+    "category": "command",
+    "summary": "Run checkout tests 20 times",
+    "input": {
+     "command": "for i in $(seq 20); do npx vitest run tests/checkout.spec.ts || exit 1; done"
+    },
+    "status": "done",
+    "durationMs": 48210,
+    "exitCode": 0,
+    "output": "✓ tests/checkout.spec.ts (6 tests) ×20\n\nTest Files  20 passed\n     Tests  120 passed"
+   },
+   {
+    "id": "demo-claude-assistant-rxlke0",
+    "sessionId": "demo-claude",
+    "agent": "claude",
+    "ts": 1792969271156,
+    "kind": "assistant",
+    "text": "Fixed the race in `useCart.ts` by awaiting the coupon mutation before the refetch. 20 consecutive runs are green.\n\n- `src/checkout/useCart.ts`: await `applyCoupon` and `refetch`\n- No test changes; assertions are untouched\n\nWant me to open a PR?",
+    "streaming": false,
+    "model": "claude-opus-5-5"
+   },
+   {
+    "id": "demo-claude-result-48mocz",
+    "sessionId": "demo-claude",
+    "agent": "claude",
+    "ts": 1792969272156,
+    "kind": "result",
+    "ok": true,
+    "costUsd": 0.42,
+    "durationMs": 61200,
+    "tokensIn": 48210,
+    "tokensOut": 2210
+   }
+  ],
+  "demo-codex": [
+   {
+    "id": "demo-codex-user-6autsj",
+    "sessionId": "demo-codex",
+    "agent": "codex",
+    "ts": 1792969211156,
+    "kind": "user",
+    "text": "The checkout tests in `tests/checkout.spec.ts` fail about 1 in 5 runs on CI. Find the race and fix it without weakening the assertions."
+   },
+   {
+    "id": "demo-codex-reasoning-rkf0mx",
+    "sessionId": "demo-codex",
+    "agent": "codex",
+    "ts": 1792969212056,
+    "kind": "reasoning",
+    "text": "Reproduce first. Run the spec in a loop to confirm the flake rate, then bisect to the awaiting pattern around coupon application.",
+    "streaming": false
+   },
+   {
+    "id": "demo-codex-tool-11kfp8",
+    "sessionId": "demo-codex",
+    "agent": "codex",
+    "ts": 1792969213156,
+    "kind": "tool",
+    "tool": "shell",
+    "category": "command",
+    "summary": "npx vitest run tests/checkout.spec.ts --reporter=dot",
+    "input": {
+     "command": "npx vitest run tests/checkout.spec.ts --reporter=dot"
+    },
+    "status": "done",
+    "durationMs": 4100,
+    "exitCode": 1,
+    "output": "·····×\n\n FAIL  tests/checkout.spec.ts > applies coupon\nAssertionError: expected 84.0 to be 75.6"
+   },
+   {
+    "id": "demo-codex-assistant-47ljrp",
+    "sessionId": "demo-codex",
+    "agent": "codex",
+    "ts": 1792969215156,
+    "kind": "assistant",
+    "text": "Reproduced on the 6th run. The assertion reads the total before the cart refetch settles. I will make the test wait for the network to be idle **and** fix the hook so the UI never shows a stale total.",
+    "streaming": false,
+    "model": "gpt-6.1-sol"
+   },
+   {
+    "id": "demo-codex-tool-7gwypv",
+    "sessionId": "demo-codex",
+    "agent": "codex",
+    "ts": 1792969217156,
+    "kind": "tool",
+    "tool": "apply_patch",
+    "category": "edit",
+    "summary": "2 files",
+    "status": "running",
+    "diff": "--- update src/checkout/useCart.ts\n@@ -86,4 +86,4 @@\n-  applyCoupon(code)\n-  refetch()\n+  await applyCoupon(code)\n+  await refetch()\n--- update tests/checkout.spec.ts\n@@ -40,2 +40,3 @@\n   await user.click(apply)\n+  await waitFor(() => expect(screen.getByTestId(\"total\")).toHaveTextContent(\"75.60\"))"
+   },
+   {
+    "id": "demo-codex-approval-dpd60v",
+    "sessionId": "demo-codex",
+    "agent": "codex",
+    "ts": 1792969217656,
+    "kind": "approval",
+    "approvalKind": "file-change",
+    "title": "Codex wants to edit files",
+    "detail": "src/checkout/useCart.ts, tests/checkout.spec.ts",
+    "diff": "--- update src/checkout/useCart.ts\n@@ -86,4 +86,4 @@\n-  applyCoupon(code)\n-  refetch()\n+  await applyCoupon(code)\n+  await refetch()\n--- update tests/checkout.spec.ts\n@@ -40,2 +40,3 @@\n   await user.click(apply)\n+  await waitFor(() => expect(screen.getByTestId(\"total\")).toHaveTextContent(\"75.60\"))",
+    "options": [
+     {
+      "id": "allow",
+      "label": "Apply",
+      "tone": "primary"
+     },
+     {
+      "id": "always",
+      "label": "Apply for session"
+     },
+     {
+      "id": "deny",
+      "label": "Decline",
+      "tone": "danger"
+     }
+    ],
+    "requestRef": "7"
+   }
+  ],
+  "demo-solo": [
+   {
+    "id": "demo-solo-user-p51yiv",
+    "sessionId": "demo-solo",
+    "agent": "claude",
+    "ts": 1792969211156,
+    "kind": "user",
+    "text": "Add a dark mode toggle to the settings page that follows the system theme by default."
+   },
+   {
+    "id": "demo-solo-assistant-uh9oin",
+    "sessionId": "demo-solo",
+    "agent": "claude",
+    "ts": 1792969241156,
+    "kind": "assistant",
+    "text": "Done. I added a `ThemeToggle` to `SettingsPage` with three states (System / Light / Dark), persisted in `localStorage`, defaulting to the OS preference via `prefers-color-scheme`.",
+    "streaming": false,
+    "model": "claude-sonnet-5-5"
+   },
+   {
+    "id": "demo-solo-result-j2r3fj",
+    "sessionId": "demo-solo",
+    "agent": "claude",
+    "ts": 1792969242156,
+    "kind": "result",
+    "ok": true,
+    "costUsd": 0.11,
+    "durationMs": 31000,
+    "tokensIn": 12000,
+    "tokensOut": 900
+   }
+  ]
+ }
+}

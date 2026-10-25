@@ -1,0 +1,37 @@
+appId: app.tandem.desktop
+productName: Tandem
+copyright: Copyright © 2026 Tandem
+directories:
+  buildResources: build
+  output: release
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+asarUnpack:
+  - node_modules/node-pty/**
+npmRebuild: true
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+    - target: zip
+  icon: build/icon.png
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSAppleEventsUsageDescription: Tandem launches and coordinates your local Claude Code and Codex command-line tools.
+    LSMinimumSystemVersion: '12.0'
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  contents:
+    - x: 140
+      y: 180
+    - x: 420
+      y: 180
+      type: link
+      path: /Applications
+publish: null

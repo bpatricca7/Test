@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15181f"/>
+      <stop offset="1" stop-color="#0a0c11"/>
+    </linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff9a6c"/>
+      <stop offset="1" stop-color="#d97757"/>
+    </linearGradient>
+    <linearGradient id="cool" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#10a37f"/>
+      <stop offset="1" stop-color="#6ee7c8"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="28" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="228" fill="url(#bg)"/>
+  <rect x="2" y="2" width="1020" height="1020" rx="226" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>
+  <!-- two interlocking strokes: warm (Claude) + cool (Codex) -->
+  <g filter="url(#glow)" fill="none" stroke-linecap="round" stroke-width="92">
+    <path d="M 300 330 C 300 230, 440 230, 480 330 L 520 430 C 560 530, 700 530, 700 430" stroke="url(#warm)"/>
+    <path d="M 724 694 C 724 794, 584 794, 544 694 L 504 594 C 464 494, 324 494, 324 594" stroke="url(#cool)"/>
+  </g>
+  <circle cx="300" cy="330" r="34" fill="#ffd2bd"/>
+  <circle cx="724" cy="694" r="34" fill="#c7fff0"/>
+</svg>

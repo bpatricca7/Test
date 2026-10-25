@@ -1,0 +1,9 @@
+node_modules/
+out/
+release/
+dist/
+*.log
+.DS_Store
+e2e/shots/
+build/icon.icns
+.tandem-license-private.pem
