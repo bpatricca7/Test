@@ -7,3 +7,4 @@ dist/
 e2e/shots/
 build/icon.icns
 .tandem-license-private.pem
+*.tsbuildinfo
