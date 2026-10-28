@@ -14,10 +14,10 @@ export function SettingsView(): React.JSX.Element {
   const appInfo = useStore((s) => s.appInfo)
   const [key, setKey] = useState('')
   const [msg, setMsg] = useState<string | undefined>()
-  if (!settings) return <div className="main" />
+  if (!settings) return <div className="main" style={{ flex: 1 }} />
   return (
-    <div className="main">
-      <div className="topbar titlebar-drag">
+    <div className="main" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+      <div className="titlebar titlebar-drag">
         <div className="crumbs">
           <span className="crumb strong">Settings</span>
         </div>

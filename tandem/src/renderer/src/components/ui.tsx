@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import type { AgentKind } from '@shared/types'
 import { Check, ChevronDown } from 'lucide-react'
 
-export function AgentAvatar({ agent, size = 26 }: { agent: AgentKind; size?: number }): React.JSX.Element {
+export function AgentAvatar({ agent, size = 26, live }: { agent: AgentKind; size?: number; live?: boolean }): React.JSX.Element {
   return (
-    <div className={`avatar ${agent}`} style={{ width: size, height: size, fontSize: size * 0.42 }} title={agent === 'claude' ? 'Claude Code' : 'Codex'}>
+    <div className={`avatar ${agent} ${live ? 'live' : ''}`} style={{ width: size, height: size, fontSize: size * 0.42 }} title={agent === 'claude' ? 'Claude Code' : 'Codex'}>
       {agent === 'claude' ? 'C' : 'X'}
     </div>
   )

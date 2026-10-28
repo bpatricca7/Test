@@ -48,6 +48,8 @@ interface State {
   newSessionOpen: boolean
   newSessionTarget: Target
   busy: Record<string, boolean>
+  paletteOpen: boolean
+  sessionsCollapsed: boolean
 
   init(): Promise<void>
   applyEvent(ev: TimelineEvent): void
@@ -78,6 +80,8 @@ interface State {
   updateSettings(patch: Partial<Settings>): Promise<void>
   activateLicense(key: string): Promise<LicenseState>
   toast(level: Toast['level'], text: string): void
+  setPalette(open: boolean): void
+  toggleSessions(): void
   dismissToast(id: string): void
   pairOf(sessionId: string): SessionMeta[]
 }
@@ -110,6 +114,8 @@ export const useStore = create<State>((set, get) => ({
   newSessionOpen: false,
   newSessionTarget: 'claude',
   busy: {},
+  paletteOpen: false,
+  sessionsCollapsed: false,
 
   async init() {
     const [appInfo, settings, license, accounts, sessions, terminals] = await Promise.all([
@@ -355,6 +361,12 @@ export const useStore = create<State>((set, get) => ({
   },
   dismissToast(id) {
     set({ toasts: get().toasts.filter((t) => t.id !== id) })
+  },
+  setPalette(open) {
+    set({ paletteOpen: open })
+  },
+  toggleSessions() {
+    set({ sessionsCollapsed: !get().sessionsCollapsed })
   },
 
   pairOf(sessionId) {

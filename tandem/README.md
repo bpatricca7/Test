@@ -7,6 +7,8 @@ Tandem is a one-time purchase that makes them work as a team.
 
 ![home](docs/01-home.png)
 
+![split](docs/02-session-split.png)
+
 ## What it does
 
 | Capability | Claude Code | Codex |
@@ -31,6 +33,27 @@ Plus:
 - **Embedded terminal.** Open the raw `claude` or `codex` TUI in a tab when you want the native experience (and for Claude computer use, which the CLI only offers interactively).
 - **Session history** persisted locally, with cost, token and context meters.
 - **Offline licensing.** Ed25519-signed keys, 14-day trial, no server, no telemetry.
+
+## Design
+
+The UI borrows the parts of the current agent apps that work and sharpens them:
+
+- **Rail + sessions + dock**, like Claude Code Desktop and the Codex app: an icon rail with account
+  usage rings, a collapsible sessions column with agent ribbons, and a right dock for the in-app
+  browser and terminal. ⌘\ collapses the sessions column.
+- **Activity groups**: consecutive tool calls fold into one card ("Worked · 1 edit, 1 command ·
+  48s") with expandable rows, so a 40-step run reads as a short story instead of a log.
+- **Autonomy as a segmented control** in the title bar (Plan · Ask · Auto-edit · Full auto),
+  the agentic-UX pattern of making the permission spectrum visible rather than buried.
+- **Approval cards that demand attention**: an animated conic highlight, "Needs you" label and a
+  deny-with-reason field, and a status-bar counter when any session is waiting.
+- **Command palette** (⌘K) for sessions, panes, theme and hand-off; a monospaced status bar with
+  live agent state, context and cost.
+- **Type**: Geist Sans for UI and Geist Mono for paths, refs and numbers (bundled, OFL). Layered
+  graphite surfaces with inset highlights, grain, and the warm/cool dual accent; glass only on
+  floating layers. Equally finished light theme.
+
+Screenshots in `docs/` are produced by `node e2e/screenshot.mjs --demo`.
 
 ## How it talks to the CLIs
 

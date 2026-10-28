@@ -1,7 +1,10 @@
 import React, { useEffect } from 'react'
 import { AlertTriangle, Info, XCircle } from 'lucide-react'
 import { useStore } from './store'
-import { Sidebar } from './components/Sidebar'
+import { Rail } from './components/Rail'
+import { SessionsPanel } from './components/SessionsPanel'
+import { StatusBar } from './components/StatusBar'
+import { CommandPalette } from './components/CommandPalette'
 import { Home } from './components/Home'
 import { Workspace } from './components/Workspace'
 import { SettingsView } from './components/Settings'
@@ -28,9 +31,7 @@ function LicenseBanner(): React.JSX.Element | null {
   if (!license || license.status === 'licensed') return null
   return (
     <div className="banner">
-      <span className="grow">
-        {license.status === 'trial' ? `Trial · ${license.trialDaysLeft} day${license.trialDaysLeft === 1 ? '' : 's'} left. Buy once, own it forever.` : license.message}
-      </span>
+      <span className="grow">{license.status === 'trial' ? `Trial · ${license.trialDaysLeft} day${license.trialDaysLeft === 1 ? '' : 's'} left. Buy once, own it forever.` : license.message}</span>
       <button type="button" className="btn xs" onClick={openSettings}>
         Enter license key
       </button>
@@ -61,47 +62,61 @@ export function App(): React.JSX.Element {
   const init = useStore((s) => s.init)
   const view = useStore((s) => s.view)
   const activeId = useStore((s) => s.activeId)
-  const openNewSession = useStore((s) => s.openNewSession)
-  const toggleTerminal = useStore((s) => s.toggleTerminalPane)
+  const sessionsCollapsed = useStore((s) => s.sessionsCollapsed)
   useEffect(() => {
     void init()
   }, [])
   useEffect(() => {
     const h = (e: KeyboardEvent): void => {
       const mod = e.metaKey || e.ctrlKey
-      if (mod && e.key.toLowerCase() === 'n') {
+      if (!mod) return
+      const st = useStore.getState()
+      const k = e.key.toLowerCase()
+      if (k === 'n') {
         e.preventDefault()
-        openNewSession()
-      }
-      if (mod && e.key === '`') {
+        st.openNewSession()
+      } else if (k === 'k') {
         e.preventDefault()
-        toggleTerminal()
-      }
-      if (mod && e.key.toLowerCase() === 'b') {
+        st.setPalette(!st.paletteOpen)
+      } else if (e.key === '`') {
         e.preventDefault()
-        const st = useStore.getState()
+        st.toggleTerminalPane()
+      } else if (k === 'b' && !e.shiftKey) {
+        e.preventDefault()
         void (st.browserOpen ? st.closeBrowser() : st.openBrowser())
-      }
-      if (mod && e.key === ',') {
+      } else if (e.key === '\\') {
         e.preventDefault()
-        useStore.getState().openSettings()
+        st.toggleSessions()
+      } else if (e.key === ',') {
+        e.preventDefault()
+        st.openSettings()
       }
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
   }, [])
-  if (!booted) return <div className="ambient" />
+  if (!booted)
+    return (
+      <div className="ambient">
+        <div className="grain" />
+      </div>
+    )
   return (
     <>
-      <div className="ambient" />
-      <div className="app">
-        <Sidebar />
-        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
+      <div className="ambient">
+        <div className="grain" />
+      </div>
+      <div className={`app ${sessionsCollapsed ? 'sessions-collapsed' : ''}`}>
+        <Rail />
+        <SessionsPanel />
+        <div className="main-col">
           <LicenseBanner />
           {view === 'settings' ? <SettingsView /> : view === 'session' && activeId ? <Workspace sessionId={activeId} /> : <Home />}
         </div>
+        <StatusBar />
       </div>
       <NewSessionDialog />
+      <CommandPalette />
       <ExpiredGate />
       <Toasts />
     </>

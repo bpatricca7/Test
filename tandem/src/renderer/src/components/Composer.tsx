@@ -1,16 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { AgentKind, PolicyMode, SessionMeta } from '@shared/types'
-import { POLICY_LABEL } from '@shared/types'
-import { ArrowUp, AppWindow, Compass, Globe, ImagePlus, Monitor, Square, TerminalSquare, Shield, Cpu, Gauge } from 'lucide-react'
+import type { AgentKind, SessionMeta } from '@shared/types'
+import { ArrowUp, AppWindow, Compass, Globe, ImagePlus, Monitor, Square, TerminalSquare, Cpu, Gauge } from 'lucide-react'
 import { useStore } from '../store'
 import { Dropdown } from './ui'
-
-const POLICIES: { value: PolicyMode; label: string; description: string }[] = [
-  { value: 'ask', label: POLICY_LABEL.ask, description: 'Prompt before commands, edits outside scope and risky actions' },
-  { value: 'auto-edit', label: POLICY_LABEL['auto-edit'], description: 'Edits apply without asking; commands still prompt' },
-  { value: 'full-auto', label: POLICY_LABEL['full-auto'], description: 'No prompts, no sandbox. Only for work you trust completely' },
-  { value: 'plan', label: POLICY_LABEL.plan, description: 'Read-only exploration and planning' }
-]
 
 export function Composer({ sessions, primary }: { sessions: SessionMeta[]; primary: SessionMeta }): React.JSX.Element {
   const [text, setText] = useState('')
@@ -18,7 +10,6 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
   const ta = useRef<HTMLTextAreaElement>(null)
   const sendToPair = useStore((s) => s.sendToPair)
   const interrupt = useStore((s) => s.interrupt)
-  const setPolicy = useStore((s) => s.setPolicy)
   const setModel = useStore((s) => s.setModel)
   const setCapabilities = useStore((s) => s.setCapabilities)
   const models = useStore((s) => s.models)
@@ -50,41 +41,35 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
     setImages([])
   }
 
-  const onPaste = (e: React.ClipboardEvent): void => {
-    const files = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/'))
-    if (!files.length) return
-    e.preventDefault()
+  const addFiles = (files: File[]): void => {
     for (const f of files) {
       const r = new FileReader()
       r.onload = () => setImages((prev) => [...prev, String(r.result)])
       r.readAsDataURL(f)
     }
   }
-
+  const onPaste = (e: React.ClipboardEvent): void => {
+    const files = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/'))
+    if (!files.length) return
+    e.preventDefault()
+    addFiles(files)
+  }
   const pickImage = (): void => {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
     input.multiple = true
-    input.onchange = () => {
-      for (const f of [...(input.files ?? [])]) {
-        const r = new FileReader()
-        r.onload = () => setImages((prev) => [...prev, String(r.result)])
-        r.readAsDataURL(f)
-      }
-    }
+    input.onchange = () => addFiles([...(input.files ?? [])])
     input.click()
   }
 
   const toggleCap = (s: SessionMeta, key: 'computerUse' | 'browserUse' | 'webAccess' | 'inAppBrowser'): void => {
     const next = !s.capabilities[key]
+    const acct = accounts[s.agent]
     if (key === 'computerUse' && next) {
-      const acct = accounts[s.agent]
-      if (!acct.computerUseAvailable) {
-        toast('warn', acct.computerUseNote ?? 'Computer use is not available for this agent here.')
-      }
+      if (!acct.computerUseAvailable) toast('warn', acct.computerUseNote ?? 'Computer use is not available for this agent here.')
       if (s.agent === 'claude') {
-        toast('info', 'Claude computer use runs in an interactive session. Opening a Claude terminal for this project with computer-use enabled; type your task there.')
+        toast('info', 'Claude computer use runs in an interactive session. Opening a Claude terminal with computer-use enabled; type your task there.')
         void openTerminal({ title: `Claude · ${s.title}`, cwd: s.cwd, agent: 'claude', purpose: 'claude-interactive', model: s.model, policy: s.policy, computerUse: true } as never)
       }
     }
@@ -92,10 +77,7 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
       void openBrowser()
       toast('info', `${s.agent === 'claude' ? 'Claude' : 'Codex'} gets the Tandem browser tools on the next message.`)
     }
-    if (key === 'browserUse' && next) {
-      const acct = accounts[s.agent]
-      toast('info', acct.browserUseNote ?? (s.agent === 'claude' ? 'Claude in Chrome tools load on the next message.' : 'Codex gets Chrome DevTools browser tools on the next turn.'))
-    }
+    if (key === 'browserUse' && next) toast('info', acct.browserUseNote ?? 'Browser tools load on the next message.')
     void setCapabilities(s.id, { [key]: next })
   }
 
@@ -106,18 +88,18 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
 
   return (
     <div className="composer">
-      <div className={`composer-box ${isPair ? '' : primary.agent}`}>
+      <div className={`composer-card ${isPair ? '' : primary.agent} ${running ? 'running' : ''}`}>
         {images.length > 0 && (
           <div className="attach-strip">
             {images.map((src, i) => (
-              <img key={i} src={src} alt="" onClick={() => setImages(images.filter((_, j) => j !== i))} title="Remove" style={{ cursor: 'pointer' }} />
+              <img key={i} src={src} alt="" onClick={() => setImages(images.filter((_, j) => j !== i))} title="Remove" />
             ))}
           </div>
         )}
         <textarea
           ref={ta}
           value={text}
-          placeholder={isPair ? 'Message both Claude Code and Codex…' : primary.agent === 'claude' ? 'Message Claude Code…' : 'Message Codex…'}
+          placeholder={isPair ? 'Brief both agents…' : primary.agent === 'claude' ? 'Brief Claude Code…' : 'Brief Codex…'}
           onChange={(e) => setText(e.target.value)}
           onPaste={onPaste}
           onKeyDown={(e) => {
@@ -129,16 +111,6 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
           rows={1}
         />
         <div className="composer-row">
-          <Dropdown
-            value={primary.policy}
-            options={POLICIES}
-            onChange={(p) => void setPolicy(primary.id, p, true)}
-            renderLabel={(o) => (
-              <>
-                <Shield size={13} /> {o?.label}
-              </>
-            )}
-          />
           {sessions.map((s) => {
             const list = models[s.agent]
             const opts = list.map((m) => ({ value: m.id, label: m.label, description: m.description }))
@@ -173,40 +145,49 @@ export function Composer({ sessions, primary }: { sessions: SessionMeta[]; prima
           })}
           <span className="grow" />
           {sessions.map((s) => (
-            <React.Fragment key={s.id}>
-              <button type="button" className={`chip ${s.capabilities.computerUse ? 'on' : ''}`} title={`${s.agent === 'claude' ? 'Claude' : 'Codex'} computer use: let it see and control your screen (macOS)`} onClick={() => toggleCap(s, 'computerUse')}>
-                <Monitor size={12} /> {isPair ? (s.agent === 'claude' ? 'C' : 'X') + ' ' : ''}Computer
+            <span className="caps" key={s.id} title={isPair ? (s.agent === 'claude' ? 'Claude capabilities' : 'Codex capabilities') : undefined}>
+              {isPair && <span className={`agent-dot ${s.agent}`} style={{ alignSelf: 'center', margin: '0 4px 0 6px' }} />}
+              <button type="button" className={`icon-btn ${s.capabilities.inAppBrowser ? 'on' : ''}`} title="Tandem browser: a browser pane inside this window that the agent can drive" onClick={() => toggleCap(s, 'inAppBrowser')}>
+                <AppWindow size={15} />
               </button>
-              <button type="button" className={`chip ${s.capabilities.inAppBrowser ? 'on' : ''}`} title="Tandem browser: a browser pane inside this window that the agent can drive" onClick={() => toggleCap(s, 'inAppBrowser')}>
-                <AppWindow size={12} /> {isPair ? (s.agent === 'claude' ? 'C' : 'X') + ' ' : ''}Tandem browser
+              <button type="button" className={`icon-btn ${s.capabilities.browserUse ? 'on' : ''}`} title={s.agent === 'claude' ? 'Your Chrome, via the Claude in Chrome extension' : 'External Chrome via a Chrome DevTools bridge'} onClick={() => toggleCap(s, 'browserUse')}>
+                <Compass size={15} />
               </button>
-              <button type="button" className={`chip ${s.capabilities.browserUse ? 'on' : ''}`} title={s.agent === 'claude' ? 'Claude in Chrome (your Chrome, with the extension)' : 'Chrome DevTools bridge (external Chrome)'} onClick={() => toggleCap(s, 'browserUse')}>
-                <Compass size={12} /> {isPair ? (s.agent === 'claude' ? 'C' : 'X') + ' ' : ''}Chrome
+              <button type="button" className={`icon-btn ${s.capabilities.computerUse ? 'on warm' : ''}`} title="Computer use: see and control the screen (macOS)" onClick={() => toggleCap(s, 'computerUse')}>
+                <Monitor size={15} />
               </button>
-              <button type="button" className={`chip ${s.capabilities.webAccess ? 'on' : ''}`} title="Web access / network" onClick={() => toggleCap(s, 'webAccess')}>
-                <Globe size={12} />
+              <button type="button" className={`icon-btn ${s.capabilities.webAccess ? 'on' : ''}`} title="Web access / network" onClick={() => toggleCap(s, 'webAccess')}>
+                <Globe size={15} />
               </button>
-            </React.Fragment>
+            </span>
           ))}
-          <button type="button" className="icon-btn" title="Open interactive CLI in terminal" onClick={() => openCli(primary.agent)}>
+          <button type="button" className="icon-btn" title="Open the interactive CLI in a terminal" onClick={() => openCli(primary.agent)}>
             <TerminalSquare size={16} />
           </button>
           <button type="button" className="icon-btn" title="Attach image" onClick={pickImage}>
             <ImagePlus size={16} />
           </button>
           {running || waiting ? (
-            <button type="button" className="btn sm danger" onClick={() => sessions.forEach((s) => void interrupt(s.id))} title="Stop">
-              <Square size={12} /> Stop
+            <button type="button" className="send stop" onClick={() => sessions.forEach((s) => void interrupt(s.id))} title="Stop">
+              <Square size={13} />
             </button>
           ) : (
-            <button type="button" className="btn sm primary" onClick={send} disabled={!text.trim() && !images.length} title="Send (Enter)">
-              <ArrowUp size={14} />
+            <button type="button" className="send" onClick={send} disabled={!text.trim() && !images.length} title="Send (Enter)">
+              <ArrowUp size={16} />
             </button>
           )}
         </div>
       </div>
-      <div className="hint" style={{ textAlign: 'center', marginTop: 6 }}>
-        <span className="kbd">Enter</span> send · <span className="kbd">Shift</span>+<span className="kbd">Enter</span> newline · paste images · {isPair ? 'messages go to both agents' : `policy & model apply to this ${primary.agent === 'claude' ? 'Claude' : 'Codex'} session`}
+      <div className="hint">
+        <span>
+          <span className="kbd">↵</span> send
+        </span>
+        <span>
+          <span className="kbd">⇧</span>
+          <span className="kbd">↵</span> newline
+        </span>
+        <span>paste images</span>
+        <span>{isPair ? 'goes to both agents' : `${primary.agent === 'claude' ? 'Claude' : 'Codex'} · ${primary.model ?? 'default model'}`}</span>
       </div>
     </div>
   )
