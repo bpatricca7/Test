@@ -143,7 +143,9 @@ export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate:
       cores.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: Math.min(2.2, b.box.w * 0.18), h: b.floorHeight, d: Math.min(2.2, b.box.d * 0.18), color: '#565656' });
       cages.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: b.box.w, h: b.floorHeight - 0.05, d: b.box.d, color: ACCENT });
     }
-    const pm = instanced(unit, interiorLit('int-floor', { color: '#ffffff' }, 0.9), patches, 'int-floors');
+    // finish patches out-offset the grounds pad of the building's own lot (polygonOffset -1/-2), which otherwise wins
+    // the depth test over the ground floor and hides its finishes inside the building
+    const pm = instanced(unit, interiorLit('int-floor', { color: '#ffffff', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }, 0.9), patches, 'int-floors');
     pm.receiveShadow = true;
     const rm = instanced(unit, std('int-rest', { color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.12, roughness: 0.6 }), rest, 'int-rest');
     const cm = instanced(unit, interiorLit('int-core', { color: '#ffffff' }, 0.6), cores, 'int-core');

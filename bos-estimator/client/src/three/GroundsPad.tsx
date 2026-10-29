@@ -41,8 +41,8 @@ export const GroundsPads = memo(function GroundsPads() {
   const batches = useMemo(() => {
     if (!layout) return [] as KindBatch[];
     // one batch per kind and attachment: site-wide areas never carry building shadows, so they always use the
-    // cheap unlit material; pads on building lots receive shadows in the High tier and, in every tier, take the
-    // scene's light alone (no night floor), so they go dark at night like the lot they cover
+    // cheap unlit material; pads on building lots receive shadows in the High tier and, in every tier, keep no night
+    // floor on their face (only on the rim), so their turf goes dark at night like the lot it covers
     const byKind = new Map<string, ZonePlacement[]>();
     for (const z of layout.zones) { const k = `${z.kind}|${z.facilityId ? 'a' : 'l'}`; const a = byKind.get(k) ?? []; a.push(z); byKind.set(k, a); }
     const out: KindBatch[] = [];

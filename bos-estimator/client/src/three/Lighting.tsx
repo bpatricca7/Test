@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { useStore } from '../store';
 import { useDerived } from '../derived';
 import { clock } from './clock';
-import { fieldUniforms, flatLight, groundColor, groundMaterial, groundUniforms, padFloor, padLight, padNight, sitePalette } from './assets';
+import { fieldUniforms, flatLight, groundColor, groundMaterial, groundUniforms, padFloor, padNight, sitePalette } from './assets';
 import { rt } from './runtime';
 
 /**
@@ -181,8 +181,7 @@ export function Lighting() {
     if (sun.current) { const k = Math.max(0, dir.y) * sun.current.intensity; c.r += sun.current.color.r * k; c.g += sun.current.color.g * k; c.b += sun.current.color.b * k; }
     if (moon.current && moon.current.intensity > 0) { const md = fl.m.copy(moon.current.position).sub(moon.current.target.position).normalize(); const k = Math.max(0, md.y) * moon.current.intensity; c.r += moon.current.color.r * k; c.g += moon.current.color.g * k; c.b += moon.current.color.b * k; }
     flatLight.value.setRGB(c.r / Math.PI, c.g / Math.PI, c.b / Math.PI);
-    // the site-wide grounds areas' night floor (pads on a lot take the scene's light alone)
-    padFloor.value = night * 0.2; padLight.value.copy(flatLight.value).addScalar(padFloor.value); padNight.value = night * 0.3;
+    padFloor.value = night * 0.2; padNight.value = night * 0.3;
     sitePalette.exposure = flatLight.value.r * 0.2126 + flatLight.value.g * 0.7152 + flatLight.value.b * 0.0722;
     // dimmed buildings sink toward the board (as an albedo under the current light)
     fieldUniforms.uGround.value.copy(P.board).multiplyScalar(1 / Math.max(0.05, sitePalette.exposure));

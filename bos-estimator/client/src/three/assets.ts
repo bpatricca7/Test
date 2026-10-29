@@ -158,16 +158,16 @@ export const std = (key: string, p: THREE.MeshLambertMaterialParameters & { roug
  */
 export const flatLight = { value: new THREE.Color(1, 1, 1) };
 /**
- * Site-wide grounds areas sit straight on the night board, so after dark they keep a little of their own colour: padFloor
- * (written by Lighting, 0.2 × the night factor) on top of the scene's light; padLight is their Fast-tier light, flatLight +
- * padFloor, at no per-pixel cost. Pads on a building lot take no floor: they are lit like the lot they cover, so they go
- * dark with the rest of the campus (a floor there turns the turf around an Inside building into a sunlit lawn at night).
- * padNight is the strength of the faint night rim (every pad).
+ * After dark a grounds pad keeps a little of its own colour on top of the scene's light: padFloor (written by Lighting,
+ * 0.2 × the night factor) × the pad's colour, added by the pad shader in both tiers. A site-wide area takes it over its
+ * whole face, so the large unimproved areas still read on the night board; a pad on a building lot only on its rim (the
+ * hairline and the hover / selection / "just found" highlight): its turf is lit like the lot it covers and goes dark with
+ * the rest of the campus. padNight is the strength of the faint night rim of every pad.
  */
-export const padLight = { value: new THREE.Color(1, 1, 1) };
 export const padFloor = { value: 0 };
 export const padNight = { value: 0 };
-const noPadFloor = { value: 0 };
+/** uPadFace: how much of the night floor a pad's face takes (1 site-wide area, 0 pad on a lot) */
+const PAD_FACE_FLOOR = { value: 1 }, LOT_FACE_FLOOR = { value: 0 };
 
 type Patch = (sh: THREE.WebGLProgramParametersWithUniforms) => void;
 /** Flat-surface material: Lambert (receives shadows) in High, unlit × flatLight in Fast. */
@@ -402,8 +402,8 @@ export function groundMaterial(fast: boolean, contours = false): THREE.MeshBasic
 /**
  * Grounds pad material per kind: shared pattern, per-instance UV scale and highlight state. The rim is a 1 px
  * hairline of the pad's own turf tint; selection draws it acid, "just found" white (never the selection's acid,
- * never blue), hover lifts it. `lot`: a pad on a building lot, lit by the scene's light alone (no night floor, see
- * padFloor); the same shader either way, only the light uniforms it binds differ.
+ * never blue), hover lifts it. `lot`: a pad on a building lot, whose face takes no night floor (see padFloor); the
+ * same shader either way, only a uniform differs.
  */
 export function padMaterial(kind: GroundsKind, color: string, fast: boolean, border = color, lot = false): THREE.MeshBasicMaterial | THREE.MeshLambertMaterial {
   return surfaceMat(`pad-${kind}${lot ? '-lot' : ''}`, fast, { color, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }, (sh) => {
@@ -412,17 +412,17 @@ export function padMaterial(kind: GroundsKind, color: string, fast: boolean, bor
     sh.uniforms.uPadLayer = { value: Math.max(0, PAD_KINDS.indexOf(kind)) };
     sh.uniforms.uTime = fieldUniforms.uTime;
     sh.uniforms.uSel = fieldUniforms.uSel;
-    sh.uniforms.uFlatLight = lot ? flatLight : padLight;
-    sh.uniforms.uPadFloor = lot ? noPadFloor : padFloor;
+    sh.uniforms.uPadFloor = padFloor;
+    sh.uniforms.uPadFace = lot ? LOT_FACE_FLOOR : PAD_FACE_FLOOR;
     sh.uniforms.uPadNight = padNight;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec2 aUvScale; attribute float aPadState; varying float vPadState; varying vec2 vPadUv; varying vec2 vPadMapUv;')
       .replace('#include <uv_vertex>', '#include <uv_vertex>\nvPadState = aPadState; vPadUv = uv; vPadMapUv = uv * aUvScale;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform vec3 uZone; uniform vec3 uSel; uniform float uTime; uniform float uPadFloor; uniform float uPadNight; uniform highp sampler2DArray uPadTex; uniform float uPadLayer; varying float vPadState; varying vec2 vPadUv; varying vec2 vPadMapUv;')
+      .replace('#include <common>', '#include <common>\nuniform vec3 uZone; uniform vec3 uSel; uniform float uTime; uniform float uPadFloor; uniform float uPadFace; uniform float uPadNight; uniform highp sampler2DArray uPadTex; uniform float uPadLayer; varying float vPadState; varying vec2 vPadUv; varying vec2 vPadMapUv;')
       .replace('#include <map_fragment>', '#include <map_fragment>\ndiffuseColor *= texture(uPadTex, vec3(vPadMapUv, uPadLayer));')
       .replace('#include <color_fragment>', `#include <color_fragment>
-        float padEdge = 0.0;
+        float padEdge = 0.0; vec3 padGlow;
         {
           vec2 fw = max(fwidth(vPadUv), vec2(1e-5));
           vec2 dpx = min(vPadUv, 1.0 - vPadUv) / fw;
@@ -436,11 +436,12 @@ export function padMaterial(kind: GroundsKind, color: string, fast: boolean, bor
           else if (vPadState > 3.5) { float pulse = 0.75 + 0.25 * sin(uTime * 6.0); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), 0.10 * pulse); border = vec3(1.0); bk = wide * 0.9 * pulse; }
           diffuseColor.rgb = mix(diffuseColor.rgb, border, bk);
           padEdge = edge;
+          // what keeps the night floor: the whole colour of a site-wide area, only the rim's share of it on a lot pad
+          padGlow = mix(border * bk, diffuseColor.rgb, uPadFace);
         }`)
-      // after dark a site-wide area keeps a little of its own colour (Fast: padLight; lit: this emissive, zero on a
-      // lot pad) and every pad a faint rim of its tint, so the large unimproved areas still read on the night board
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * uPadFloor;')
-      .replace('#include <opaque_fragment>', '#include <opaque_fragment>\ngl_FragColor.rgb += uZone * (padEdge * uPadNight);');
+      // after dark (padFloor) a pad keeps a little of its own colour on top of the scene's light, the same term in
+      // both tiers (see padFloor), and every pad a faint rim of its tint (padNight)
+      .replace('#include <opaque_fragment>', '#include <opaque_fragment>\ngl_FragColor.rgb += padGlow * uPadFloor + uZone * (padEdge * uPadNight);');
   }, 'pad-instanced');
 }
 
