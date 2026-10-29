@@ -1,6 +1,6 @@
 // Grounds pads (UI spec §9.6): one instanced mesh per grounds kind with the shared kind texture (UVs scaled per
 // zone to w/5 × d/5), a crisp 1 px border in the shader, highlight state per instance and no Html.
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { GroundsKind } from '@shared/types';
@@ -9,12 +9,15 @@ import { useDerived } from '../derived';
 import { ZONE_COLORS, type ZonePlacement } from './layout';
 import { padMaterial } from './assets';
 import { hoverFromScene } from './hover';
+import { rt } from './runtime';
 
 const m4 = new THREE.Matrix4();
 const q0 = new THREE.Quaternion();
 const v0 = new THREE.Vector3();
 const s0 = new THREE.Vector3();
 const PAD = { normal: 0, hover: 1, selected: 2, dim: 3, recent: 4 } as const;
+/** a pad found by the reader flashes white this long (the same window as a building's "just found" edge) */
+const RECENT_MS = 2500;
 
 /** ZONE_COLORS desaturated 15% */
 export const padColor = (k: GroundsKind) => { const c = new THREE.Color(ZONE_COLORS[k]); const hsl = { h: 0, s: 0, l: 0 }; c.getHSL(hsl); c.setHSL(hsl.h, hsl.s * 0.85, hsl.l); return `#${c.getHexString()}`; };
@@ -31,6 +34,8 @@ export const GroundsPads = memo(function GroundsPads() {
   const focusMode = useStore((s) => s.focusMode);
   const buildingTab = useStore((s) => s.buildingTab);
   const recentIds = useStore((s) => s.extraction.recentIds);
+  const recentAt = useStore((s) => s.extraction.recent);
+  const [tick, setTick] = useState(0);
   const fast = useStore((s) => s.quality) !== 'high';
 
   const batches = useMemo(() => {
@@ -65,7 +70,11 @@ export const GroundsPads = memo(function GroundsPads() {
   useEffect(() => {
     const selId = selection.kind === 'grounds' ? selection.id : null;
     const parent = selection.kind === 'facility' && focusMode === 'building' && buildingTab === 'grounds' ? selection.id : null;
-    const recent = new Set(recentIds ?? []);
+    // "just found" is a short flash, not a state that lingers after the read (it used to keep a cyan rim for good)
+    const now = Date.now();
+    let nextExpiry = Infinity;
+    const recent = new Set<string>();
+    for (const id of recentIds ?? []) { const t = recentAt?.[id]; if (t != null && now - t < RECENT_MS) { recent.add(id); nextExpiry = Math.min(nextExpiry, t + RECENT_MS); } }
     for (const b of batches) {
       b.zones.forEach((z, i) => {
         let st: number = PAD.normal;
@@ -78,7 +87,11 @@ export const GroundsPads = memo(function GroundsPads() {
       b.state.needsUpdate = true;
     }
     invalidate();
-  }, [batches, selection, hoverId, filterIds, focusMode, buildingTab, recentIds, invalidate]);
+    if (!recent.size) { rt.animating.delete('pad-recent'); return; }
+    rt.animating.add('pad-recent');
+    const timer = setTimeout(() => { rt.animating.delete('pad-recent'); setTick((x) => x + 1); invalidate(); }, Math.max(50, nextExpiry - now + 20));
+    return () => { clearTimeout(timer); rt.animating.delete('pad-recent'); };
+  }, [batches, selection, hoverId, filterIds, focusMode, buildingTab, recentIds, recentAt, tick, invalidate]);
 
   const idOf = (e: ThreeEvent<PointerEvent | MouseEvent>) => { const ids = (e.object as THREE.InstancedMesh).userData.ids as string[] | undefined; return e.instanceId != null && ids ? ids[e.instanceId] : null; };
   const onMove = (e: ThreeEvent<PointerEvent>) => { const id = idOf(e); if (!id) return; e.stopPropagation(); hoverFromScene(id); };

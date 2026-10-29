@@ -2,7 +2,7 @@
 // result row, previous-award form in two columns, assumption rows with lock icons, waterfall, rationale, stale badge),
 // D manning per contract year, E estimating assumptions, F site. Every number comes from useDerived() and
 // useTopDownLive(), so the top bar and this tab cannot disagree (A11).
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { History, Lock, LockOpen, RefreshCw, Sparkles } from 'lucide-react';
 import { useStore } from '../../store';
 import { useDerived, useTopDownLive, type TopDownLive } from '../../derived';
@@ -230,7 +230,7 @@ function CrossCheck({ est, live }: { est: EstimateResult | null; live: TopDownLi
           return (
             <div key={sl.key} className={cx('est__slider', locked && 'is-locked')}>
               <span className="lbl" title={sl.label}>{sl.label}</span>
-              <input type="range" min={sl.min} max={sl.max} step={sl.step} value={v} aria-label={sl.label} onChange={(e) => setOverride(sl.key, Number(e.target.value) as never)} />
+              <input type="range" min={sl.min} max={sl.max} step={sl.step} value={v} aria-label={sl.label} style={{ '--p': `${Math.max(0, Math.min(100, ((v - sl.min) / ((sl.max - sl.min) || 1)) * 100))}%` } as CSSProperties} onChange={(e) => setOverride(sl.key, Number(e.target.value) as never)} />
               <NumField size="sm" value={v} kind={sl.pct ? 'percent' : 'number'} decimals={sl.decimals} suffix={sl.suffix} aria-label={`${sl.label} value`} rule={{ min: 0 }} onCommit={(x) => setOverride(sl.key, (x ?? undefined) as never)} wrapClassName="num" />
               <IconButton size="sm" icon={locked ? Lock : LockOpen} className={cx('est__lock', locked && 'is-locked')} pressed={locked}
                 label={locked ? `${sl.label} is locked; click to use the reader's value` : `Lock ${sl.label} at this value`}

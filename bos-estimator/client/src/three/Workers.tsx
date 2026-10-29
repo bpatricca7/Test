@@ -42,7 +42,7 @@ const crewBodyMaterial = () => mat('crew-body', () => {
       .replace('#include <common>', '#include <common>\nuniform float uNight;')
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         #if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )
-          totalEmissiveRadiance += vColor.rgb * uNight * 0.6;
+          totalEmissiveRadiance += vColor.rgb * uNight * 1.5; // after dark the crews are points of their own light
         #endif`);
   };
   m.customProgramCacheKey = () => 'crew-body-glow';
@@ -159,6 +159,11 @@ export function Workers() {
   const ghostState = useMemo(() => ({ prev: new Set<string>() }), []);
   useEffect(() => { meshes.proxy.userData.hist = hist; }, [meshes, hist]);
   useFrame(() => {
+    // after dark the crew rings, x-ray figures and distant dots burn brighter (above the bloom threshold)
+    const nf = fieldUniforms.uNight.value;
+    (meshes.ring.material as THREE.MeshBasicMaterial).color.setScalar(1 + nf * 0.9);
+    (meshes.xbody.material as THREE.MeshBasicMaterial).color.setScalar(1 + nf * 0.6);
+    const dm = meshes.dots.material as THREE.PointsMaterial; dm.color.setScalar(1 + nf * 1.6); dm.size = 5 + nf * 1.5;
     // pick radius: 5 screen px at the agent's distance
     const ortho = (camera as unknown as THREE.OrthographicCamera).isOrthographicCamera === true;
     meshes.proxy.userData.k = ortho ? 0 : (5 * 2 * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1, size.height);

@@ -365,16 +365,17 @@ export function predictBounds(l: SiteLayout, expected: number): Box2 {
   return { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2, w: maxX - minX, d: maxZ - minZ };
 }
 
-/** Obsidian grounds: muted moss / olive / soil mats on the black void (the model's only organic tones); paved kinds are pure graphite. */
+/** Obsidian grounds: moss / olive / soil mats on the graphite board (the model's only organic tones), one clear value step
+ *  apart from each other and from the board; paved kinds are pure graphite. */
 export const ZONE_COLORS: Record<GroundsKind, string> = {
-  improved_turf: '#335c36',
-  semi_improved: '#4b5734',
-  unimproved: '#58553f',
-  athletic_field: '#277446',
-  shrub_bed: '#56412d',
-  parking: '#262626',
-  sidewalk: '#5c5c5c',
-  tree_canopy: '#24402b',
+  improved_turf: '#38673c',
+  semi_improved: '#535f38',
+  unimproved: '#645e45',
+  athletic_field: '#2b8450',
+  shrub_bed: '#604732',
+  parking: '#2b2b2b',
+  sidewalk: '#666666',
+  tree_canopy: '#2a4b33',
 };
 export const ZONE_LABELS: Record<GroundsKind, string> = {
   improved_turf: 'Improved turf', semi_improved: 'Semi-improved', unimproved: 'Unimproved', athletic_field: 'Athletic field', shrub_bed: 'Planting beds', parking: 'Parking', sidewalk: 'Walks', tree_canopy: 'Trees',

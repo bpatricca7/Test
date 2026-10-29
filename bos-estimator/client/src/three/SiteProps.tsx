@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { useStore } from '../store';
 import { useDerived } from '../derived';
 import type { Box2, SiteLayout } from './layout';
-import { mat, seeded, std, surfaceMat } from './assets';
+import { mat, seeded, sitePalette, std, surfaceMat } from './assets';
 import { clock } from './clock';
 import { nightFactor } from './Lighting';
 
@@ -31,22 +31,56 @@ function build(geo: THREE.BufferGeometry, material: THREE.Material, boxes: { x: 
 }
 
 function lotMaterial(fast: boolean) {
-  // obsidian: lots are dark-concrete plinths on the black void, ringed by a lighter hairline
-  return surfaceMat('lot', fast, { color: '#202020', polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }, (sh) => {
-    sh.uniforms.uLotEdge = { value: new THREE.Color('#3d3d3d') };
+  // obsidian: lots are concrete plinths on the board, ringed by a lighter hairline that stays >= 1 px at any distance
+  return surfaceMat('lot', fast, { color: '#222222', polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }, (sh) => {
+    sh.uniforms.uLotEdge = lotEdge;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 aBld; varying vec2 vLotP; varying vec2 vLotS; varying vec4 vBld;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLotP = position.xz + 0.5; vLotS = vec2(length(instanceMatrix[0].xyz), length(instanceMatrix[2].xyz)); vBld = aBld;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform vec3 uLotEdge; varying vec2 vLotP; varying vec2 vLotS; varying vec4 vBld;')
       .replace('#include <color_fragment>', `#include <color_fragment>
-        { vec2 dw = min(vLotP, 1.0 - vLotP) * vLotS; float e = 1.0 - smoothstep(0.32, 0.42, min(dw.x, dw.y)); diffuseColor.rgb = mix(diffuseColor.rgb, uLotEdge, e);
+        { vec2 dw = min(vLotP, 1.0 - vLotP) * vLotS; float dm = min(dw.x, dw.y);
+          float e = max(1.0 - smoothstep(0.32, 0.42, dm), 1.0 - smoothstep(0.4, 1.3, dm / max(fwidth(dm), 1e-4)));
+          diffuseColor.rgb = mix(diffuseColor.rgb, uLotEdge, e);
           vec2 p = (vLotP - 0.5) * vLotS - vBld.xy; vec2 q = max(abs(p) - vBld.zw, 0.0);
           float ao = 1.0 - smoothstep(0.0, 1.5, length(q)); diffuseColor.rgb *= 1.0 - ao * 0.38; }`);
   }, 'lot-edge');
 }
-const roadMaterial = (fast: boolean) => surfaceMat('road', fast, { color: '#151515', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+const lotEdge = { value: new THREE.Color('#3e3e3e') };
+const roadMaterial = (fast: boolean) => surfaceMat('road', fast, { color: '#2e2e2e', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
 
+/** world size of the kerb (curb + gutter) and its minimum on screen, device px */
+const kerbU = { uKerbW: { value: 0.3 }, uKerbPx: { value: 1.35 }, uViewH: { value: 900 }, uKerbGlow: { value: new THREE.Color(0, 0, 0) } };
+/**
+ * Road casing: every road quad again, grown by the kerb width (never thinner than ~1.3 px on screen) and kept under
+ * the asphalt by its polygon offset. Each road gets a light kerb line on both sides and at its ends, and where roads
+ * cross the asphalt covers the other road's casing, so junctions stay clean. Unlit: its colour is final (the site
+ * palette), plus a sodium glow after dark, so the street network still reads at night.
+ */
+const kerbMaterial = () => mat('road-kerb', () => {
+  // writes depth (the open ground is drawn after it); its offset sits between the lots (-1) and the asphalt (-2), so
+  // the asphalt always wins over a casing and a casing over a lot it overlaps
+  const m = new THREE.MeshBasicMaterial({ color: '#6c6c6c', polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5 });
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, kerbU);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform float uKerbW; uniform float uKerbPx; uniform float uViewH;')
+      .replace('#include <project_vertex>', `
+        vec4 kw = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
+        vec4 kv = viewMatrix * kw;
+        float kd = isPerspectiveMatrix(projectionMatrix) ? -kv.z : 1.0;
+        float kpx = 2.0 * kd / (projectionMatrix[1][1] * uViewH);   // world size of one pixel here
+        kw.xz += sign(position.xz) * max(uKerbW, uKerbPx * kpx);
+        vec4 mvPosition = viewMatrix * kw;
+        gl_Position = projectionMatrix * mvPosition;`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec3 uKerbGlow;')
+      .replace('#include <alphamap_fragment>', '#include <alphamap_fragment>\ndiffuseColor.rgb += uKerbGlow;');
+  };
+  m.customProgramCacheKey = () => 'road-kerb-casing';
+  return m;
+});
 export function SiteProps() {
   const { layout } = useDerived();
   const lighting = useStore((s) => s.lighting ?? 'review');
@@ -70,9 +104,9 @@ export function SiteProps() {
       lines.push(horiz ? { x: r.x, y: 0.075, z: r.z, w: r.w * 0.98, h: 1, d: 0.16 } : { x: r.x, y: 0.075, z: r.z, w: 0.16, h: 1, d: r.d * 0.98 });
     }
     const roadMat = roadMaterial(true);
-    const curbMat = std('curb', { color: '#4a4a4a', roughness: 0.9 });
+    const curbMat = std('curb', { color: '#6a6a6a', roughness: 0.9 });
     const lineMat = mat('road-line', () => {
-      const m = new THREE.MeshBasicMaterial({ color: '#7a7a7a', transparent: true, opacity: 0.45, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+      const m = new THREE.MeshBasicMaterial({ color: '#7a7a7a', transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
       m.onBeforeCompile = (sh) => {
         sh.vertexShader = sh.vertexShader
           .replace('#include <common>', '#include <common>\nvarying float vDash;')
@@ -85,6 +119,7 @@ export function SiteProps() {
       return m;
     });
     const roadMesh = build(flat, roadMat, asphalt, layout, 'roads'); roadMesh.receiveShadow = true;
+    const kerbMesh = build(flat, kerbMaterial(), asphalt, layout, 'road-kerbs');
     const curbMesh = build(box, curbMat, curbs, layout, 'curbs'); curbMesh.receiveShadow = true;
     const lineMesh = build(flat, lineMat, lines, layout, 'road-lines');
     // ---- lots
@@ -94,7 +129,10 @@ export function SiteProps() {
     lotGeo.setAttribute('aBld', bld);
     const lotMesh = build(lotGeo, lotMaterial(true), layout.buildings.map((b) => ({ x: b.lot.x, y: 0.035, z: b.lot.z, w: b.lot.w, h: 1, d: b.lot.d })), layout, 'lots');
     lotMesh.receiveShadow = true;
-    for (const m of [roadMesh, curbMesh, lotMesh]) m.renderOrder = -2;
+    for (const m of [roadMesh, curbMesh]) m.renderOrder = -2;
+    // lots, asphalt, then the kerb casings (the offsets decide the overlaps): drawn after the asphalt, a casing's
+    // fragments under the road fail the depth test before shading, so only its visible kerb line costs fill
+    lotMesh.renderOrder = -2.6; kerbMesh.renderOrder = -1.9;
     // ---- street lights along the roads
     const spots: { x: number; z: number }[] = [];
     for (const r of layout.roads) {
@@ -112,23 +150,24 @@ export function SiteProps() {
     // ---- trees: perimeter, lot corners, tree zones and loose turf; deterministic
     const trees = treeSpots(layout);
     const trunkMesh = build(new THREE.CylinderGeometry(0.12, 0.18, 1, 5, 1, true), std('tree-trunk', { color: '#1c1c1c', roughness: 1 }), [], layout, 'tree-trunks');
-    const crownMesh = build(new THREE.IcosahedronGeometry(1.3, 0), std('tree-crown', { color: '#272a27', roughness: 0.9, flatShading: true }), [], layout, 'tree-crowns');
+    const crownMesh = build(new THREE.IcosahedronGeometry(1.3, 0), std('tree-crown', { color: '#3a3f3a', roughness: 0.9, flatShading: true }), [], layout, 'tree-crowns');
     const trunkCap = new THREE.InstancedMesh(trunkMesh.geometry, trunkMesh.material, Math.max(1, trees.length));
     const crownCap = new THREE.InstancedMesh(crownMesh.geometry, crownMesh.material, Math.max(1, trees.length));
     for (const m of [trunkCap, crownCap]) { m.raycast = noRaycast; m.castShadow = true; fixedSphere(m, layout); }
     trunkCap.name = 'tree-trunks'; crownCap.name = 'tree-crowns';
-    return { flat, lotGeo, box, roadMesh, curbMesh, lineMesh, lotMesh, poleMesh, headMesh, headMat, trees, trunkCap, crownCap };
+    return { flat, lotGeo, box, roadMesh, kerbMesh, curbMesh, lineMesh, lotMesh, poleMesh, headMesh, headMat, lineMat, trees, trunkCap, crownCap, nearOnly: [curbMesh, lineMesh, poleMesh, trunkCap] };
   }, [layout]);
   useEffect(() => () => { if (!meshes) return; for (const g of [meshes.flat, meshes.lotGeo, meshes.box, meshes.poleMesh.geometry, meshes.headMesh.geometry, meshes.trunkCap.geometry, meshes.crownCap.geometry]) g.dispose(); }, [meshes]);
 
   useEffect(() => { if (!meshes) return; meshes.lotMesh.material = lotMaterial(fast); meshes.roadMesh.material = roadMaterial(fast); invalidate(); }, [meshes, fast, invalidate]);
 
-  // tree density: 60% in Review lighting (deterministic subset), 100% in Live
+  // tree density: in Review only the trees in lots and tree zones (a deterministic 60 % subset; the perimeter rows
+  // read as specks on the empty board at large viewports), every tree in Live
   useEffect(() => {
     if (!meshes) return;
     let n = 0;
     for (const t of meshes.trees) {
-      if (review && t.keep < 0.4) continue;
+      if (review && (t.perim || t.keep < 0.4)) continue;
       m4.compose(v0.set(t.x, 0.9 * t.s, t.z), q0, s0.set(t.s, 1.8 * t.s, t.s)); meshes.trunkCap.setMatrixAt(n, m4);
       m4.compose(v0.set(t.x, 2.4 * t.s, t.z), q0, s0.set(t.s, t.s * 1.05, t.s)); meshes.crownCap.setMatrixAt(n, m4);
       n++;
@@ -140,14 +179,26 @@ export function SiteProps() {
 
   const camera = useThree((s) => s.camera);
   const controls = useThree((s) => s.controls) as unknown as { target?: THREE.Vector3 } | null;
+  const gl = useThree((s) => s.gl);
   useFrame(() => {
     if (!meshes) return;
+    // the flat palette (Lighting writes it every frame): lit surfaces take colour / exposure as albedo
+    const inv = 1 / Math.max(0.05, sitePalette.exposure);
+    const lm = lotMaterial(fast), rm = roadMaterial(fast);
+    lm.color.copy(sitePalette.lot).multiplyScalar(inv);
+    lotEdge.value.copy(sitePalette.lotEdge).multiplyScalar(inv);
+    rm.color.copy(sitePalette.road).multiplyScalar(inv);
+    (meshes.kerbMesh.material as THREE.MeshBasicMaterial).color.copy(sitePalette.kerb);
+    kerbU.uKerbGlow.value.copy(sitePalette.kerbGlow);
+    kerbU.uViewH.value = gl.domElement.height || 900;
+    meshes.lineMat.color.copy(sitePalette.dash);
+    (meshes.crownCap.material as THREE.MeshLambertMaterial).color.copy(sitePalette.crown);
     const k = review ? 0 : 0.15 + nightFactor(clock.time) * 2.4;
     if (meshes.headMat.emissiveIntensity !== k) meshes.headMat.emissiveIntensity = k;
     // sub-pixel details (curbs, centre lines, lamp posts, trunks) only when the camera is close enough to see them
     const dist = controls?.target ? camera.position.distanceTo(controls.target) : 300;
     const near = dist < 260;
-    for (const m of [meshes.curbMesh, meshes.lineMesh, meshes.poleMesh, meshes.trunkCap]) if (m.visible !== near) m.visible = near;
+    for (const m of meshes.nearOnly) if (m.visible !== near) m.visible = near;
     const heads = near || !review;
     if (meshes.headMesh.visible !== heads) meshes.headMesh.visible = heads;
   });
@@ -156,6 +207,7 @@ export function SiteProps() {
   return (
     <group>
       <primitive object={meshes.lotMesh} />
+      <primitive object={meshes.kerbMesh} />
       <primitive object={meshes.roadMesh} />
       <primitive object={meshes.curbMesh} />
       <primitive object={meshes.lineMesh} />
@@ -167,10 +219,11 @@ export function SiteProps() {
   );
 }
 
-function treeSpots(layout: SiteLayout): { x: number; z: number; s: number; keep: number }[] {
-  const out: { x: number; z: number; s: number; keep: number }[] = [];
+function treeSpots(layout: SiteLayout): { x: number; z: number; s: number; keep: number; perim: boolean }[] {
+  const out: { x: number; z: number; s: number; keep: number; perim: boolean }[] = [];
+  let onPerim = true;
   const rnd = seeded(`trees-${layout.buildings.length}-${layout.zones.length}`);
-  const push = (x: number, z: number, s: number) => out.push({ x, z, s, keep: rnd() });
+  const push = (x: number, z: number, s: number) => out.push({ x, z, s, keep: rnd(), perim: onPerim });
   const b = layout.bounds;
   const perim = [
     { x0: b.x - b.w / 2, z0: b.z - b.d / 2, x1: b.x + b.w / 2, z1: b.z - b.d / 2 }, { x0: b.x - b.w / 2, z0: b.z + b.d / 2, x1: b.x + b.w / 2, z1: b.z + b.d / 2 },
@@ -180,6 +233,7 @@ function treeSpots(layout: SiteLayout): { x: number; z: number; s: number; keep:
     const len = Math.hypot(p.x1 - p.x0, p.z1 - p.z0); const n = Math.floor(len / 12);
     for (let i = 0; i <= n; i++) { const u = i / Math.max(1, n); const j = (rnd() - 0.5) * 5; push(p.x0 + (p.x1 - p.x0) * u + (pi >= 2 ? j : 0), p.z0 + (p.z1 - p.z0) * u + (pi < 2 ? j : 0), 0.8 + rnd() * 0.7); }
   });
+  onPerim = false;
   // a tree at two corners of roomy lots
   for (const bp of layout.buildings) {
     const l: Box2 = bp.lot;

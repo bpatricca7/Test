@@ -1,12 +1,13 @@
 /* Run strip (UI spec §5.5): 40 px, first row of .center. Container queries keep the stepper, the facility count,
    the warnings counter, the elapsed time and Cancel visible down to ~520 px (the 1280×720 free width is 596). */
-.runstrip{position:relative;display:flex;align-items:center;gap:12px;height:var(--runstrip-h);padding:0 6px 0 12px;background:#101010;border-bottom:1px solid var(--border-2);
+.runstrip{position:relative;display:flex;align-items:center;gap:12px;height:var(--runstrip-h);padding:0 6px 0 12px;background:#181818;border-bottom:1px solid var(--border-2);box-shadow:inset 0 1px 0 var(--edge-hi);
   font-size:var(--fs-sm);color:var(--text-2);min-width:0;white-space:nowrap;pointer-events:auto;overflow:hidden;container:runstrip/inline-size}
-.runstrip--failed{background:linear-gradient(90deg,rgba(240,82,79,.14),rgba(240,82,79,.05));border-bottom-color:rgba(240,82,79,.7);color:var(--text-1)}
+.runstrip--failed{background:linear-gradient(90deg,rgba(240,82,79,.14),rgba(240,82,79,.05)),#181818;border-bottom-color:rgba(240,82,79,.7);color:var(--text-1);box-shadow:inset 2px 0 0 var(--bad)}
 .runstrip--failed .runstrip__icon{color:var(--bad)}
 .runstrip--done .runstrip__icon{color:var(--ok)}
+.runstrip--done{box-shadow:inset 2px 0 0 var(--ok)}
 .runstrip--cancelled{color:var(--text-2)}
-.runstrip--warn{background:linear-gradient(90deg,rgba(245,165,36,.11),rgba(245,165,36,.03));border-bottom-color:rgba(245,165,36,.45);color:var(--text-1)}
+.runstrip--warn{background:linear-gradient(90deg,rgba(245,165,36,.11),rgba(245,165,36,.03)),#181818;border-bottom-color:rgba(245,165,36,.45);color:var(--text-1);box-shadow:inset 2px 0 0 var(--warn)}
 .runstrip--warn .runstrip__icon{color:var(--warn-text)}
 .runstrip--warn .runstrip__msg b{color:var(--warn-text);font-weight:600}
 .runstrip--cancelled .runstrip__icon{color:var(--text-3)}
@@ -20,7 +21,7 @@
 .rs-seg__btn{all:unset;cursor:pointer;border-radius:var(--r-1);padding:0 4px;margin:0 -4px;color:var(--warn-text)}
 .rs-seg__btn:hover{background:rgba(245,165,36,.14)}
 .rs-seg__btn:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
-.rs-more{flex-shrink:0;height:20px;padding:0 6px;border-radius:var(--r-pill);background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px var(--hair);color:var(--text-2);font:600 var(--fs-xs)/20px var(--font-sans);cursor:default}
+.rs-more{flex-shrink:0;height:20px;padding:0 6px;border-radius:var(--r-pill);background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px var(--hair);color:var(--text-2);font:600 var(--fs-xs)/20px var(--font-sans);font-variant-numeric:tabular-nums;cursor:default}
 .rs-more:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
 .rs-more-tip{display:flex;flex-direction:column;gap:2px}
 
@@ -29,7 +30,7 @@
 .runstrip__step{display:flex;align-items:center;gap:5px;color:var(--text-3);font-size:var(--fs-xs)}
 .runstrip__step + .runstrip__step::before{content:"";width:10px;height:1px;background:var(--border-2);margin-right:1px}
 .runstrip__step.is-done + .runstrip__step::before{background:var(--ok)}
-.runstrip__step .dot{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--border-ctl);color:var(--accent-ink);flex-shrink:0}
+.runstrip__step .dot{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--border-ctl);color:var(--accent-ink);flex-shrink:0;background:var(--surface-1)}
 .runstrip__step.is-done .dot{background:var(--ok);border-color:var(--ok)}
 .runstrip__step.is-done{color:var(--text-2)}
 .runstrip__step.is-active{color:var(--text-1);font-weight:600}
@@ -37,12 +38,13 @@
 
 /* counters */
 .runstrip__counters{display:flex;align-items:center;gap:12px;flex:0 1 auto;min-width:0;overflow:hidden;font-variant-numeric:tabular-nums}
+.runstrip__msg,.rs-segs{font-variant-numeric:tabular-nums}
 .rs-c{flex-shrink:0;border-radius:var(--r-1)}
 .rs-c .k{color:var(--text-3)}
 .rs-c b{color:var(--text-1);font-weight:600}
 .rs-docs .warn{color:var(--warn-text)}
 .rs-staged{color:var(--new);font-size:var(--fs-xs)}
-.rs-time{color:var(--text-1);font-size:var(--fs-sm)}
+.rs-time,.rs-time.mono{color:var(--text-1);font-family:var(--font-sans);font-size:var(--fs-sm);font-weight:500;font-variant-numeric:tabular-nums}
 .runstrip__warn{display:inline-flex;align-items:center;gap:3px;height:24px;border:0;border-radius:var(--r-1);background:rgba(245,165,36,.1);box-shadow:inset 0 0 0 1px rgba(245,165,36,.25);color:var(--warn-text);font:600 var(--fs-sm)/1 var(--font-sans);cursor:pointer;padding:0 6px}
 .runstrip__warn:hover{background:rgba(245,165,36,.2)}
 .runstrip__ticker{flex:1 1 0;min-width:0;max-width:420px;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-family:var(--font-mono);color:var(--text-3)}

@@ -1,7 +1,7 @@
 // Bottom panel (UI spec §5.9), between the side panels: Crews | Log. 112 px expanded, 36 px collapsed; hidden while
 // the project is empty and in Table view. Crews: a fixed 200 px clock card plus crew cards (ring = working ÷ heads)
 // in a horizontal scroller with edge fades and ‹ › buttons. Log: the AI log with filters, warnings first-class.
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Copy, Pause, Play, TriangleAlert, X } from 'lucide-react';
 import { useStore, type LogEntry, type LogFilter } from '../../store';
 import { useDerived } from '../../derived';
@@ -155,7 +155,7 @@ function CrewsBody({ onPlay, onSpeed }: { onPlay: () => void; onSpeed: (v: numbe
           <IconButton className="bp__play" variant="secondary" icon={playing ? Pause : Play} label={playing ? 'Pause the crew clock' : 'Play the crew clock'} tooltip={`${playing ? 'Pause' : 'Play'} (Space)`} onClick={onPlay} />
         </div>
         <div className="bp__clock-row">
-          <input className="bp__scrub" type="range" min={0} max={23.99} step={0.05} value={time} aria-label="Time of day" onChange={(e) => setTime(Number(e.target.value))} />
+          <input className="bp__scrub" type="range" min={0} max={23.99} step={0.05} value={time} aria-label="Time of day" style={{ '--p': `${Math.max(0, Math.min(100, (time / 23.99) * 100))}%` } as CSSProperties} onChange={(e) => setTime(Number(e.target.value))} />
           <Select size="sm" className="bp__speed" aria-label="Clock speed" value={String(speed)} onChange={(v) => onSpeed(Number(v))} options={SPEED_OPTS} />
         </div>
       </div>

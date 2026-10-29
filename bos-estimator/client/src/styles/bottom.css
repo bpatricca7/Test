@@ -1,5 +1,5 @@
 /* Bottom panel (UI spec §5.9): Crews | Log; 112 px expanded, 36 px collapsed, taller while the Log is open. */
-.bottom-panel{display:flex;flex-direction:column;height:var(--dock-h);background:#0b0b0b;border-top:1px solid var(--border-2);min-width:0;overflow:hidden;
+.bottom-panel{display:flex;flex-direction:column;height:var(--dock-h);background:var(--frame);border-top:1px solid var(--border-2);min-width:0;overflow:hidden;
   transition:height var(--dur-2) var(--ease);pointer-events:auto}
 .bottom-panel.is-collapsed{height:var(--dock-h-collapsed)}
 .bottom-panel.is-log{height:min(240px,40vh)}
@@ -11,13 +11,14 @@
 
 /* collapsed header: clock, play, speed and crew chips (110 px each) */
 .bp__mini{display:flex;align-items:center;gap:6px;min-width:0;flex:1;overflow:hidden}
-.bp__time{font-size:var(--fs-sm);color:var(--text-1);flex-shrink:0;font-variant-numeric:tabular-nums}
+/* the crew clock reads as a number: Geist tabular figures (a plain zero), not the mono face */
+.bp__time,.bp__time.mono{font-family:var(--font-sans);font-size:var(--fs-sm);font-weight:500;color:var(--text-1);flex-shrink:0;font-variant-numeric:tabular-nums}
 .bp__speed{width:84px;flex-shrink:0}
 .bp__mini .bp__speed{width:84px}
 .bp__mini-crews{display:flex;gap:4px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:none;mask-image:linear-gradient(90deg,#000 calc(100% - 16px),transparent)}
 .bp__mini-crews::-webkit-scrollbar{display:none}
 .bp__mini-chip,.bp__mini-crews .chip{flex-shrink:0;justify-content:flex-start}
-.bp__mini-crews .chip__count{flex-shrink:0;font:500 var(--fs-xs)/1 var(--font-mono)}
+.bp__mini-crews .chip__count{flex-shrink:0;font:600 var(--fs-xs)/1 var(--font-sans);font-variant-numeric:tabular-nums}
 /* collapsed dock: icon + count chips (the crew name is in the tooltip and read by screen readers) */
 .bp__mini-name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .bp__mini-crews .chip__label{display:contents}
@@ -26,13 +27,23 @@
 
 /* crews: clock card (fixed 200 px) + cards */
 .bp__crews{display:flex;gap:8px;flex:1;min-height:0;padding:6px 8px}
-.bp__clock{display:flex;flex-direction:column;justify-content:center;gap:4px;width:200px;flex-shrink:0;padding:4px 8px;border-radius:var(--r-3);background:linear-gradient(180deg,#161616,#111111);
+.bp__clock{display:flex;flex-direction:column;justify-content:center;gap:4px;width:200px;flex-shrink:0;padding:4px 8px;border-radius:var(--r-3);background:linear-gradient(180deg,#1e1e1e,#191919);
   box-shadow:inset 0 0 0 1px var(--hair),inset 0 1px 0 var(--edge-hi)}
 .bp__clock-row{display:flex;align-items:center;gap:8px;min-width:0}
-.bp__clock-time{font:500 24px/28px var(--font-mono);letter-spacing:-0.03em;color:#fafafa}
+.bp__clock-time,.bp__clock-time.mono{font:600 24px/28px var(--font-sans);letter-spacing:-0.035em;color:var(--text-hi);font-variant-numeric:tabular-nums}
 .bp__clock-part{font-size:var(--fs-xs);color:var(--text-3);white-space:nowrap}
 .bp__play{margin-left:auto}
-.bp__scrub{flex:1;min-width:0;margin:0;accent-color:var(--accent)}
+.bp__scrub{flex:1;min-width:0;margin:0}
+/* the clock scrubber: the same quiet instrument as the Estimate sliders (graphite track, grey fill, white thumb, acid
+   only while held or keyboard-focused); the native 16 px box is kept; the track is a 3.3:1 boundary on the clock card */
+.bp__scrub{--fill:var(--text-2);--thumb:#f2f2f2;-webkit-appearance:none;appearance:none;height:16px;background:transparent;cursor:pointer}
+.bp__scrub::-webkit-slider-runnable-track{height:2px;border-radius:1px;background:linear-gradient(90deg,var(--fill) 0 var(--p,0%),#6e6e6e var(--p,0%) 100%)}
+.bp__scrub::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;margin-top:-5px;border:0;border-radius:50%;background:var(--thumb);box-shadow:0 0 0 2px #1c1c1c,0 1px 3px rgba(0,0,0,.6)}
+.bp__scrub::-moz-range-track{height:2px;border-radius:1px;background:#6e6e6e}
+.bp__scrub::-moz-range-progress{height:2px;border-radius:1px;background:var(--fill)}
+.bp__scrub::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--thumb);box-shadow:0 0 0 2px #1c1c1c,0 1px 3px rgba(0,0,0,.6)}
+.bp__scrub:hover{--fill:#c4c4c4;--thumb:#ffffff}
+.bp__scrub:active,.bp__scrub:focus-visible{--fill:var(--accent);--thumb:var(--accent)}
 /* live state: while the crew clock runs, its pause control wears the accent (selected by its existing label) */
 .bp__play[aria-label^="Pause"]{color:var(--accent);border-color:var(--accent-line);background:var(--accent-soft);box-shadow:0 0 14px -4px rgba(198,244,60,.6)}
 .bp__clock .bp__speed{width:90px}
@@ -47,26 +58,26 @@
 .bp__pg--r{right:4px}
 /* a 40 px gutter behind the paging arrows, so the arrow never sits on a card's text */
 .bp__cards-wrap.fade-r::after,.bp__cards-wrap.fade-l::before{content:"";position:absolute;top:0;bottom:0;width:44px;z-index:1;pointer-events:none}
-.bp__cards-wrap.fade-r::after{right:0;background:linear-gradient(90deg,rgba(11,11,11,0),#0b0b0b 45%)}
-.bp__cards-wrap.fade-l::before{left:0;background:linear-gradient(270deg,rgba(11,11,11,0),#0b0b0b 45%)}
-.bp__card{position:relative;flex:1 0 176px;min-width:176px;max-width:240px;border:1px solid #232323;border-radius:var(--r-3);background:linear-gradient(180deg,#151515,#111111);overflow:hidden;
+.bp__cards-wrap.fade-r::after{right:0;background:linear-gradient(90deg,rgba(19,19,19,0),var(--frame) 45%)}
+.bp__cards-wrap.fade-l::before{left:0;background:linear-gradient(270deg,rgba(19,19,19,0),var(--frame) 45%)}
+.bp__card{position:relative;flex:1 0 176px;min-width:176px;max-width:240px;border:1px solid #2a2a2a;border-radius:var(--r-3);background:linear-gradient(180deg,#1d1d1d,#191919);overflow:hidden;
   box-shadow:inset 0 1px 0 var(--edge-hi);transition:border-color var(--dur-1),box-shadow var(--dur-2)}
 .bp__card::before{content:"";position:absolute;left:8px;top:0;width:14px;height:1px;background:var(--crew);opacity:.9;pointer-events:none}
-.bp__card:hover{border-color:#383838}
+.bp__card:hover{border-color:#404040}
 .bp__card.is-on{border:2px solid var(--crew);box-shadow:0 0 22px -8px var(--crew),inset 0 1px 0 var(--edge-hi)}
 .bp__card-main{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;gap:8px;width:100%;height:100%;padding:5px 8px;border:0;background:transparent;color:var(--text-1);text-align:left;cursor:pointer}
 .bp__card.is-on .bp__card-main{padding:4px 7px}
-.bp__card .ring{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:conic-gradient(var(--crew) calc(var(--p) * 1%),#262626 0)}
-.bp__card .ring span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#121212;font:500 var(--fs-xs)/1 var(--font-mono);letter-spacing:-.04em;overflow:hidden}
+.bp__card .ring{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:conic-gradient(var(--crew) calc(var(--p) * 1%),#2e2e2e 0)}
+.bp__card .ring span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#181818;font:600 var(--fs-xs)/1 var(--font-sans);font-variant-numeric:tabular-nums;letter-spacing:-.03em;overflow:hidden}
 .bp__card .txt{display:flex;flex-direction:column;gap:1px;min-width:0}
 .bp__card .name{display:flex;align-items:center;gap:5px;font:600 var(--fs-sm)/var(--lh-sm) var(--font-sans);letter-spacing:var(--track-snug);min-width:0}
 .bp__card .name svg{color:var(--crew);flex-shrink:0}
 .bp__card .name .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bp__card .cnt{font:400 var(--fs-xs)/16px var(--font-mono);color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp__card .cnt,.bp__card .cnt.mono{font:400 var(--fs-xs)/16px var(--font-sans);font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bp__card .now{font-size:var(--fs-xs);line-height:var(--lh-xs);color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bp__card.is-off .ring{opacity:.6}
-.bp__jump{position:absolute;left:44px;bottom:3px;padding:1px 4px;border:0;border-radius:3px;background:#121212;color:var(--accent);font:500 var(--fs-xs)/16px var(--font-sans);cursor:pointer}
-.bp__jump:hover{background:var(--accent-soft)}
+.bp__jump{position:absolute;left:44px;bottom:3px;padding:1px 4px;border:0;border-radius:3px;background:#191919;color:var(--text-2);font:500 var(--fs-xs)/16px var(--font-sans);font-variant-numeric:tabular-nums;cursor:pointer;transition:color var(--dur-1),background-color var(--dur-1)}
+.bp__jump:hover{background:var(--accent-soft);color:var(--accent)}
 .bp__card-x{position:absolute;top:3px;right:3px;display:grid;place-items:center;width:18px;height:18px;border:0;border-radius:3px;background:transparent;color:var(--text-2);cursor:pointer}
 .bp__card-x:hover{background:rgba(255,255,255,.08);color:var(--text-1)}
 .bp__empty{padding:12px;color:var(--text-3);font-size:var(--fs-sm);font-family:var(--font-sans)}
@@ -82,7 +93,7 @@
 .bp__log-line .tag{color:var(--text-3)}
 .bp__log-line .txt{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text-2)}
 .bp__log-line.is-status .txt{color:var(--text-1)}
-.bp__log-line.is-status .tag{color:var(--accent)}
+.bp__log-line.is-status .tag{color:var(--text-2)}
 .bp__log-line.is-found .txt{color:var(--text-1)}
 .bp__log-line.is-warning .txt,.bp__log-line.is-warning .tag{color:var(--warn-text)}
 .bp__log-line.is-error .txt,.bp__log-line.is-error .tag{color:var(--bad-text)}

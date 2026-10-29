@@ -20,7 +20,7 @@ import { CameraRig } from './CameraRig';
 import { PlanCamera } from './PlanView';
 import { LabelLayerDriver } from './LabelLayer';
 import { useTestHooks } from './testHooks';
-import { disposeAssets } from './assets';
+import { disposeAssets, fieldUniforms, groundUniforms } from './assets';
 import { rt } from './runtime';
 import { freeRect, insets, insetsSettling } from './insets';
 import { PerfGovernor, usePerfLevel } from './perf';
@@ -94,6 +94,7 @@ function ScanSweep() {
   );
 }
 
+const ACID = new THREE.Color('#c6f43c');
 /** Accent ground reticle on the selected building or zone. */
 function SelectionFx() {
   const selection = useStore((s) => s.selection);
@@ -104,23 +105,42 @@ function SelectionFx() {
   let box: Box2 | undefined;
   if (layout && selection.kind === 'facility') box = layout.buildings.find((x) => x.id === selection.id)?.lot;
   if (layout && selection.kind === 'grounds') box = layout.zones.find((x) => x.id === selection.id)?.box;
+  const fill = useRef<THREE.Mesh>(null);
+  const casing = useRef<THREE.Mesh>(null);
   useFrame(() => {
     if (!ring.current || !box) return;
     const p = reduced ? 0.5 : (performance.now() % 2400) / 2400;
     const r = Math.max(box.w, box.d) * 0.62;
     ring.current.scale.setScalar(r * (0.96 + p * 0.12));
-    (ring.current.material as THREE.MeshBasicMaterial).opacity = 0.75 - p * 0.35;
+    const rm = ring.current.material as THREE.MeshBasicMaterial;
+    rm.opacity = 0.9 - p * 0.4;
+    // after dark the reticle burns above the bloom threshold: the one acid light in a white-edged night
+    const k = 1 + fieldUniforms.uNight.value * 0.8;
+    rm.color.copy(ACID).multiplyScalar(k);
+    if (fill.current) (fill.current.material as THREE.MeshBasicMaterial).color.copy(ACID).multiplyScalar(k);
+    // on the light Live-day table the acid ring gets a dark casing, so it keeps its contrast
+    if (casing.current) {
+      casing.current.scale.copy(ring.current.scale);
+      const b = groundUniforms.uBoard.value; const lum = b.r * 0.2126 + b.g * 0.7152 + b.b * 0.0722;
+      const o = THREE.MathUtils.smoothstep(lum, 0.02, 0.08) * 0.6;
+      (casing.current.material as THREE.MeshBasicMaterial).opacity = o;
+      casing.current.visible = o > 0.01;
+    }
   });
   if (!box || focusMode === 'building') return null;
   return (
     <group position={[box.x, 0.12, box.z]}>
-      <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={3}>
-        <ringGeometry args={[0.97, 1, 72]} />
-        <meshBasicMaterial color="#c6f43c" transparent opacity={0.7} depthWrite={false} />
+      <mesh ref={casing} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={2} visible={false}>
+        <ringGeometry args={[0.925, 1.03, 72]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0} depthWrite={false} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={3}>
+      <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={3}>
+        <ringGeometry args={[0.955, 1, 72]} />
+        <meshBasicMaterial color="#c6f43c" transparent opacity={0.7} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh ref={fill} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={3}>
         <planeGeometry args={[box.w + 0.6, box.d + 0.6]} />
-        <meshBasicMaterial color="#c6f43c" transparent opacity={0.1} depthWrite={false} />
+        <meshBasicMaterial color="#c6f43c" transparent opacity={0.13} depthWrite={false} toneMapped={false} />
       </mesh>
     </group>
   );

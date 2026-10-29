@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { useStore } from '../store';
 import { useDerived } from '../derived';
 import { clock } from './clock';
-import { fieldUniforms, flatLight, groundColor, groundMaterial, groundUniforms } from './assets';
+import { fieldUniforms, flatLight, groundColor, groundMaterial, groundUniforms, padLight, padNight, sitePalette } from './assets';
 import { rt } from './runtime';
 
 /**
@@ -26,18 +26,36 @@ export const dayFactor = (t: number) => Math.max(0, Math.sin(((t - 6) / 12) * Ma
 /** 0 by day → 1 deep night, with dusk/dawn ramps. */
 export const nightFactor = (t: number) => { const d = dayFactor(t); return d > 0.25 ? 0 : 1 - d / 0.25; };
 
-// Obsidian: Review is a neutral studio (black void, white key, no blue cast); Live runs from a graphite overcast day to an
-// obsidian night where the only colour is warm window light and a faint cold moon on the massing.
-const REVIEW = {
-  top: new THREE.Color('#0a0a0a'), horizon: new THREE.Color('#1b1b1b'),
-  hemiSky: new THREE.Color('#f2f2f2'), hemiGround: new THREE.Color('#262626'),
-  key: new THREE.Color('#fffaf3'), ground: new THREE.Color('#0d0d0d'),
-};
+// Obsidian. Review is a neutral studio: the model on a lit board on a black table, white key, no blue cast. Live runs
+// a real day: a sunlit grey table under a pale sky by day, a warm low sun at dusk, and a deep cold night where the
+// massing goes dark, the chamfer edges and the grid near the site light up like blueprint hairlines, windows burn
+// tungsten, the kerbs carry a soft tungsten-white street light (the lamp heads keep the sodium) and the crews glow.
+const PAL_KEYS = ['board', 'boardEdge', 'table', 'void', 'grid1', 'grid2', 'contour', 'glow', 'road', 'kerb', 'lot', 'lotEdge', 'dash', 'kerbGlow', 'crown', 'skyTop', 'skyHor'] as const;
+type Pal = Record<(typeof PAL_KEYS)[number], THREE.Color>;
+const pal = (o: Record<(typeof PAL_KEYS)[number], string>): Pal => { const p = {} as Pal; for (const k of PAL_KEYS) p[k] = new THREE.Color(o[k]); return p; };
+function mixPal(out: Pal, a: Pal, b: Pal, t: number) { for (let i = 0; i < PAL_KEYS.length; i++) { const k = PAL_KEYS[i]; out[k].copy(a[k]).lerp(b[k], t); } }
+/** colours the flat surfaces show (ground: final; lots, roads: target before exposure compensation); crown is an albedo */
+const P_REVIEW = pal({ board: '#1a1a1a', boardEdge: '#3c3c3c', table: '#0f0f0f', void: '#080808', grid1: '#1e1e1e', grid2: '#272727', contour: '#1b1b1b', glow: '#000000',
+  road: '#303030', kerb: '#787878', lot: '#232323', lotEdge: '#444444', dash: '#8a8a8a', kerbGlow: '#000000', crown: '#4a524b', skyTop: '#0a0a0a', skyHor: '#0d0d0d' });
+const P_DAY = pal({ board: '#5a5b5b', boardEdge: '#8e8e8e', table: '#454646', void: '#7e8081', grid1: '#616262', grid2: '#6b6c6c', contour: '#525353', glow: '#000000',
+  road: '#262727', kerb: '#bdbdb9', lot: '#797976', lotEdge: '#a3a3a0', dash: '#ecece6', kerbGlow: '#000000', crown: '#56614d', skyTop: '#8a929b', skyHor: '#d3d6d7' });
+const P_DUSK = pal({ board: '#262423', boardEdge: '#48433f', table: '#1b1a19', void: '#181615', grid1: '#2b2928', grid2: '#322f2d', contour: '#252321', glow: '#000000',
+  road: '#1b1b1c', kerb: '#6b6661', lot: '#2c2a29', lotEdge: '#48443f', dash: '#7a756f', kerbGlow: '#251e14', crown: '#3a3f38', skyTop: '#16181d', skyHor: '#4b3a31' });
+const P_NIGHT = pal({ board: '#0c0d10', boardEdge: '#1f252e', table: '#07080a', void: '#020203', grid1: '#0f1114', grid2: '#141920', contour: '#0d1015', glow: '#0f1924',
+  road: '#0e0f11', kerb: '#2b2c30', lot: '#111215', lotEdge: '#22262c', dash: '#2a2a2a', kerbGlow: '#5c4e38', crown: '#464d48', skyTop: '#020305', skyHor: '#07090d' });
+const P = pal({ board: '#000', boardEdge: '#000', table: '#000', void: '#000', grid1: '#000', grid2: '#000', contour: '#000', glow: '#000', road: '#000', kerb: '#000', lot: '#000', lotEdge: '#000', dash: '#000', kerbGlow: '#000', crown: '#000', skyTop: '#000', skyHor: '#000' });
+const REVIEW = { hemiSky: new THREE.Color('#f2f2f2'), hemiGround: new THREE.Color('#262626'), key: new THREE.Color('#fffaf3'), amb: new THREE.Color('#ececec') };
 const LIVE = {
-  topDay: new THREE.Color('#2c2c2c'), topNight: new THREE.Color('#020202'), horDay: new THREE.Color('#6b6b6b'), horNight: new THREE.Color('#0d0d0d'),
-  night: new THREE.Color('#9aa5b6'), dusk: new THREE.Color('#ffb07a'), noon: new THREE.Color('#fffaf2'),
-  hemiSky: new THREE.Color('#e4e6ea'), hemiGround: new THREE.Color('#222222'), groundDay: new THREE.Color('#151515'), groundNight: new THREE.Color('#080808'),
+  noon: new THREE.Color('#fff5e8'), dusk: new THREE.Color('#ff9a58'), moon: new THREE.Color('#8ea0ba'),
+  hemiSkyDay: new THREE.Color('#eef0f2'), hemiSkyNight: new THREE.Color('#66748a'), hemiGroundDay: new THREE.Color('#3a3a38'), hemiGroundNight: new THREE.Color('#060607'),
+  ambDay: new THREE.Color('#ececec'), ambNight: new THREE.Color('#8191a8'),
 };
+/** 0 at night → 1 in daylight; 0.5 around 17:30 / 06:30 (dusk and dawn) */
+export const daylight = (t: number) => { const x = Math.min(1, Math.max(0, dayFactor(t) / 0.26)); return x * x * (3 - 2 * x); };
+
+/** the table follows the site bounds; it eases toward a grown site while a read streams */
+export const tableTarget = { cx: 0, cz: 0, hx: 60, hz: 45, r: 80, m: 6, set: false };
+const ease = (a: number, b: number, k: number) => a + (b - a) * k;
 /** key light direction for Review: azimuth 135° (from +z toward +x), elevation 50° */
 const REVIEW_DIR = (() => { const az = (135 * Math.PI) / 180, el = (50 * Math.PI) / 180; return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).normalize(); })();
 
@@ -90,46 +108,72 @@ export function Lighting() {
     rt.shadowDirty = true;
   }, [geo]);
 
-  useFrame(() => {
+  useFrame((_, dtRaw) => {
     const t = clock.time;
     let night = 0;
+    let L = 1;
     if (!live) {
-      uniforms.top.value.copy(REVIEW.top); uniforms.horizon.value.copy(REVIEW.horizon); uniforms.glowAmt.value = 0; uniforms.disc.value = 0;
+      mixPal(P, P_REVIEW, P_REVIEW, 0);
+      uniforms.top.value.copy(P.skyTop); uniforms.horizon.value.copy(P.skyHor); uniforms.glowAmt.value = 0; uniforms.disc.value = 0;
       dir.copy(REVIEW_DIR);
       if (sun.current) { sun.current.intensity = 2.0; sun.current.color.copy(REVIEW.key); }
       if (moon.current) moon.current.intensity = 0;
       if (hemi.current) { hemi.current.intensity = 1.0; hemi.current.color.copy(REVIEW.hemiSky); hemi.current.groundColor.copy(REVIEW.hemiGround); }
-      if (amb.current) amb.current.intensity = 0.35;
+      if (amb.current) { amb.current.intensity = 0.35; amb.current.color.copy(REVIEW.amb); }
       if (stars.current) stars.current.visible = false;
-      groundColor.copy(REVIEW.ground); groundUniforms.uGridAmt.value = 1;
-      fieldUniforms.uGround.value.copy(REVIEW.ground);
+      fieldUniforms.uEdgeGlow.value.setRGB(0, 0, 0);
     } else {
       const day = dayFactor(t);
       night = nightFactor(t);
+      L = daylight(t);
+      if (L >= 0.5) mixPal(P, P_DUSK, P_DAY, (L - 0.5) * 2); else mixPal(P, P_NIGHT, P_DUSK, L * 2);
       const ang = ((t - 6) / 12) * Math.PI;
       dir.set(Math.cos(ang), Math.sin(ang), 0.45).normalize();
-      if (dir.y < 0.5) { dir.y = 0.5 + (0.5 - dir.y) * 0.3; dir.normalize(); } // moonlight from high above at night
+      // a low warm sun at dusk; moonlight from high above at night
+      const minY = 0.2 + 0.4 * (1 - L);
+      if (dir.y < minY) { dir.y = minY + (minY - dir.y) * 0.3; dir.normalize(); }
       uniforms.sunDir.value.set(Math.cos(ang), Math.sin(ang), 0.45).normalize();
       uniforms.glowAmt.value = Math.exp(-Math.pow(Math.sin(ang) / 0.22, 2)) * 0.9;
       uniforms.disc.value = day > 0 ? 0.8 : 0;
-      uniforms.top.value.copy(LIVE.topNight).lerp(LIVE.topDay, day);
-      uniforms.horizon.value.copy(LIVE.horNight).lerp(LIVE.horDay, Math.min(1, day * 1.4));
-      fog.color.copy(uniforms.horizon.value);
+      uniforms.top.value.copy(P.skyTop);
+      uniforms.horizon.value.copy(P.skyHor);
+      fog.color.copy(P.skyHor);
       if (sun.current) {
-        sun.current.intensity = 0.8 + day * 1.45;
-        if (day <= 0) tmp.copy(LIVE.night); else if (day < 0.35) tmp.copy(LIVE.dusk).lerp(LIVE.noon, day / 0.35); else tmp.copy(LIVE.noon);
+        sun.current.intensity = 0.5 + (0.7 + 1.9 * day) * L;
+        if (L >= 0.5) tmp.copy(LIVE.dusk).lerp(LIVE.noon, Math.min(1, (L - 0.5) * 2.4)); else { const k = Math.max(0, Math.min(1, (L - 0.12) / 0.38)); tmp.copy(LIVE.moon).lerp(LIVE.dusk, k * k); }
         sun.current.color.copy(tmp);
       }
-      if (moon.current) moon.current.intensity = 0.6 * night;
-      // night floor: roofs stay readable (category colours distinguishable) at 22:30
-      if (hemi.current) { hemi.current.intensity = Math.max(0.45, 0.6 + day * 0.7 + night * 0.25); hemi.current.color.copy(LIVE.hemiSky); hemi.current.groundColor.copy(LIVE.hemiGround); }
-      if (amb.current) amb.current.intensity = 0.32 + day * 0.2 + night * 0.2;
+      if (moon.current) moon.current.intensity = 0.25 * night;
+      if (hemi.current) { hemi.current.intensity = 0.26 + 0.89 * L; hemi.current.color.copy(LIVE.hemiSkyNight).lerp(LIVE.hemiSkyDay, L); hemi.current.groundColor.copy(LIVE.hemiGroundNight).lerp(LIVE.hemiGroundDay, L); }
+      if (amb.current) { amb.current.intensity = 0.1 + 0.2 * L; amb.current.color.copy(LIVE.ambNight).lerp(LIVE.ambDay, L); }
       if (stars.current) stars.current.visible = day < 0.12;
-      groundColor.copy(LIVE.groundNight).lerp(LIVE.groundDay, Math.min(1, day * 1.5)); groundUniforms.uGridAmt.value = 0.35;
-      fieldUniforms.uGround.value.copy(groundColor);
-      fog.near = Math.max(300, geo.r * 2); fog.far = Math.max(fog.near + 200, geo.r * 6);
+      // the chamfer edges light up from dusk: white, ~1 px (screen-space in the shader), a modest bloom
+      const e = Math.pow(1 - L, 1.6) * 1.35;
+      fieldUniforms.uEdgeGlow.value.setRGB(e, e, e);
+      // haze only well beyond the model: the campus stays crisp, the far table melts into the sky
+      fog.near = Math.max(420, geo.r * 4); fog.far = Math.max(fog.near + 600, geo.r * 11);
     }
-    groundMaterial(true).color.copy(groundColor);
+    // the table: ease toward the site bounds (a streaming read grows the site a few buildings at a time)
+    {
+      const g = groundUniforms, tt = tableTarget;
+      const k = 1 - Math.exp(-Math.min(0.1, dtRaw || 0) * 7);
+      // a new project (or the first frame) snaps; growth eases, except under reduced motion, where it snaps too
+      const kk = useStore.getState().reducedMotion || Math.abs(g.uCenter.value.x - tt.cx) + Math.abs(g.uCenter.value.y - tt.cz) > tt.r * 1.5 || !tt.set ? 1 : k;
+      g.uCenter.value.set(ease(g.uCenter.value.x, tt.cx, kk), ease(g.uCenter.value.y, tt.cz, kk));
+      g.uHalf.value.set(ease(g.uHalf.value.x, tt.hx, kk), ease(g.uHalf.value.y, tt.hz, kk));
+      g.uSiteR.value = ease(g.uSiteR.value, tt.r, kk); g.uBoardM.value = ease(g.uBoardM.value, tt.m, kk);
+      tt.set = true;
+      const off = Math.abs(g.uHalf.value.x - tt.hx) + Math.abs(g.uHalf.value.y - tt.hz) + Math.abs(g.uCenter.value.x - tt.cx) + Math.abs(g.uCenter.value.y - tt.cz);
+      if (off > 0.05) rt.animating.add('table'); else if (rt.animating.has('table')) { rt.animating.delete('table'); g.uCenter.value.set(tt.cx, tt.cz); g.uHalf.value.set(tt.hx, tt.hz); g.uSiteR.value = tt.r; g.uBoardM.value = tt.m; }
+      g.uBoard.value.copy(P.board); g.uBoardEdge.value.copy(P.boardEdge); g.uTable.value.copy(P.table); g.uVoid.value.copy(P.void);
+      g.uGrid1.value.copy(P.grid1); g.uGrid2.value.copy(P.grid2); g.uContour.value.copy(P.contour); g.uGlow.value.copy(P.glow);
+      g.uGridAmt.value = 1;
+      { const S = Math.max(1, g.uSiteR.value); g.uInvS.value = 1 / S; g.uInvSp.value = 1 / Math.max(20, S * 0.3); }
+      groundColor.copy(P.board);
+      const sp = sitePalette;
+      sp.road.copy(P.road); sp.kerb.copy(P.kerb); sp.lot.copy(P.lot); sp.lotEdge.copy(P.lotEdge); sp.dash.copy(P.dash); sp.kerbGlow.copy(P.kerbGlow); sp.crown.copy(P.crown);
+    }
+    groundMaterial(true).color.copy(groundColor); groundMaterial(true, true).color.copy(groundColor);
     // irradiance / π on a horizontal surface, for the unlit flat surfaces of the Fast tier
     const c = fl.c.setRGB(0, 0, 0);
     if (amb.current) { c.r = amb.current.color.r * amb.current.intensity; c.g = amb.current.color.g * amb.current.intensity; c.b = amb.current.color.b * amb.current.intensity; }
@@ -137,6 +181,10 @@ export function Lighting() {
     if (sun.current) { const k = Math.max(0, dir.y) * sun.current.intensity; c.r += sun.current.color.r * k; c.g += sun.current.color.g * k; c.b += sun.current.color.b * k; }
     if (moon.current && moon.current.intensity > 0) { const md = fl.m.copy(moon.current.position).sub(moon.current.target.position).normalize(); const k = Math.max(0, md.y) * moon.current.intensity; c.r += moon.current.color.r * k; c.g += moon.current.color.g * k; c.b += moon.current.color.b * k; }
     flatLight.value.setRGB(c.r / Math.PI, c.g / Math.PI, c.b / Math.PI);
+    padLight.value.copy(flatLight.value).addScalar(night * 0.2); padNight.value = night * 0.3;
+    sitePalette.exposure = flatLight.value.r * 0.2126 + flatLight.value.g * 0.7152 + flatLight.value.b * 0.0722;
+    // dimmed buildings sink toward the board (as an albedo under the current light)
+    fieldUniforms.uGround.value.copy(P.board).multiplyScalar(1 / Math.max(0.05, sitePalette.exposure));
     fieldUniforms.uNight.value = night;
     fieldUniforms.uTime.value = performance.now() / 1000;
     if (sun.current) { sun.current.position.set(geo.cx + dir.x * geo.r * 2, dir.y * geo.r * 2, geo.cz + dir.z * geo.r * 2); }
@@ -146,7 +194,7 @@ export function Lighting() {
       // only draw the dome when some of the view looks above the horizon
       camera.updateMatrixWorld();
       let up = -1;
-      for (const x of [-1, 1]) { fl.b.set(x, 1, 0.5).unproject(camera).sub(camera.position).normalize(); up = Math.max(up, fl.b.y); }
+      for (let x = -1; x <= 1; x += 2) { fl.b.set(x, 1, 0.5).unproject(camera).sub(camera.position).normalize(); up = Math.max(up, fl.b.y); }
       sky.current.visible = up > -0.03;
     }
     // shadow map: refresh on demand (layout, selection, lighting) and at ≤ 1 Hz while the Live sun moves (spec: ≤ 4 Hz)
@@ -182,14 +230,28 @@ export function Lighting() {
 /** Ground plane with the review grid. Clicking empty ground clears the selection. */
 export function Ground() {
   const { layout } = useDerived();
+  const rings = useStore((s) => s.quality) === 'high'; // the table's contour rings are a High-tier detail
+  const invalidate = useThree((s) => s.invalidate);
   const select = useStore((s) => s.select);
   const b = layout?.bounds ?? { x: 0, z: 0, w: 200, d: 200 };
   const size = Math.max(6000, Math.max(b.w, b.d) * 12);
-  useEffect(() => { groundUniforms.uFadeFar.value = Math.max(900, Math.max(b.w, b.d) * 2.2); }, [b.w, b.d]);
+  // the board hugs the campus bounds one margin out (an empty project shows a bare board waiting for a model)
+  const empty = !layout || (layout.buildings.length === 0 && layout.zones.length === 0);
+  const tb = empty ? { x: 0, z: 0, w: 120, d: 84 } : b;
+  const wasEmpty = useRef(true);
+  useEffect(() => {
+    const r = Math.max(40, Math.hypot(tb.w, tb.d) / 2);
+    // a site that grows (a streaming read) eases; a first model, another project or a jump in size snaps
+    const ratio = r / Math.max(1, tableTarget.r);
+    if (wasEmpty.current || empty || ratio > 2 || ratio < 0.5) tableTarget.set = false;
+    wasEmpty.current = empty;
+    Object.assign(tableTarget, { cx: tb.x, cz: tb.z, hx: tb.w / 2, hz: tb.d / 2, r, m: Math.max(5, Math.min(30, r * 0.07)) });
+    invalidate();
+  }, [tb.x, tb.z, tb.w, tb.d, empty, invalidate]);
   return (
     // the open ground never carries building shadows (lots, roads and pads cover the campus), so it stays on the
     // cheap unlit × flat-light material in both tiers
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[b.x, 0, b.z]} material={groundMaterial(true)} name="ground" renderOrder={-1}
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[b.x, 0, b.z]} material={groundMaterial(true, rings)} name="ground" renderOrder={-1}
       onClick={(e) => { if (e.delta > 4 || useStore.getState().focusMode === 'building') return; e.stopPropagation(); select({ kind: null }); }}>
       <planeGeometry args={[size, size]} />
     </mesh>

@@ -3,21 +3,52 @@
 // canopy, a cached EdgesGeometry outline in the accent colour, and the cut-away interior when focused.
 // When focused every shell mesh ignores raycasts, so clicks reach the crew inside.
 import { memo, useEffect, useMemo } from 'react';
-import type { ThreeEvent } from '@react-three/fiber';
+import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { FacilityEstimate } from '@shared/estimate';
 import { FINISH_COLORS } from '../components/lib/theme';
 import { useStore } from '../store';
 import type { BuildingPlacement } from './layout';
-import { BAYS, basic, fieldMaterial, mat, seeded, std, styleOf } from './assets';
+import { BAYS, fieldMaterial, fieldUniforms, mat, seeded, std, styleOf } from './assets';
 import { hoverFromScene } from './hover';
 import { explodeGap, floorY } from './InteriorCrew';
 import { WALL_BASE, WALL_TINT } from './BuildingField';
 
 /** the acid accent of the obsidian theme (tokens.css --accent): selection outline and the interior cage */
 const ACCENT = '#c6f43c';
+const ACCENT_C = new THREE.Color(ACCENT);
+/** field-material state of the hero: its chamfer edges turn acid (and glow after dark) */
+const SELECTED = 7;
 
 const noRaycast = () => {};
+
+/** the 12 edges of a unit box (no face diagonals): the floor cage is drawn from these, one box per floor */
+const CAGE_EDGES = (() => { const g = new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)); const a = Float32Array.from(g.getAttribute('position').array as ArrayLike<number>); g.dispose(); return a; })();
+function cageLines(items: { x: number; y: number; z: number; w: number; h: number; d: number }[]): THREE.LineSegments {
+  const n = CAGE_EDGES.length;
+  const pos = new Float32Array(items.length * n);
+  items.forEach((it, i) => { for (let j = 0; j < n; j += 3) { pos[i * n + j] = it.x + CAGE_EDGES[j] * it.w; pos[i * n + j + 1] = it.y + CAGE_EDGES[j + 1] * it.h; pos[i * n + j + 2] = it.z + CAGE_EDGES[j + 2] * it.d; } });
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.computeBoundingSphere();
+  const m = mat('int-cage-lines', () => new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.35, depthWrite: false, toneMapped: false }));
+  const lines = new THREE.LineSegments(geo, m); lines.name = 'int-cage';
+  return lines;
+}
+/**
+ * Interior finishes are lit from inside after dark: the focused building reads as "lights on" (the warm-window story),
+ * an emissive in proportion to each finish's own colour, so the step between carpet, resilient and tile patches holds.
+ * Zero in Review and by day (fieldUniforms.uNight).
+ */
+const interiorLit = (key: string, p: THREE.MeshLambertMaterialParameters, k: number) => mat(key, () => {
+  const m = new THREE.MeshLambertMaterial(p);
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uNight = fieldUniforms.uNight;
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uNight;')
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * vec3(1.0, 0.93, 0.8) * (uNight * ${k.toFixed(3)});`);
+  };
+  m.customProgramCacheKey = () => `${key}-night-lit`;
+  return m;
+});
 const m4 = new THREE.Matrix4();
 const q0 = new THREE.Quaternion();
 const v0 = new THREE.Vector3();
@@ -38,7 +69,7 @@ function instanced(geo: THREE.BufferGeometry, material: THREE.Material, items: {
 
 export interface HeroProps { placement: BuildingPlacement; estimate?: FacilityEstimate; tint: string; focused: boolean; hovered: boolean }
 
-export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate: e, tint, focused, hovered }: HeroProps) {
+export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate: e, tint, focused }: HeroProps) {
   const style = styleOf(b.category);
   const h = Math.max(0.6, b.height);
   const select = useStore((s) => s.select);
@@ -69,9 +100,9 @@ export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate:
     massing.geometry.getAttribute('aRoof').needsUpdate = true;
     const w = WALL_BASE.clone().lerp(c, WALL_TINT);
     massing.instanceColor!.setXYZ(0, w.r, w.g, w.b); massing.instanceColor!.needsUpdate = true;
-    (massing.geometry.getAttribute('aState') as THREE.InstancedBufferAttribute).setX(0, hovered ? 1 : 0);
+    (massing.geometry.getAttribute('aState') as THREE.InstancedBufferAttribute).setX(0, SELECTED);
     massing.geometry.getAttribute('aState').needsUpdate = true;
-  }, [massing, tint, hovered]);
+  }, [massing, tint]);
 
   // cached outline
 
@@ -108,25 +139,30 @@ export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate:
       let x = -b.box.w / 2;
       for (const [k, v] of entries) { const w = v * b.box.w; patches.push({ x: x + w / 2, y: y + 0.05, z: 0, w: Math.max(0.05, w - 0.02), h: 0.1, d: b.box.d - 0.02, color: FINISH_COLORS[k] ?? '#999' }); x += w; }
       for (let r = 0; r < restroomsPerFloor; r++) rest.push({ x: -b.box.w / 2 + 0.9 + r * 1.6, y: y + 0.55, z: b.box.d / 2 - 0.8, w: 1.4, h: 0.9, d: 1.3, color: '#f4f4f4' });
-      cores.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: Math.min(2.2, b.box.w * 0.18), h: b.floorHeight, d: Math.min(2.2, b.box.d * 0.18), color: '#1a1a1a' });
+      // the stair / elevator core: a mid-graphite volume (a black core read as a hole in the floor)
+      cores.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: Math.min(2.2, b.box.w * 0.18), h: b.floorHeight, d: Math.min(2.2, b.box.d * 0.18), color: '#565656' });
       cages.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: b.box.w, h: b.floorHeight - 0.05, d: b.box.d, color: ACCENT });
     }
-    const pm = instanced(unit, std('int-floor', { color: '#ffffff', roughness: 0.9 }), patches, 'int-floors');
+    const pm = instanced(unit, interiorLit('int-floor', { color: '#ffffff' }, 0.9), patches, 'int-floors');
     pm.receiveShadow = true;
     const rm = instanced(unit, std('int-rest', { color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.12, roughness: 0.6 }), rest, 'int-rest');
-    const cm = instanced(unit, std('int-core', { color: '#ffffff', roughness: 0.8 }), cores, 'int-core');
-    const wm = instanced(unit, basic('int-cage', { color: ACCENT, wireframe: true, transparent: true, opacity: 0.2, depthWrite: false }), cages, 'int-cage');
+    const cm = instanced(unit, interiorLit('int-core', { color: '#ffffff' }, 0.6), cores, 'int-core');
+    cm.castShadow = false; cm.receiveShadow = false;
+    // the floor cage: one acid box outline per floor (edges only, no face diagonals)
+    const wm = cageLines(cages);
     for (const m of [pm, rm, cm, wm]) m.raycast = noRaycast;
     return { unit, pm, rm, cm, wm };
   }, [focused, b.id, b.box.w, b.box.d, b.floors, b.floorHeight, e]);
-  useEffect(() => () => interior?.unit.dispose(), [interior]);
+  useEffect(() => () => { interior?.unit.dispose(); interior?.wm.geometry.dispose(); }, [interior]);
   const gap = explodeGap(b);
   const hx = focused ? Math.max(h, Math.min(b.floors, 24) * (b.floorHeight + gap) - gap) : h;
 
   const outline = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(b.box.w + 0.04, hx + 0.04, b.box.d + 0.04)), [b.box.w, b.box.d, hx]);
   useEffect(() => () => outline.dispose(), [outline]);
   const ghostMat = mat('hero-ghost', () => new THREE.MeshStandardMaterial({ color: '#e8e8e8', transparent: true, opacity: 0.06, depthWrite: false, roughness: 0.4, side: THREE.DoubleSide }));
-  const outlineMat = mat('hero-outline', () => new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 1 }));
+  const outlineMat = mat('hero-outline', () => new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 1, toneMapped: false }));
+  // the acid outline rises above the bloom threshold after dark, so the selection out-glows every white night edge
+  useFrame(() => { const k = 1 + fieldUniforms.uNight.value * 0.7; if (Math.abs(outlineMat.color.g - ACCENT_C.g * k) > 1e-4) outlineMat.color.copy(ACCENT_C).multiplyScalar(k); });
 
   const onDouble = (ev: ThreeEvent<MouseEvent>) => { ev.stopPropagation(); select({ kind: 'facility', id: b.id }); setFocusMode('building'); };
   const onClick = (ev: ThreeEvent<MouseEvent>) => { if (ev.delta > 4) return; ev.stopPropagation(); };
