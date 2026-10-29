@@ -1,45 +1,51 @@
-/* Visual tokens (UI spec §3). Dark only. SHELL owns this file; three/labels.css may read the subset listed in §2.8. */
+/* Visual tokens (UI spec §3). Dark only. SHELL owns this file; three/labels.css may read the subset listed in §2.8.
+   Concept "Obsidian": pure neutral graphite (R = G = B, no blue cast), razor hairlines, and ONE acid-lime accent kept
+   for primary actions, selection, focus and live state. Everything else is monochrome. */
 :root{
   color-scheme: dark;
   --ui-zoom: 1;
-  /* surfaces */
-  --bg:#0b0f17; --surface-1:#121824; --surface-2:#182131; --surface-3:#212b3d; --surface-sel:#163050;
-  --well:#0d121c; --scrim:rgba(6,9,15,.72); --overlay-bg:rgba(18,24,36,.94);
-  /* lines */
-  --border-1:#263043; --border-2:#334159; --border-ctl:#5f6d85;
-  /* text (contrast on --surface-1): 15.3 / 9.7 / 6.8 ; --text-off is for disabled only */
-  --text-1:#e9eef6; --text-2:#b6c0cf; --text-3:#95a1b5; --text-off:#5d6a80;
-  /* interactive */
-  --accent:#5aa9f5; --accent-hover:#7bbaf7; --accent-ink:#06101e; --accent-soft:rgba(90,169,245,.14); --focus:#8cc8ff;
+  /* surfaces: obsidian → graphite, 7 / 14 / 21 / 29 steps of pure neutral */
+  --bg:#070707; --surface-1:#0e0e0e; --surface-2:#151515; --surface-3:#1d1d1d; --surface-sel:#191c12;
+  --well:#0a0a0a; --scrim:rgba(0,0,0,.74); --overlay-bg:rgba(13,13,13,.94);
+  /* lines: hairlines are quiet; --border-ctl is the 3:1 boundary of inputs (3.57 on surface-1, 3.38 on surface-2) */
+  --border-1:#1f1f1f; --border-2:#2b2b2b; --border-ctl:#6a6a6a;
+  --hair:rgba(255,255,255,.075); --hair-2:rgba(255,255,255,.12); --edge-hi:rgba(255,255,255,.045);
+  /* text (contrast on --surface-1): 16.5 / 7.9 / 5.7 ; worst case on --surface-3: 14.4 / 6.9 / 4.95 ; --text-off is disabled only */
+  --text-1:#ededed; --text-2:#a6a6a6; --text-3:#8b8b8b; --text-off:#4d4d4d;
+  /* interactive: the acid accent (15.1:1 on surface-1); ink on accent 15.5:1 */
+  --accent:#c6f43c; --accent-hover:#d6ff5e; --accent-ink:#0a0a0a; --accent-soft:rgba(198,244,60,.10); --accent-line:rgba(198,244,60,.42);
+  --accent-glow:0 0 0 1px rgba(198,244,60,.35),0 0 18px -2px rgba(198,244,60,.35); --focus:#d8ff6e;
   /* status: fill / text */
-  --ok:#22c55e; --ok-text:#45c97a; --warn:#f59e0b; --warn-text:#f2b43c; --bad:#ef4444; --bad-text:#ff7d7d;
-  --flag:#f472b6; --edit:#b3a6ff; --new:#22d3ee; --ai:#e879f9; --danger-bg:#b42f3a;
-  /* charts */
-  --c-bottomup:#5aa9f5; --c-implied:#f2b43c; --c-ai:#e879f9;
-  --c-labor:#5aa9f5; --c-odc:#eab308; --c-subs:#8b5cf6; --c-ga:#14b8a6; --c-fee:#fb923c;
-  --brand:linear-gradient(135deg,#22d3ee 0%,#818cf8 55%,#e879f9 100%);   /* logo mark only */
-  /* type */
-  --font-sans:"IBM Plex Sans","Segoe UI Variable","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --ok:#2fcf8e; --ok-text:#4fd8a0; --warn:#f5a524; --warn-text:#f5b13d; --bad:#f0524f; --bad-text:#ff7a72;
+  --flag:#ff74b8; --edit:#a596ff; --new:#52c8f5; --ai:#f5a3f0; --danger-bg:#c4302b;
+  /* charts: bottom-up is ours (accent), implied is the reference (cool periwinkle, CVD-safe against lime);
+     the price stack is a monochrome ramp with the fee in accent */
+  --c-bottomup:#c6f43c; --c-implied:#9db2ff; --c-ai:#f5a3f0;
+  --c-labor:#e6e6e6; --c-odc:#a3a3a3; --c-subs:#6e6e6e; --c-ga:#474747; --c-fee:#c6f43c;
+  --brand:linear-gradient(160deg,#262626 0%,#0c0c0c 70%);   /* logo mark only */
+  /* type: Geist (vendored from @fontsource-variable/geist) + IBM Plex Mono */
+  --font-sans:"Geist Variable","IBM Plex Sans","Segoe UI Variable","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
   --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
   --fs-xs:11.5px; --lh-xs:16px;  --fs-sm:12.5px; --lh-sm:18px;  --fs-md:13.5px; --lh-md:20px;
   --fs-lg:15px;   --lh-lg:22px;  --fs-xl:18px;   --lh-xl:24px;  --fs-kpi:22px;  --lh-kpi:28px;
   --fs-hero:24px; --lh-hero:28px; --fs-display:32px; --lh-display:38px;
+  --track-tight:-0.02em; --track-snug:-0.01em; --track-label:0.01em;
   /* space (4-pt) */
   --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px; --s-8:32px; --pad:12px;
   /* fixed sizes */
   --top-h:48px; --rail-w:44px; --tab-h:40px; --toolbar-h:40px; --runstrip-h:40px;
   --ctl-h:32px; --ctl-h-sm:26px; --row-h:40px; --cell-h:32px; --cell-h-compact:28px; --thead-h:34px; --foot-h:32px;
   --left-w:300px; --right-w:340px; --dock-h:112px; --dock-h-collapsed:36px;
-  /* radii */
-  --r-1:4px; --r-2:6px; --r-3:8px; --r-4:12px; --r-pill:999px;
-  /* elevation */
-  --sh-overlay:0 2px 8px rgba(0,0,0,.35),0 0 0 1px var(--border-1);
-  --sh-pop:0 4px 16px rgba(0,0,0,.45),0 0 0 1px var(--border-2);
-  --sh-dialog:0 16px 48px rgba(0,0,0,.55),0 0 0 1px var(--border-2);
+  /* radii: tight and precise */
+  --r-1:3px; --r-2:5px; --r-3:7px; --r-4:10px; --r-pill:999px;
+  /* elevation: a hairline ring + a deep, soft drop; no coloured glows except the accent */
+  --sh-overlay:0 0 0 1px var(--hair),0 10px 28px -10px rgba(0,0,0,.75),inset 0 1px 0 var(--edge-hi);
+  --sh-pop:0 0 0 1px var(--hair-2),0 16px 40px -12px rgba(0,0,0,.85),inset 0 1px 0 var(--edge-hi);
+  --sh-dialog:0 0 0 1px var(--hair-2),0 32px 80px -16px rgba(0,0,0,.9),inset 0 1px 0 var(--edge-hi);
   /* layers */
   --z-vp-overlay:12; --z-sheet:14; --z-drawer:30; --z-pop:40; --z-dialog:50; --z-toast:60; --z-drop:70; --z-tip:80;
-  /* motion */
-  --dur-1:120ms; --dur-2:180ms; --dur-3:280ms; --ease:cubic-bezier(.2,.8,.2,1);
+  /* motion: quick, expo-out, no bounce */
+  --dur-1:90ms; --dur-2:150ms; --dur-3:220ms; --ease:cubic-bezier(.16,1,.3,1);
   /* insets: runtime values written by the shell; these defaults cover first paint at 1280×720 */
   --inset-top:48px; --inset-right:340px; --inset-bottom:36px; --inset-left:344px;
 }
@@ -49,4 +55,4 @@
 @media (prefers-reduced-motion:reduce){:root{--dur-1:0ms;--dur-2:0ms;--dur-3:0ms}}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .grid :focus-visible,.list :focus-visible{outline-offset:-2px}
-body{background:var(--bg);color:var(--text-1);font:400 var(--fs-md)/var(--lh-md) var(--font-sans);font-variant-numeric:tabular-nums}
+body{background:var(--bg);color:var(--text-1);font:400 var(--fs-md)/var(--lh-md) var(--font-sans);font-variant-numeric:tabular-nums;font-optical-sizing:auto}

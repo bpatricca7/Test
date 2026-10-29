@@ -5,8 +5,8 @@ import type { FacilityCategory } from '@shared/types';
 import type { ColorBy } from '../../store';
 
 export const T = {
-  bg: '#0b0f17', surface1: '#121824', text1: '#e9eef6', text2: '#b6c0cf', text3: '#95a1b5', accent: '#5aa9f5', focus: '#8cc8ff',
-  ok: '#22c55e', warn: '#f59e0b', bad: '#ef4444', flag: '#f472b6', edit: '#b3a6ff', newc: '#22d3ee', ai: '#e879f9',
+  bg: '#070707', surface1: '#0e0e0e', text1: '#ededed', text2: '#a6a6a6', text3: '#8b8b8b', accent: '#c6f43c', focus: '#d8ff6e',
+  ok: '#2fcf8e', warn: '#f5a524', bad: '#f0524f', flag: '#ff74b8', edit: '#a596ff', newc: '#52c8f5', ai: '#f5a3f0',
 } as const;
 
 export type ConfBand = 'hi' | 'mid' | 'lo';
@@ -18,15 +18,19 @@ export function confBand(c: number): ConfBand { return c >= CONF.hi ? 'hi' : c >
 /** Tone of the bottom-up vs implied Δ chip (§5.1): ≤ 10 % ok, ≤ 25 % warn, otherwise bad. */
 export function deltaTone(d: number): 'ok' | 'warn' | 'bad' { const a = Math.abs(d); return a <= 0.1 ? 'ok' : a <= 0.25 ? 'warn' : 'bad'; }
 export const CONF_GLYPH = { hi: '●', mid: '◆', lo: '▲' } as const;
-export const CONF_COLOR = { hi: '#22c55e', mid: '#f59e0b', lo: '#ef4444' } as const;
-export const REVIEW_COLOR = { verified: '#22c55e', flagged: '#f472b6', needs: '#f59e0b', ok: '#c9ced6' } as const;
-export const NEUTRAL_ROOF = '#c9ced6';
-export const FTE_RAMP = ['#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'] as const; // low → high
-export const FINISH_COLORS = { carpet: '#7c6a52', resilient: '#aab1bb', hardTile: '#e5e7eb', concrete: '#5f6670', wood: '#b7793f' } as const;
+/** Obsidian: high confidence is quiet (neutral, like its roof in the confidence legend); only doubt carries colour. Text-safe on every surface (≥ 6.6:1). */
+export const CONF_COLOR = { hi: '#a6a6a6', mid: '#f5b13d', lo: '#ff7a72' } as const;
+export const REVIEW_COLOR = { verified: '#2fcf8e', flagged: '#ff74b8', needs: '#f5a524', ok: '#9c9c9c' } as const;
+export const NEUTRAL_ROOF = '#9c9c9c';
+/** FTE heat: graphite rising to the acid accent (monotonic lightness, readable under every CVD). */
+export const FTE_RAMP = ['#4f4f4f', '#6e7a4a', '#90aa40', '#b6d83a', '#e2ff7a'] as const; // low → high
+/** Interior finishes, kept in the dark-graphite range so the pale scale-model figurines read on every floor. */
+export const FINISH_COLORS = { carpet: '#4f483f', resilient: '#6a6a6a', hardTile: '#878787', concrete: '#3d3d3d', wood: '#7d5735' } as const;
 
-/** Crew identity colours (CVD-validated against the dark surface; floor care and landscape swapped for adjacency). */
-const CREW_OVERRIDE: Partial<Record<Crew, string>> = { floor_care: '#c98500', grounds_landscape: '#d95926' };
-export function crewColor(id: Crew): string { return CREW_OVERRIDE[id] ?? CREWS.find((c) => c.id === id)?.color ?? '#9ca3af'; }
+/** Crew identity colours live in shared/factors.ts (CREWS[*].color): OKLCH-searched for the obsidian surfaces, ≥ 4.2:1 on
+ *  surface-3 and worst-case OKLab separation 0.141 / 0.094 / 0.092 / 0.065 (normal / protan / deutan / tritan). */
+const CREW_OVERRIDE: Partial<Record<Crew, string>> = {};
+export function crewColor(id: Crew): string { return CREW_OVERRIDE[id] ?? CREWS.find((c) => c.id === id)?.color ?? '#8f8f8f'; }
 export const CREW_ORDER: Crew[] = ['custodial', 'floor_care', 'dining_prod', 'dining_san', 'supervision', 'grounds_mow', 'grounds_landscape'];
 
 export function categoryColor(c: FacilityCategory): string { return CATEGORY_DEFAULTS[c]?.color ?? CATEGORY_DEFAULTS.other.color; }

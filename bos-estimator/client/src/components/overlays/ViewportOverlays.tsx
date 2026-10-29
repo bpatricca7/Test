@@ -66,7 +66,7 @@ function useLegend() {
     for (const g of grounds ?? []) kinds.set(g.kind, (kinds.get(g.kind) ?? 0) + 1);
     return {
       categories: [...cat.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c),
-      grounds: [...kinds.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => ({ color: ZONE_COLORS[k] ?? '#4f7a45', label: ZONE_LABELS[k] ?? k })),
+      grounds: [...kinds.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => ({ color: ZONE_COLORS[k] ?? '#3f6e40', label: ZONE_LABELS[k] ?? k })),
     };
   }, [colorBy, facilities, grounds]);
   return useMemo(() => legendFor(colorBy, fteBreaks, present), [colorBy, fteBreaks, present]);

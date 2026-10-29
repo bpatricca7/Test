@@ -8,7 +8,7 @@ import { SMAAPreset, type BloomEffect as BloomEffectImpl, type EffectComposer as
 import * as THREE from 'three';
 import { useStore } from '../store';
 import { useDerived } from '../derived';
-import { buildingTint } from '../components/lib/theme';
+import { buildingTint, NEUTRAL_ROOF } from '../components/lib/theme';
 import { clock } from './clock';
 import { Lighting, Ground } from './Lighting';
 import { SiteProps } from './SiteProps';
@@ -72,7 +72,7 @@ function Animator() {
   return null;
 }
 
-/** Cyan scan plane that sweeps the site only while the reader is extracting (P1). */
+/** Acid scan plane that sweeps the site only while the reader is extracting (P1): the live state wears the accent. */
 function ScanSweep() {
   const phase = useStore((s) => s.extraction.phase ?? (s.extraction.running ? 'extracting' : 'idle'));
   const reduced = useStore((s) => s.reducedMotion ?? false);
@@ -89,7 +89,7 @@ function ScanSweep() {
   return (
     <mesh ref={plane} raycast={() => null}>
       <boxGeometry args={[0.35, 8, 1]} />
-      <meshBasicMaterial color="#22d3ee" transparent opacity={0.28} blending={THREE.AdditiveBlending} depthWrite={false} />
+      <meshBasicMaterial color="#c6f43c" transparent opacity={0.3} blending={THREE.AdditiveBlending} depthWrite={false} />
     </mesh>
   );
 }
@@ -116,11 +116,11 @@ function SelectionFx() {
     <group position={[box.x, 0.12, box.z]}>
       <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={3}>
         <ringGeometry args={[0.97, 1, 72]} />
-        <meshBasicMaterial color="#5aa9f5" transparent opacity={0.7} depthWrite={false} />
+        <meshBasicMaterial color="#c6f43c" transparent opacity={0.7} depthWrite={false} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={3}>
         <planeGeometry args={[box.w + 0.6, box.d + 0.6]} />
-        <meshBasicMaterial color="#5aa9f5" transparent opacity={0.12} depthWrite={false} />
+        <meshBasicMaterial color="#c6f43c" transparent opacity={0.1} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -141,7 +141,7 @@ function Hero() {
   if (!b || !f) return null;
   const neutral = crewFilter != null;
   const meta = d.rowMeta.get(b.id);
-  const tint = neutral ? '#c9ced6' : buildingTint(colorBy, { category: f.category, conf: f.confidence, review: meta?.review ?? 'ok', fte: d.estById.get(b.id)?.fte ?? 0, fteBreaks: d.fteBreaks });
+  const tint = neutral ? NEUTRAL_ROOF : buildingTint(colorBy, { category: f.category, conf: f.confidence, review: meta?.review ?? 'ok', fte: d.estById.get(b.id)?.fte ?? 0, fteBreaks: d.fteBreaks });
   return <HeroBuilding placement={b} estimate={d.estById.get(b.id)} tint={tint} focused={focusMode === 'building' && buildingTab === 'interior'} hovered={hoverId === b.id} />;
 }
 

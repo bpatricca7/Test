@@ -12,6 +12,10 @@ import type { BuildingPlacement } from './layout';
 import { BAYS, basic, fieldMaterial, mat, seeded, std, styleOf } from './assets';
 import { hoverFromScene } from './hover';
 import { explodeGap, floorY } from './InteriorCrew';
+import { WALL_BASE, WALL_TINT } from './BuildingField';
+
+/** the acid accent of the obsidian theme (tokens.css --accent): selection outline and the interior cage */
+const ACCENT = '#c6f43c';
 
 const noRaycast = () => {};
 const m4 = new THREE.Matrix4();
@@ -63,7 +67,7 @@ export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate:
     const c = new THREE.Color(tint);
     (massing.geometry.getAttribute('aRoof') as THREE.InstancedBufferAttribute).setXYZ(0, c.r, c.g, c.b);
     massing.geometry.getAttribute('aRoof').needsUpdate = true;
-    const w = new THREE.Color('#e6e9ee').lerp(c, 0.25);
+    const w = WALL_BASE.clone().lerp(c, WALL_TINT);
     massing.instanceColor!.setXYZ(0, w.r, w.g, w.b); massing.instanceColor!.needsUpdate = true;
     (massing.geometry.getAttribute('aState') as THREE.InstancedBufferAttribute).setX(0, hovered ? 1 : 0);
     massing.geometry.getAttribute('aState').needsUpdate = true;
@@ -76,11 +80,11 @@ export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate:
     const roofC = new THREE.Color(tint).multiplyScalar(0.72).getStyle();
     const parapet = instanced(unit, std('hero-parapet', { color: '#ffffff', roughness: 0.9 }), [{ x: 0, y: h + 0.12, z: 0, w: b.box.w + 0.16, h: 0.24, d: b.box.d + 0.16, color: roofC }], 'hero-parapet');
     const floorsToDraw = Math.min(b.floors, 16);
-    const bands = instanced(unit, std('hero-band', { color: '#1b2433', roughness: 1 }), Array.from({ length: Math.max(0, floorsToDraw - 1) }, (_, i) => ({ x: 0, y: (i + 1) * b.floorHeight, z: 0, w: b.box.w + 0.06, h: 0.07, d: b.box.d + 0.06 })), 'hero-bands');
-    const units = instanced(unit, std('hero-rtu', { color: '#aab2bd' }), [], 'hero-rtu'); // rooftop units: shared field mesh
+    const bands = instanced(unit, std('hero-band', { color: '#141414', roughness: 1 }), Array.from({ length: Math.max(0, floorsToDraw - 1) }, (_, i) => ({ x: 0, y: (i + 1) * b.floorHeight, z: 0, w: b.box.w + 0.06, h: 0.07, d: b.box.d + 0.06 })), 'hero-bands');
+    const units = instanced(unit, std('hero-rtu', { color: '#8c8c8c' }), [], 'hero-rtu'); // rooftop units: shared field mesh
     const extras: { x: number; y: number; z: number; w: number; h: number; d: number; color?: string }[] = [];
-    if (b.category === 'hangar') extras.push({ x: 0, y: h + 0.5, z: 0, w: b.box.w * 0.9, h: 0.9, d: b.box.d * 0.28, color: '#475569' });
-    if (style !== 'industrial') extras.push({ x: 0, y: 0.5, z: b.box.d / 2 + 0.02, w: Math.min(2.2, b.box.w * 0.3), h: 1.0, d: 0.04, color: '#22344d' }); // entrance glazing (canopy: field mesh)
+    if (b.category === 'hangar') extras.push({ x: 0, y: h + 0.5, z: 0, w: b.box.w * 0.9, h: 0.9, d: b.box.d * 0.28, color: '#4a4a4a' });
+    if (style !== 'industrial') extras.push({ x: 0, y: 0.5, z: b.box.d / 2 + 0.02, w: Math.min(2.2, b.box.w * 0.3), h: 1.0, d: 0.04, color: '#141414' }); // entrance glazing (canopy: field mesh)
     const extra = instanced(unit, std('hero-extra', { color: '#ffffff', roughness: 0.5, metalness: 0.25 }), extras, 'hero-extra');
     for (const m of [parapet, units, extra]) m.castShadow = true;
     return { unit, parapet, bands, units, extra };
@@ -103,15 +107,15 @@ export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate:
       const y = floorY(b, f);
       let x = -b.box.w / 2;
       for (const [k, v] of entries) { const w = v * b.box.w; patches.push({ x: x + w / 2, y: y + 0.05, z: 0, w: Math.max(0.05, w - 0.02), h: 0.1, d: b.box.d - 0.02, color: FINISH_COLORS[k] ?? '#999' }); x += w; }
-      for (let r = 0; r < restroomsPerFloor; r++) rest.push({ x: -b.box.w / 2 + 0.9 + r * 1.6, y: y + 0.55, z: b.box.d / 2 - 0.8, w: 1.4, h: 0.9, d: 1.3, color: '#3b82f6' });
-      cores.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: Math.min(2.2, b.box.w * 0.18), h: b.floorHeight, d: Math.min(2.2, b.box.d * 0.18), color: '#1e293b' });
-      cages.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: b.box.w, h: b.floorHeight - 0.05, d: b.box.d, color: '#8cc8ff' });
+      for (let r = 0; r < restroomsPerFloor; r++) rest.push({ x: -b.box.w / 2 + 0.9 + r * 1.6, y: y + 0.55, z: b.box.d / 2 - 0.8, w: 1.4, h: 0.9, d: 1.3, color: '#f4f4f4' });
+      cores.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: Math.min(2.2, b.box.w * 0.18), h: b.floorHeight, d: Math.min(2.2, b.box.d * 0.18), color: '#1a1a1a' });
+      cages.push({ x: 0, y: y + b.floorHeight / 2, z: 0, w: b.box.w, h: b.floorHeight - 0.05, d: b.box.d, color: ACCENT });
     }
     const pm = instanced(unit, std('int-floor', { color: '#ffffff', roughness: 0.9 }), patches, 'int-floors');
     pm.receiveShadow = true;
-    const rm = instanced(unit, std('int-rest', { color: '#ffffff', emissive: '#1d4ed8', emissiveIntensity: 0.25, roughness: 0.6 }), rest, 'int-rest');
+    const rm = instanced(unit, std('int-rest', { color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.12, roughness: 0.6 }), rest, 'int-rest');
     const cm = instanced(unit, std('int-core', { color: '#ffffff', roughness: 0.8 }), cores, 'int-core');
-    const wm = instanced(unit, basic('int-cage', { color: '#8cc8ff', wireframe: true, transparent: true, opacity: 0.16, depthWrite: false }), cages, 'int-cage');
+    const wm = instanced(unit, basic('int-cage', { color: ACCENT, wireframe: true, transparent: true, opacity: 0.2, depthWrite: false }), cages, 'int-cage');
     for (const m of [pm, rm, cm, wm]) m.raycast = noRaycast;
     return { unit, pm, rm, cm, wm };
   }, [focused, b.id, b.box.w, b.box.d, b.floors, b.floorHeight, e]);
@@ -121,8 +125,8 @@ export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate:
 
   const outline = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(b.box.w + 0.04, hx + 0.04, b.box.d + 0.04)), [b.box.w, b.box.d, hx]);
   useEffect(() => () => outline.dispose(), [outline]);
-  const ghostMat = mat('hero-ghost', () => new THREE.MeshStandardMaterial({ color: '#cfe3ff', transparent: true, opacity: 0.07, depthWrite: false, roughness: 0.4, side: THREE.DoubleSide }));
-  const outlineMat = mat('hero-outline', () => new THREE.LineBasicMaterial({ color: '#5aa9f5', transparent: true, opacity: 0.95 }));
+  const ghostMat = mat('hero-ghost', () => new THREE.MeshStandardMaterial({ color: '#e8e8e8', transparent: true, opacity: 0.06, depthWrite: false, roughness: 0.4, side: THREE.DoubleSide }));
+  const outlineMat = mat('hero-outline', () => new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 1 }));
 
   const onDouble = (ev: ThreeEvent<MouseEvent>) => { ev.stopPropagation(); select({ kind: 'facility', id: b.id }); setFocusMode('building'); };
   const onClick = (ev: ThreeEvent<MouseEvent>) => { if (ev.delta > 4) return; ev.stopPropagation(); };

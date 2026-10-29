@@ -42,13 +42,13 @@ export interface CrewMeta {
 }
 
 export const CREWS: CrewMeta[] = [
-  { id: 'custodial', label: 'Custodial crew', short: 'Custodial', color: '#3987e5', defaultWage: 17.5, shift: { start: 17, end: 1.5 }, domain: 'interior' },
-  { id: 'floor_care', label: 'Floor care crew', short: 'Floor care', color: '#d95926', defaultWage: 19.5, shift: { start: 20, end: 4.5 }, domain: 'interior' },
-  { id: 'grounds_mow', label: 'Grounds — mowing crew', short: 'Mowing', color: '#199e70', defaultWage: 18.5, shift: { start: 6, end: 14.5 }, domain: 'grounds' },
-  { id: 'grounds_landscape', label: 'Grounds — landscape crew', short: 'Landscape', color: '#c98500', defaultWage: 19.0, shift: { start: 6.5, end: 15 }, domain: 'grounds' },
-  { id: 'dining_prod', label: 'Dining — food production', short: 'Food prod', color: '#d55181', defaultWage: 19.0, shift: { start: 4.5, end: 20 }, domain: 'dining' },
-  { id: 'dining_san', label: 'Dining — attendants & sanitation', short: 'Dining san', color: '#008300', defaultWage: 17.0, shift: { start: 5.5, end: 21 }, domain: 'dining' },
-  { id: 'supervision', label: 'Working supervision', short: 'Supervision', color: '#9085e9', defaultWage: 28.0, shift: { start: 6, end: 14.5 }, domain: 'interior' },
+  { id: 'custodial', label: 'Custodial crew', short: 'Custodial', color: '#1a8cf0', defaultWage: 17.5, shift: { start: 17, end: 1.5 }, domain: 'interior' },
+  { id: 'floor_care', label: 'Floor care crew', short: 'Floor care', color: '#f8b02a', defaultWage: 19.5, shift: { start: 20, end: 4.5 }, domain: 'interior' },
+  { id: 'grounds_mow', label: 'Grounds — mowing crew', short: 'Mowing', color: '#55b4be', defaultWage: 18.5, shift: { start: 6, end: 14.5 }, domain: 'grounds' },
+  { id: 'grounds_landscape', label: 'Grounds — landscape crew', short: 'Landscape', color: '#f5732e', defaultWage: 19.0, shift: { start: 6.5, end: 15 }, domain: 'grounds' },
+  { id: 'dining_prod', label: 'Dining — food production', short: 'Food prod', color: '#e0408a', defaultWage: 19.0, shift: { start: 4.5, end: 20 }, domain: 'dining' },
+  { id: 'dining_san', label: 'Dining — attendants & sanitation', short: 'Dining san', color: '#2ee09a', defaultWage: 17.0, shift: { start: 5.5, end: 21 }, domain: 'dining' },
+  { id: 'supervision', label: 'Working supervision', short: 'Supervision', color: '#c3bcfa', defaultWage: 28.0, shift: { start: 6, end: 14.5 }, domain: 'interior' },
 ];
 
 export const crewMeta = (id: Crew): CrewMeta => CREWS.find((c) => c.id === id)!;
@@ -178,19 +178,19 @@ export interface CategoryDefaults {
 }
 
 export const CATEGORY_DEFAULTS: Record<FacilityCategory, CategoryDefaults> = {
-  admin: { label: 'Administrative / office', floorMix: { carpet: 0.55, resilient: 0.25, hardTile: 0.15, concrete: 0.05, wood: 0 }, cleanableShare: 0.85, serviceLevel: 'daily_5', fixturesPerMsf: 0.5, occupantsPerMsf: 4, typicalFloors: 2, aspect: 1.6, color: '#94a3b8' },
-  barracks: { label: 'Barracks / dormitory', floorMix: { carpet: 0.2, resilient: 0.5, hardTile: 0.25, concrete: 0.05, wood: 0 }, cleanableShare: 0.6, serviceLevel: 'daily_7', fixturesPerMsf: 2.0, occupantsPerMsf: 3, typicalFloors: 3, aspect: 2.4, color: '#b8a48a' },
-  dining: { label: 'Dining facility', floorMix: { carpet: 0.1, resilient: 0.2, hardTile: 0.7, concrete: 0, wood: 0 }, cleanableShare: 0.9, serviceLevel: 'daily_7', fixturesPerMsf: 0.6, occupantsPerMsf: 15, typicalFloors: 1, aspect: 1.5, color: '#f59e0b' },
-  medical: { label: 'Medical / dental clinic', floorMix: { carpet: 0.15, resilient: 0.6, hardTile: 0.25, concrete: 0, wood: 0 }, cleanableShare: 0.9, serviceLevel: 'daily_7', fixturesPerMsf: 1.2, occupantsPerMsf: 5, typicalFloors: 2, aspect: 1.5, color: '#f8fafc' },
-  warehouse: { label: 'Warehouse / supply', floorMix: { carpet: 0, resilient: 0.1, hardTile: 0, concrete: 0.9, wood: 0 }, cleanableShare: 0.3, serviceLevel: '2x_week', fixturesPerMsf: 0.1, occupantsPerMsf: 0.3, typicalFloors: 1, aspect: 2.2, color: '#78716c' },
-  maintenance: { label: 'Maintenance shop / motor pool', floorMix: { carpet: 0, resilient: 0.2, hardTile: 0, concrete: 0.8, wood: 0 }, cleanableShare: 0.4, serviceLevel: '2x_week', fixturesPerMsf: 0.2, occupantsPerMsf: 0.8, typicalFloors: 1, aspect: 1.8, color: '#71717a' },
-  hangar: { label: 'Aircraft hangar', floorMix: { carpet: 0, resilient: 0.05, hardTile: 0, concrete: 0.95, wood: 0 }, cleanableShare: 0.25, serviceLevel: 'weekly', fixturesPerMsf: 0.08, occupantsPerMsf: 0.3, typicalFloors: 1, aspect: 1.3, color: '#64748b' },
-  fitness: { label: 'Fitness center / gym', floorMix: { carpet: 0, resilient: 0.4, hardTile: 0.3, concrete: 0, wood: 0.3 }, cleanableShare: 0.9, serviceLevel: 'daily_7', fixturesPerMsf: 1.5, occupantsPerMsf: 6, typicalFloors: 1, aspect: 1.4, color: '#60a5fa' },
-  child_care: { label: 'Child development center', floorMix: { carpet: 0.3, resilient: 0.6, hardTile: 0.1, concrete: 0, wood: 0 }, cleanableShare: 0.9, serviceLevel: 'daily_5', fixturesPerMsf: 1.5, occupantsPerMsf: 6, typicalFloors: 1, aspect: 1.8, color: '#fda4af' },
-  education: { label: 'Training / education', floorMix: { carpet: 0.35, resilient: 0.5, hardTile: 0.15, concrete: 0, wood: 0 }, cleanableShare: 0.85, serviceLevel: 'daily_5', fixturesPerMsf: 0.8, occupantsPerMsf: 8, typicalFloors: 2, aspect: 1.8, color: '#a3e635' },
-  community: { label: 'Community / MWR / chapel', floorMix: { carpet: 0.4, resilient: 0.35, hardTile: 0.25, concrete: 0, wood: 0 }, cleanableShare: 0.85, serviceLevel: 'daily_5', fixturesPerMsf: 0.8, occupantsPerMsf: 6, typicalFloors: 1, aspect: 1.5, color: '#c4b5fd' },
-  lab: { label: 'Laboratory / technical', floorMix: { carpet: 0.1, resilient: 0.7, hardTile: 0.2, concrete: 0, wood: 0 }, cleanableShare: 0.8, serviceLevel: 'daily_5', fixturesPerMsf: 0.6, occupantsPerMsf: 3, typicalFloors: 2, aspect: 1.5, color: '#67e8f9' },
-  other: { label: 'Other', floorMix: { carpet: 0.3, resilient: 0.4, hardTile: 0.2, concrete: 0.1, wood: 0 }, cleanableShare: 0.8, serviceLevel: 'daily_5', fixturesPerMsf: 0.5, occupantsPerMsf: 3, typicalFloors: 1, aspect: 1.5, color: '#9ca3af' },
+  admin: { label: 'Administrative / office', floorMix: { carpet: 0.55, resilient: 0.25, hardTile: 0.15, concrete: 0.05, wood: 0 }, cleanableShare: 0.85, serviceLevel: 'daily_5', fixturesPerMsf: 0.5, occupantsPerMsf: 4, typicalFloors: 2, aspect: 1.6, color: '#b8b8b8' },
+  barracks: { label: 'Barracks / dormitory', floorMix: { carpet: 0.2, resilient: 0.5, hardTile: 0.25, concrete: 0.05, wood: 0 }, cleanableShare: 0.6, serviceLevel: 'daily_7', fixturesPerMsf: 2.0, occupantsPerMsf: 3, typicalFloors: 3, aspect: 2.4, color: '#b9996b' },
+  dining: { label: 'Dining facility', floorMix: { carpet: 0.1, resilient: 0.2, hardTile: 0.7, concrete: 0, wood: 0 }, cleanableShare: 0.9, serviceLevel: 'daily_7', fixturesPerMsf: 0.6, occupantsPerMsf: 15, typicalFloors: 1, aspect: 1.5, color: '#f5911d' },
+  medical: { label: 'Medical / dental clinic', floorMix: { carpet: 0.15, resilient: 0.6, hardTile: 0.25, concrete: 0, wood: 0 }, cleanableShare: 0.9, serviceLevel: 'daily_7', fixturesPerMsf: 1.2, occupantsPerMsf: 5, typicalFloors: 2, aspect: 1.5, color: '#f5f5f5' },
+  warehouse: { label: 'Warehouse / supply', floorMix: { carpet: 0, resilient: 0.1, hardTile: 0, concrete: 0.9, wood: 0 }, cleanableShare: 0.3, serviceLevel: '2x_week', fixturesPerMsf: 0.1, occupantsPerMsf: 0.3, typicalFloors: 1, aspect: 2.2, color: '#857c72' },
+  maintenance: { label: 'Maintenance shop / motor pool', floorMix: { carpet: 0, resilient: 0.2, hardTile: 0, concrete: 0.8, wood: 0 }, cleanableShare: 0.4, serviceLevel: '2x_week', fixturesPerMsf: 0.2, occupantsPerMsf: 0.8, typicalFloors: 1, aspect: 1.8, color: '#666666' },
+  hangar: { label: 'Aircraft hangar', floorMix: { carpet: 0, resilient: 0.05, hardTile: 0, concrete: 0.95, wood: 0 }, cleanableShare: 0.25, serviceLevel: 'weekly', fixturesPerMsf: 0.08, occupantsPerMsf: 0.3, typicalFloors: 1, aspect: 1.3, color: '#97a5b0' },
+  fitness: { label: 'Fitness center / gym', floorMix: { carpet: 0, resilient: 0.4, hardTile: 0.3, concrete: 0, wood: 0.3 }, cleanableShare: 0.9, serviceLevel: 'daily_7', fixturesPerMsf: 1.5, occupantsPerMsf: 6, typicalFloors: 1, aspect: 1.4, color: '#3892d8' },
+  child_care: { label: 'Child development center', floorMix: { carpet: 0.3, resilient: 0.6, hardTile: 0.1, concrete: 0, wood: 0 }, cleanableShare: 0.9, serviceLevel: 'daily_5', fixturesPerMsf: 1.5, occupantsPerMsf: 6, typicalFloors: 1, aspect: 1.8, color: '#fcbcc4' },
+  education: { label: 'Training / education', floorMix: { carpet: 0.35, resilient: 0.5, hardTile: 0.15, concrete: 0, wood: 0 }, cleanableShare: 0.85, serviceLevel: 'daily_5', fixturesPerMsf: 0.8, occupantsPerMsf: 8, typicalFloors: 2, aspect: 1.8, color: '#32b78c' },
+  community: { label: 'Community / MWR / chapel', floorMix: { carpet: 0.4, resilient: 0.35, hardTile: 0.25, concrete: 0, wood: 0 }, cleanableShare: 0.85, serviceLevel: 'daily_5', fixturesPerMsf: 0.8, occupantsPerMsf: 6, typicalFloors: 1, aspect: 1.5, color: '#a49ddc' },
+  lab: { label: 'Laboratory / technical', floorMix: { carpet: 0.1, resilient: 0.7, hardTile: 0.2, concrete: 0, wood: 0 }, cleanableShare: 0.8, serviceLevel: 'daily_5', fixturesPerMsf: 0.6, occupantsPerMsf: 3, typicalFloors: 2, aspect: 1.5, color: '#51d7f9' },
+  other: { label: 'Other', floorMix: { carpet: 0.3, resilient: 0.4, hardTile: 0.2, concrete: 0.1, wood: 0 }, cleanableShare: 0.8, serviceLevel: 'daily_5', fixturesPerMsf: 0.5, occupantsPerMsf: 3, typicalFloors: 1, aspect: 1.5, color: '#888888' },
 };
 
 export const SNOW_EVENTS_BY_CLIMATE = { cold: 18, temperate: 6, hot_humid: 0, arid: 1 } as const;

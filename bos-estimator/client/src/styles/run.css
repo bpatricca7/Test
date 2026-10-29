@@ -1,12 +1,12 @@
 /* Run strip (UI spec §5.5): 40 px, first row of .center. Container queries keep the stepper, the facility count,
    the warnings counter, the elapsed time and Cancel visible down to ~520 px (the 1280×720 free width is 596). */
-.runstrip{position:relative;display:flex;align-items:center;gap:12px;height:var(--runstrip-h);padding:0 6px 0 12px;background:var(--surface-2);border-bottom:1px solid var(--border-1);
+.runstrip{position:relative;display:flex;align-items:center;gap:12px;height:var(--runstrip-h);padding:0 6px 0 12px;background:#101010;border-bottom:1px solid var(--border-2);
   font-size:var(--fs-sm);color:var(--text-2);min-width:0;white-space:nowrap;pointer-events:auto;overflow:hidden;container:runstrip/inline-size}
-.runstrip--failed{background:rgba(239,68,68,.12);border-bottom-color:var(--bad);color:var(--text-1)}
+.runstrip--failed{background:linear-gradient(90deg,rgba(240,82,79,.14),rgba(240,82,79,.05));border-bottom-color:rgba(240,82,79,.7);color:var(--text-1)}
 .runstrip--failed .runstrip__icon{color:var(--bad)}
 .runstrip--done .runstrip__icon{color:var(--ok)}
 .runstrip--cancelled{color:var(--text-2)}
-.runstrip--warn{background:rgba(245,158,11,.10);border-bottom-color:rgba(245,158,11,.55);color:var(--text-1)}
+.runstrip--warn{background:linear-gradient(90deg,rgba(245,165,36,.11),rgba(245,165,36,.03));border-bottom-color:rgba(245,165,36,.45);color:var(--text-1)}
 .runstrip--warn .runstrip__icon{color:var(--warn-text)}
 .runstrip--warn .runstrip__msg b{color:var(--warn-text);font-weight:600}
 .runstrip--cancelled .runstrip__icon{color:var(--text-3)}
@@ -18,9 +18,9 @@
 .rs-seg + .rs-seg::before{content:"·";margin:0 6px;color:var(--text-3)}
 .rs-seg.is-warn{color:var(--warn-text)}
 .rs-seg__btn{all:unset;cursor:pointer;border-radius:var(--r-1);padding:0 4px;margin:0 -4px;color:var(--warn-text)}
-.rs-seg__btn:hover{background:rgba(245,158,11,.16)}
+.rs-seg__btn:hover{background:rgba(245,165,36,.14)}
 .rs-seg__btn:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
-.rs-more{flex-shrink:0;height:20px;padding:0 6px;border-radius:var(--r-pill);background:var(--surface-3);color:var(--text-2);font:600 var(--fs-xs)/20px var(--font-sans);cursor:default}
+.rs-more{flex-shrink:0;height:20px;padding:0 6px;border-radius:var(--r-pill);background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px var(--hair);color:var(--text-2);font:600 var(--fs-xs)/20px var(--font-sans);cursor:default}
 .rs-more:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
 .rs-more-tip{display:flex;flex-direction:column;gap:2px}
 
@@ -33,7 +33,7 @@
 .runstrip__step.is-done .dot{background:var(--ok);border-color:var(--ok)}
 .runstrip__step.is-done{color:var(--text-2)}
 .runstrip__step.is-active{color:var(--text-1);font-weight:600}
-.runstrip__step.is-active .dot{border-color:var(--accent);color:var(--accent)}
+.runstrip__step.is-active .dot{border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px -2px rgba(198,244,60,.7)}
 
 /* counters */
 .runstrip__counters{display:flex;align-items:center;gap:12px;flex:0 1 auto;min-width:0;overflow:hidden;font-variant-numeric:tabular-nums}
@@ -43,12 +43,12 @@
 .rs-docs .warn{color:var(--warn-text)}
 .rs-staged{color:var(--new);font-size:var(--fs-xs)}
 .rs-time{color:var(--text-1);font-size:var(--fs-sm)}
-.runstrip__warn{display:inline-flex;align-items:center;gap:3px;height:24px;border:0;background:rgba(245,158,11,.14);color:var(--warn-text);font:600 var(--fs-sm)/1 var(--font-sans);cursor:pointer;padding:0 6px}
-.runstrip__warn:hover{background:rgba(245,158,11,.24)}
-.runstrip__ticker{flex:1 1 0;min-width:0;max-width:420px;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-3)}
+.runstrip__warn{display:inline-flex;align-items:center;gap:3px;height:24px;border:0;border-radius:var(--r-1);background:rgba(245,165,36,.1);box-shadow:inset 0 0 0 1px rgba(245,165,36,.25);color:var(--warn-text);font:600 var(--fs-sm)/1 var(--font-sans);cursor:pointer;padding:0 6px}
+.runstrip__warn:hover{background:rgba(245,165,36,.2)}
+.runstrip__ticker{flex:1 1 0;min-width:0;max-width:420px;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-family:var(--font-mono);color:var(--text-3)}
 .runstrip__actions{display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0}
 .runstrip__bar{position:absolute;left:0;right:0;bottom:0;height:2px;overflow:hidden}
-.runstrip__bar span{display:block;height:100%;background:var(--accent);transition:width var(--dur-2)}
+.runstrip__bar span{display:block;height:100%;background:var(--accent);box-shadow:0 0 10px rgba(198,244,60,.8);transition:width var(--dur-2)}
 .runstrip__bar.is-indeterminate span{width:30%;animation:run-shimmer 1.4s ease-in-out infinite}
 @keyframes run-shimmer{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
 :root[data-reduced-motion="true"] .runstrip__bar.is-indeterminate span{animation:none}

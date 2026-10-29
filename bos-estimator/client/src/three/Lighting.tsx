@@ -26,15 +26,17 @@ export const dayFactor = (t: number) => Math.max(0, Math.sin(((t - 6) / 12) * Ma
 /** 0 by day → 1 deep night, with dusk/dawn ramps. */
 export const nightFactor = (t: number) => { const d = dayFactor(t); return d > 0.25 ? 0 : 1 - d / 0.25; };
 
+// Obsidian: Review is a neutral studio (black void, white key, no blue cast); Live runs from a graphite overcast day to an
+// obsidian night where the only colour is warm window light and a faint cold moon on the massing.
 const REVIEW = {
-  top: new THREE.Color('#8ea7bf'), horizon: new THREE.Color('#d3dde6'),
-  hemiSky: new THREE.Color('#eef3f8'), hemiGround: new THREE.Color('#5d6656'),
-  key: new THREE.Color('#fff6e8'), ground: new THREE.Color('#67715f'),
+  top: new THREE.Color('#0a0a0a'), horizon: new THREE.Color('#1b1b1b'),
+  hemiSky: new THREE.Color('#f2f2f2'), hemiGround: new THREE.Color('#262626'),
+  key: new THREE.Color('#fffaf3'), ground: new THREE.Color('#0d0d0d'),
 };
 const LIVE = {
-  topDay: new THREE.Color('#5fa8e8'), topNight: new THREE.Color('#070b1c'), horDay: new THREE.Color('#cfe4f7'), horNight: new THREE.Color('#1a2645'),
-  night: new THREE.Color('#9fb4ff'), dusk: new THREE.Color('#ffb47a'), noon: new THREE.Color('#fff6e6'),
-  hemiSky: new THREE.Color('#dbe7ff'), hemiGround: new THREE.Color('#3a4a3a'), groundDay: new THREE.Color('#58644f'), groundNight: new THREE.Color('#3a4538'),
+  topDay: new THREE.Color('#2c2c2c'), topNight: new THREE.Color('#020202'), horDay: new THREE.Color('#6b6b6b'), horNight: new THREE.Color('#0d0d0d'),
+  night: new THREE.Color('#9aa5b6'), dusk: new THREE.Color('#ffb07a'), noon: new THREE.Color('#fffaf2'),
+  hemiSky: new THREE.Color('#e4e6ea'), hemiGround: new THREE.Color('#222222'), groundDay: new THREE.Color('#151515'), groundNight: new THREE.Color('#080808'),
 };
 /** key light direction for Review: azimuth 135° (from +z toward +x), elevation 50° */
 const REVIEW_DIR = (() => { const az = (135 * Math.PI) / 180, el = (50 * Math.PI) / 180; return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).normalize(); })();
@@ -51,8 +53,8 @@ export function Lighting() {
   const amb = useRef<THREE.AmbientLight>(null);
   const stars = useRef<THREE.Group>(null);
   const sky = useRef<THREE.Mesh>(null);
-  const fog = useMemo(() => new THREE.Fog('#16213f', 300, 2000), []);
-  const uniforms = useMemo(() => ({ top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, glow: { value: new THREE.Color('#ff9a5c') }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, glowAmt: { value: 0 }, disc: { value: 0 } }), []);
+  const fog = useMemo(() => new THREE.Fog('#0d0d0d', 300, 2000), []);
+  const uniforms = useMemo(() => ({ top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, glow: { value: new THREE.Color('#ff8f4a') }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, glowAmt: { value: 0 }, disc: { value: 0 } }), []);
   const tmp = useMemo(() => new THREE.Color(), []);
   const dir = useMemo(() => new THREE.Vector3(), []);
   const fl = useMemo(() => ({ c: new THREE.Color(), m: new THREE.Vector3(), b: new THREE.Vector3() }), []);
@@ -169,10 +171,10 @@ export function Lighting() {
             }`} />
       </mesh>
       {live && <group ref={stars}><Stars radius={900} depth={80} count={2200} factor={4} fade speed={0.35} /></group>}
-      <ambientLight ref={amb} intensity={0.35} color="#e6ecf5" />
-      <hemisphereLight ref={hemi} intensity={1} color="#eef3f8" groundColor="#5d6656" />
+      <ambientLight ref={amb} intensity={0.35} color="#ececec" />
+      <hemisphereLight ref={hemi} intensity={1} color="#f2f2f2" groundColor="#262626" />
       <directionalLight ref={sun} intensity={2} castShadow={quality === 'high'} shadow-mapSize={[2048, 2048]} shadow-bias={-0.0005} shadow-normalBias={0.04} />
-      {live && <directionalLight ref={moon} intensity={0} color="#9fb4ff" />}
+      {live && <directionalLight ref={moon} intensity={0} color="#9aa5b6" />}
     </>
   );
 }

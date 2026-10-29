@@ -11,11 +11,11 @@ body{overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:var(--accent)}
-code{font-family:var(--font-mono);font-size:var(--fs-xs);background:var(--surface-3);padding:0 4px;border-radius:3px}
+code{font-family:var(--font-mono);font-size:var(--fs-xs);background:var(--surface-3);padding:0 4px;border-radius:3px;box-shadow:inset 0 0 0 1px var(--hair)}
 h1,h2,h3,h4{margin:0}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#2c374b;border-radius:10px;border:2px solid transparent;background-clip:padding-box}
-::-webkit-scrollbar-thumb:hover{background:#3a4760;background-clip:padding-box}
+::-webkit-scrollbar-thumb{background:#262626;border-radius:10px;border:3px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:#3d3d3d;background-clip:padding-box}
 ::-webkit-scrollbar-corner{background:transparent}
-::selection{background:rgba(90,169,245,.35)}
+::selection{background:rgba(198,244,60,.85);color:#0a0a0a}

@@ -31,8 +31,9 @@ function build(geo: THREE.BufferGeometry, material: THREE.Material, boxes: { x: 
 }
 
 function lotMaterial(fast: boolean) {
-  return surfaceMat('lot', fast, { color: '#737e6b', polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }, (sh) => {
-    sh.uniforms.uLotEdge = { value: new THREE.Color('#808a76') };
+  // obsidian: lots are dark-concrete plinths on the black void, ringed by a lighter hairline
+  return surfaceMat('lot', fast, { color: '#202020', polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }, (sh) => {
+    sh.uniforms.uLotEdge = { value: new THREE.Color('#3d3d3d') };
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 aBld; varying vec2 vLotP; varying vec2 vLotS; varying vec4 vBld;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLotP = position.xz + 0.5; vLotS = vec2(length(instanceMatrix[0].xyz), length(instanceMatrix[2].xyz)); vBld = aBld;');
@@ -44,7 +45,7 @@ function lotMaterial(fast: boolean) {
           float ao = 1.0 - smoothstep(0.0, 1.5, length(q)); diffuseColor.rgb *= 1.0 - ao * 0.38; }`);
   }, 'lot-edge');
 }
-const roadMaterial = (fast: boolean) => surfaceMat('road', fast, { color: '#454c56', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+const roadMaterial = (fast: boolean) => surfaceMat('road', fast, { color: '#151515', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
 
 export function SiteProps() {
   const { layout } = useDerived();
@@ -69,9 +70,9 @@ export function SiteProps() {
       lines.push(horiz ? { x: r.x, y: 0.075, z: r.z, w: r.w * 0.98, h: 1, d: 0.16 } : { x: r.x, y: 0.075, z: r.z, w: 0.16, h: 1, d: r.d * 0.98 });
     }
     const roadMat = roadMaterial(true);
-    const curbMat = std('curb', { color: '#9aa1aa', roughness: 0.9 });
+    const curbMat = std('curb', { color: '#4a4a4a', roughness: 0.9 });
     const lineMat = mat('road-line', () => {
-      const m = new THREE.MeshBasicMaterial({ color: '#d9c06a', transparent: true, opacity: 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+      const m = new THREE.MeshBasicMaterial({ color: '#7a7a7a', transparent: true, opacity: 0.45, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
       m.onBeforeCompile = (sh) => {
         sh.vertexShader = sh.vertexShader
           .replace('#include <common>', '#include <common>\nvarying float vDash;')
@@ -104,14 +105,14 @@ export function SiteProps() {
       }
     }
     const lamps = spots.slice(0, 320);
-    const poleMesh = build(new THREE.CylinderGeometry(0.06, 0.09, 1, 5, 1, true), std('lamp-pole', { color: '#3b4350', roughness: 0.6, metalness: 0.4 }), lamps.map((s) => ({ x: s.x, y: 1.9, z: s.z, w: 1, h: 3.8, d: 1 })), layout, 'lamp-poles');
+    const poleMesh = build(new THREE.CylinderGeometry(0.06, 0.09, 1, 5, 1, true), std('lamp-pole', { color: '#2e2e2e', roughness: 0.6, metalness: 0.4 }), lamps.map((s) => ({ x: s.x, y: 1.9, z: s.z, w: 1, h: 3.8, d: 1 })), layout, 'lamp-poles');
     poleMesh.castShadow = true;
-    const headMat = std('lamp-head', { color: '#fff1c9', emissive: '#ffd27a', emissiveIntensity: 0 });
+    const headMat = std('lamp-head', { color: '#f2ead8', emissive: '#ffc46b', emissiveIntensity: 0 });
     const headMesh = build(new THREE.OctahedronGeometry(0.24, 0), headMat, lamps.map((s) => ({ x: s.x, y: 3.85, z: s.z, w: 1, h: 1, d: 1 })), layout, 'lamp-heads');
     // ---- trees: perimeter, lot corners, tree zones and loose turf; deterministic
     const trees = treeSpots(layout);
-    const trunkMesh = build(new THREE.CylinderGeometry(0.12, 0.18, 1, 5, 1, true), std('tree-trunk', { color: '#5b3a1f', roughness: 1 }), [], layout, 'tree-trunks');
-    const crownMesh = build(new THREE.IcosahedronGeometry(1.3, 0), std('tree-crown', { color: '#4f7a45', roughness: 0.9, flatShading: true }), [], layout, 'tree-crowns');
+    const trunkMesh = build(new THREE.CylinderGeometry(0.12, 0.18, 1, 5, 1, true), std('tree-trunk', { color: '#1c1c1c', roughness: 1 }), [], layout, 'tree-trunks');
+    const crownMesh = build(new THREE.IcosahedronGeometry(1.3, 0), std('tree-crown', { color: '#272a27', roughness: 0.9, flatShading: true }), [], layout, 'tree-crowns');
     const trunkCap = new THREE.InstancedMesh(trunkMesh.geometry, trunkMesh.material, Math.max(1, trees.length));
     const crownCap = new THREE.InstancedMesh(crownMesh.geometry, crownMesh.material, Math.max(1, trees.length));
     for (const m of [trunkCap, crownCap]) { m.raycast = noRaycast; m.castShadow = true; fixedSphere(m, layout); }

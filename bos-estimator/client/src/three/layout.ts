@@ -112,7 +112,7 @@ function placeInLot(lot: Lot, lotBox: Box2, buildings: BuildingPlacement[], zone
   const parkDepth = Math.min(lot.parkDepth, Math.max(0, lotBox.d - lot.bd - 1));
   const bz = lotBox.z - parkDepth / 2; // building in the north part, parking strip on the south edge
   const fh = floorHeightOf(lot.f.category);
-  buildings.push({ id: lot.id, box: { x: lotBox.x, z: bz, w: lot.bw, d: lot.bd }, height: fh * lot.f.floors, floors: lot.f.floors, floorHeight: fh, color: CATEGORY_DEFAULTS[lot.f.category]?.color ?? '#9ca3af', lot: lotBox, category: lot.f.category });
+  buildings.push({ id: lot.id, box: { x: lotBox.x, z: bz, w: lot.bw, d: lot.bd }, height: fh * lot.f.floors, floors: lot.f.floors, floorHeight: fh, color: CATEGORY_DEFAULTS[lot.f.category]?.color ?? '#888888', lot: lotBox, category: lot.f.category });
   const padBox: Box2 = { x: lotBox.x, z: lotBox.z - parkDepth / 2, w: lotBox.w, d: lotBox.d - parkDepth };
   lot.turf.forEach((g, i) => {
     const shrink = 1 - i * 0.08;
@@ -365,15 +365,16 @@ export function predictBounds(l: SiteLayout, expected: number): Box2 {
   return { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2, w: maxX - minX, d: maxZ - minZ };
 }
 
+/** Obsidian grounds: muted moss / olive / soil mats on the black void (the model's only organic tones); paved kinds are pure graphite. */
 export const ZONE_COLORS: Record<GroundsKind, string> = {
-  improved_turf: '#3f8f3a',
-  semi_improved: '#6f8f3a',
-  unimproved: '#8a8a4a',
-  athletic_field: '#2f9e44',
-  shrub_bed: '#5b3a1f',
-  parking: '#3b3f46',
-  sidewalk: '#8b8f98',
-  tree_canopy: '#2b6b2f',
+  improved_turf: '#335c36',
+  semi_improved: '#4b5734',
+  unimproved: '#58553f',
+  athletic_field: '#277446',
+  shrub_bed: '#56412d',
+  parking: '#262626',
+  sidewalk: '#5c5c5c',
+  tree_canopy: '#24402b',
 };
 export const ZONE_LABELS: Record<GroundsKind, string> = {
   improved_turf: 'Improved turf', semi_improved: 'Semi-improved', unimproved: 'Unimproved', athletic_field: 'Athletic field', shrub_bed: 'Planting beds', parking: 'Parking', sidewalk: 'Walks', tree_canopy: 'Trees',

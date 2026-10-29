@@ -15,7 +15,9 @@ import { hoverFromScene } from './hover';
 
 export const STATE = { normal: 0, hover: 1, hidden: 2, dim: 3, ghost: 4, recent: 5, refound: 6 } as const;
 const RECENT_MS = 2500;
-const WALL_BASE = new THREE.Color('#e6e9ee');
+/** Obsidian massing: close neutral graphite walls; the category hue lives in the roof (aRoof) and only tints the walls 8%. */
+export const WALL_BASE = new THREE.Color('#878787');
+export const WALL_TINT = 0.08;
 
 interface Batch { style: FacadeStyle; mesh: THREE.InstancedMesh; cap: number; ids: string[]; placements: BuildingPlacement[]; roof: THREE.InstancedBufferAttribute; dims: THREE.InstancedBufferAttribute; floors: THREE.InstancedBufferAttribute; state: THREE.InstancedBufferAttribute; seed: THREE.InstancedBufferAttribute; born: THREE.InstancedBufferAttribute }
 
@@ -129,7 +131,7 @@ export function BuildingField() {
       mesh.userData.base = mesh.instanceMatrix.array.slice();
       return mesh;
     };
-    return { unit, rtu: mk(rtus, '#aab2bd', 'rtu'), canopy: mk(canopies, '#cbd5e1', 'canopy') };
+    return { unit, rtu: mk(rtus, '#8c8c8c', 'rtu'), canopy: mk(canopies, '#a9a9a9', 'canopy') };
   }, [layout]);
   useEffect(() => () => details?.unit.dispose(), [details]);
   // the hero's own units and canopy hide while its cut-away interior shows
@@ -194,7 +196,7 @@ export function BuildingField() {
     invalidate();
   }, [layout, batches]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ---- colours: roof = buildingTint, walls = mix(#e6e9ee, tint, 0.25)
+  // ---- colours: roof = buildingTint, walls = mix(WALL_BASE graphite, tint, WALL_TINT)
   useEffect(() => {
     if (!layout) return;
     // a crew filter hands the colour to the crews (scene colour owner); Live keeps roof colours readable at night (S9)
@@ -205,7 +207,7 @@ export function BuildingField() {
       b.ids.forEach((id, i) => {
         c0.set(tintFor(id, b.placements[i].category, ctx));
         b.roof.setXYZ(i, c0.r, c0.g, c0.b);
-        c1.copy(WALL_BASE).lerp(c0, 0.25);
+        c1.copy(WALL_BASE).lerp(c0, WALL_TINT);
         b.mesh.instanceColor!.setXYZ(i, c1.r, c1.g, c1.b);
       });
       b.roof.needsUpdate = true; b.mesh.instanceColor!.needsUpdate = true;

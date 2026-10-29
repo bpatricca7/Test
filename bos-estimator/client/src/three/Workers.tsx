@@ -12,7 +12,7 @@ import { crewColor } from '../components/lib/theme';
 import { clock } from './clock';
 import { agentStates, type AgentState } from './sim';
 import { interiorAgents } from './InteriorCrew';
-import { basic, mat, std } from './assets';
+import { basic, fieldUniforms, mat, std } from './assets';
 import { rt, type CrewPoint } from './runtime';
 
 const m4 = new THREE.Matrix4();
@@ -22,14 +22,32 @@ const s0 = new THREE.Vector3();
 const e0 = new THREE.Euler();
 const QI = new THREE.Quaternion();
 const c0 = new THREE.Color();
-const NEUTRAL_BODY = new THREE.Color('#2b3240');
-const SKIN = new THREE.Color('#f1d3b3');
+// obsidian: scale-model figurines (pale graphite bodies, neutral heads); the crew colour rides on the glowing ring
+const NEUTRAL_BODY = new THREE.Color('#d6d6d6');
+const SKIN = new THREE.Color('#e6e1da');
+const ACCENT = new THREE.Color('#c6f43c');
 const capFor = (n: number) => { let c = 32; while (c < n) c *= 2; return c; };
 
 type GearKind = 'mower' | 'cart' | 'tray' | 'none';
 const gearOf = (crew: Crew): GearKind => { const m = crewMeta(crew); return m.domain === 'grounds' ? (crew === 'grounds_mow' ? 'mower' : 'cart') : m.domain === 'dining' ? 'tray' : crew === 'supervision' ? 'none' : 'cart'; };
 const GEAR_SIZE: Record<GearKind, [number, number, number]> = { mower: [1.1, 0.5, 1.4], cart: [0.55, 0.5, 0.8], tray: [0.5, 0.06, 0.35], none: [0, 0, 0] };
-const GEAR_COLOR: Record<GearKind, THREE.Color> = { mower: new THREE.Color('#d97706'), cart: new THREE.Color('#fbbf24'), tray: new THREE.Color('#e2e8f0'), none: new THREE.Color('#000') };
+const GEAR_COLOR: Record<GearKind, THREE.Color> = { mower: new THREE.Color('#5c5c5c'), cart: new THREE.Color('#8f8f8f'), tray: new THREE.Color('#e0e0e0'), none: new THREE.Color('#000') };
+
+/** Crew bodies: Lambert plus a self-glow in their own (instance) colour that rises with the Live night factor. */
+const crewBodyMaterial = () => mat('crew-body', () => {
+  const m = new THREE.MeshLambertMaterial({ color: '#ffffff', emissive: '#000000' });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uNight = fieldUniforms.uNight;
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uNight;')
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        #if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )
+          totalEmissiveRadiance += vColor.rgb * uNight * 0.6;
+        #endif`);
+  };
+  m.customProgramCacheKey = () => 'crew-body-glow';
+  return m;
+});
 
 const _c = new THREE.Vector3();
 const _d = new THREE.Vector3();
@@ -95,15 +113,15 @@ export function Workers() {
 
   const cap = capFor(roster.length + 32);
   const meshes = useMemo(() => {
-    const body = new THREE.InstancedMesh(new THREE.CapsuleGeometry(0.22, 0.55, 2, 7), std('crew-body', { color: '#ffffff', roughness: 0.55, emissive: '#000000' }), cap);
+    const body = new THREE.InstancedMesh(new THREE.CapsuleGeometry(0.22, 0.55, 2, 7), crewBodyMaterial(), cap);
     const head = new THREE.InstancedMesh(new THREE.SphereGeometry(0.2, 7, 5), std('crew-head', { color: '#ffffff', roughness: 0.7 }), cap);
     const gear = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), std('crew-gear', { color: '#ffffff', roughness: 0.6 }), cap);
     const ringGeo = new THREE.RingGeometry(0.45, 0.6, 16); ringGeo.rotateX(-Math.PI / 2);
-    const ring = new THREE.InstancedMesh(ringGeo, basic('crew-ring', { color: '#ffffff', transparent: true, opacity: 0.8, depthWrite: false }), cap);
+    const ring = new THREE.InstancedMesh(ringGeo, basic('crew-ring', { color: '#ffffff', transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending }), cap);
     const proxy = new THREE.InstancedMesh(new THREE.SphereGeometry(0.9, 6, 4), basic('crew-proxy', { colorWrite: false, depthWrite: false }), cap);
     // crews working inside buildings, seen through the walls when the camera is close (site view)
     const xbody = new THREE.InstancedMesh(body.geometry, mat('crew-xbody', () => new THREE.MeshBasicMaterial({ color: '#ffffff', depthTest: false, depthWrite: false, transparent: true, opacity: 0.9 })), cap);
-    const xhead = new THREE.InstancedMesh(head.geometry, mat('crew-xhead', () => new THREE.MeshBasicMaterial({ color: '#f1d3b3', depthTest: false, depthWrite: false, transparent: true, opacity: 0.9 })), cap);
+    const xhead = new THREE.InstancedMesh(head.geometry, mat('crew-xhead', () => new THREE.MeshBasicMaterial({ color: '#e6e1da', depthTest: false, depthWrite: false, transparent: true, opacity: 0.9 })), cap);
     xbody.renderOrder = 20; xhead.renderOrder = 21; xbody.name = 'crew-xray-bodies'; xhead.name = 'crew-xray-heads';
     for (const m of [xbody, xhead]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.count = 0; m.raycast = () => {}; }
     xbody.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
@@ -204,7 +222,7 @@ export function Workers() {
       if (crewColored || sel) meshes.body.setColorAt(i, cc); else meshes.body.setColorAt(i, NEUTRAL_BODY);
       m4.compose(v0.set(s.x, s.y + 1.12 * sc + bob, s.z), q0, s0.set(sc, sc, sc)); meshes.head.setMatrixAt(i, m4); meshes.head.setColorAt(i, SKIN);
       const rs = sel ? 1.5 : (s.status === 'work' || !crewColored) ? 1 : 0.0001;
-      m4.compose(v0.set(s.x, s.y + 0.03, s.z), QI, s0.set(rs, 1, rs)); meshes.ring.setMatrixAt(i, m4); meshes.ring.setColorAt(i, cc);
+      m4.compose(v0.set(s.x, s.y + 0.03, s.z), QI, s0.set(rs, 1, rs)); meshes.ring.setMatrixAt(i, m4); meshes.ring.setColorAt(i, sel ? ACCENT : cc);
       m4.compose(v0.set(s.x, s.y + 0.6, s.z), QI, s0.set(1, 1, 1)); meshes.proxy.setMatrixAt(i, m4);
       const gk = gearOf(s.agent.crew);
       if (gk !== 'none') {

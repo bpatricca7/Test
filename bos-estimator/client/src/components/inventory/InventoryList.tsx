@@ -302,7 +302,7 @@ const GroundsRow = memo(function GroundsRow({ g, meta, fte, maxFte, host, incomi
   return (
     <div id={optId(g.id)} role="option" aria-selected={selected} aria-disabled={incoming || undefined}
       className={cx('inv-row', 'inv-row--grounds', selected && 'is-sel', hovered && 'is-hover', isNew && 'is-new', incoming && 'is-incoming', flash && 'is-flash', cursor && 'is-cursor')}
-      style={{ ['--cat' as string]: ZONE_COLORS[g.kind] ?? '#3f8f3a', ['--fte' as string]: `${fte ? Math.min(100, (fte / maxFte) * 100) : 0}%` }}
+      style={{ ['--cat' as string]: ZONE_COLORS[g.kind] ?? '#3f6e40', ['--fte' as string]: `${fte ? Math.min(100, (fte / maxFte) * 100) : 0}%` }}
       onClick={incoming ? undefined : () => selectRow(g.id, { local: true })}
       onMouseEnter={() => hoverFromList(g.id)} onMouseLeave={() => { if (s().hoverId === g.id) hoverFromList(null); }}>
       <div className="inv-row__no">

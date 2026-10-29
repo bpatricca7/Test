@@ -50,17 +50,19 @@ function makeFacade(style: FacadeStyle) {
   const d = diffuse.getContext('2d')!; const e = emis.getContext('2d')!;
   const rnd = seeded(`facade-${style}`);
   d.fillStyle = '#ffffff'; d.fillRect(0, 0, W, H);
-  d.strokeStyle = 'rgba(15,23,42,0.16)'; d.lineWidth = 2;
+  d.strokeStyle = 'rgba(0,0,0,0.22)'; d.lineWidth = 2;
   for (let f = 0; f <= floors; f++) { d.beginPath(); d.moveTo(0, (H / floors) * f); d.lineTo(W, (H / floors) * f); d.stroke(); }
   e.fillStyle = '#000'; e.fillRect(0, 0, W, H);
   const fh = H / floors, bw = W / bays;
   const glass = (x: number, y: number, w: number, h: number) => {
-    const g = d.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, '#1f2c40'); g.addColorStop(1, '#34496a');
+    // obsidian glazing: smoked, neutral glass with a hairline sill highlight
+    const g = d.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, '#0f0f0f'); g.addColorStop(1, '#2a2a2a');
     d.fillStyle = g; d.fillRect(x, y, w, h);
-    d.fillStyle = 'rgba(255,255,255,0.14)'; d.fillRect(x, y, w, 2);
+    d.fillStyle = 'rgba(255,255,255,0.18)'; d.fillRect(x, y, w, 1);
     if (rnd() < 0.6) {
+      // night: warm tungsten / sodium rooms against the cold massing, a few neutral-white offices
       const warm = rnd();
-      e.fillStyle = warm < 0.72 ? `rgba(255,${205 + Math.floor(rnd() * 40)},${120 + Math.floor(rnd() * 60)},${0.8 + rnd() * 0.2})` : `rgba(${200 + Math.floor(rnd() * 55)},${225 + Math.floor(rnd() * 30)},255,${0.75 + rnd() * 0.25})`;
+      e.fillStyle = warm < 0.86 ? `rgba(255,${168 + Math.floor(rnd() * 46)},${78 + Math.floor(rnd() * 52)},${0.82 + rnd() * 0.18})` : `rgba(255,${238 + Math.floor(rnd() * 14)},${214 + Math.floor(rnd() * 24)},${0.75 + rnd() * 0.25})`;
       e.fillRect(x + 1, y + 1, w - 2, h - 2);
     }
   };
@@ -71,7 +73,7 @@ function makeFacade(style: FacadeStyle) {
         glass(x + 3, y + fh * 0.12, bw - 6, fh * 0.16); // clerestory strip
         if (b % 4 === 1) { // roll-up bay door at grade of each floor row
           const wx = x + 3, wy = y + fh * 0.42, ww = bw * 2 - 6, wh = fh * 0.58;
-          d.fillStyle = '#8d96a3'; d.fillRect(wx, wy, ww, wh);
+          d.fillStyle = '#8a8a8a'; d.fillRect(wx, wy, ww, wh);
           d.strokeStyle = 'rgba(0,0,0,.28)'; d.lineWidth = 1;
           for (let k = 1; k < 6; k++) { d.beginPath(); d.moveTo(wx, wy + (wh / 6) * k); d.lineTo(wx + ww, wy + (wh / 6) * k); d.stroke(); }
         }
@@ -181,11 +183,12 @@ export const basic = (key: string, p: THREE.MeshBasicMaterialParameters) => mat(
 export const fieldUniforms = {
   uNight: { value: 0 },
   uTime: { value: 0 },
-  uGround: { value: new THREE.Color('#67715f') },
-  uEdge: { value: new THREE.Color('#0f172a') },
-  uRecent: { value: new THREE.Color('#22d3ee') },
-  uGhost: { value: new THREE.Color('#9aa3ae') },
-  uOk: { value: new THREE.Color('#22c55e') },
+  uGround: { value: new THREE.Color('#0d0d0d') },
+  // obsidian: box edges catch a LIGHT hairline (a chamfered scale-model edge), not a dark outline
+  uEdge: { value: new THREE.Color('#e2e2e2') },
+  uRecent: { value: new THREE.Color('#52c8f5') },
+  uGhost: { value: new THREE.Color('#8a8a8a') },
+  uOk: { value: new THREE.Color('#2fcf8e') },
 };
 
 /**
@@ -234,10 +237,12 @@ export function fieldMaterial(style: FacadeStyle): THREE.MeshLambertMaterial {
           vec3 facade = texture(uFacade, vec3(vFacUv, uFacLayer)).rgb;`)
         .replace('#include <color_fragment>', `#include <color_fragment>
           if (vTop > 0.5) diffuseColor.rgb = vRoof; else diffuseColor.rgb *= facade;
+          // obsidian night: the massing goes cold and dark (roofs keep their colour), so warm windows carry the scene
+          if (vTop < 0.5) diffuseColor.rgb *= mix(vec3(1.0), vec3(0.40, 0.43, 0.48), uNight);
           vec2 fw = max(fwidth(vFace), vec2(1e-5));
           vec2 dpx = min(vFace, 1.0 - vFace) / fw;
           float edge = 1.0 - smoothstep(0.6, 1.9, min(dpx.x, dpx.y));
-          diffuseColor.rgb = mix(diffuseColor.rgb, uEdge, edge * 0.35);
+          diffuseColor.rgb = mix(diffuseColor.rgb, uEdge, edge * 0.42);
           if (vState > 0.5 && vState < 1.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), 0.08) * 1.06;
           else if (vState > 2.5 && vState < 3.5) diffuseColor.rgb = mix(diffuseColor.rgb, uGround, 0.7);
           else if (vState > 3.5 && vState < 4.5) diffuseColor.rgb = mix(diffuseColor.rgb, uGhost, 0.6);
@@ -247,7 +252,7 @@ export function fieldMaterial(style: FacadeStyle): THREE.MeshLambertMaterial {
           {
             vec3 win = texture(uFacade, vec3(vFacUv, uFacLayer + 3.0)).rgb * (1.0 - vTop);
             float dimK = (vState > 2.5 && vState < 4.5) ? 0.2 : 1.0;
-            totalEmissiveRadiance += win * uNight * 1.7 * dimK;
+            totalEmissiveRadiance += win * uNight * 2.3 * dimK;
             if (vState > 4.5 && vState < 5.5) totalEmissiveRadiance += uRecent * edge * (0.75 + 0.25 * sin(uTime * 6.0)) * 1.4;
             if (vState > 5.5) totalEmissiveRadiance += uOk * edge * 1.2;
           }`);
@@ -259,14 +264,14 @@ export function fieldMaterial(style: FacadeStyle): THREE.MeshLambertMaterial {
 
 /** Ground: base colour plus a 100-ft (10 unit) / 500-ft grid that fades with distance and density. */
 export const groundUniforms = {
-  uGrid1: { value: new THREE.Color('#727c69') },
-  uGrid2: { value: new THREE.Color('#7b8571') },
+  uGrid1: { value: new THREE.Color('#161616') },
+  uGrid2: { value: new THREE.Color('#212121') },
   uGridAmt: { value: 1 },
   uFadeFar: { value: 1500 },
 };
-export const groundColor = new THREE.Color('#67715f');
+export const groundColor = new THREE.Color('#0d0d0d');
 export function groundMaterial(fast: boolean): THREE.MeshBasicMaterial | THREE.MeshLambertMaterial {
-  const m = surfaceMat('ground', fast, { color: '#67715f' }, (sh) => {
+  const m = surfaceMat('ground', fast, { color: '#0d0d0d' }, (sh) => {
     Object.assign(sh.uniforms, groundUniforms);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vGWorld;')
@@ -312,10 +317,10 @@ export function padMaterial(kind: GroundsKind, color: string, fast: boolean, bor
           float edge = 1.0 - smoothstep(0.5, 1.5, min(dpx.x, dpx.y));
           vec3 base = diffuseColor.rgb;
           if (vPadState > 0.5 && vPadState < 1.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), 0.1);
-          else if (vPadState > 1.5 && vPadState < 2.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.1, 0.4, 0.9), 0.18);
-          else if (vPadState > 2.5 && vPadState < 3.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.29, 0.31, 0.27), 0.6);
-          // 1 px border: the zone colour at 60% (accent when selected, cyan when just found)
-          vec3 border = vPadState > 1.5 && vPadState < 2.5 ? vec3(0.1, 0.4, 0.9) : (vPadState > 3.5 ? vec3(0.02, 0.65, 0.8) : uZone);
+          else if (vPadState > 1.5 && vPadState < 2.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.565, 0.905, 0.045), 0.16);
+          else if (vPadState > 2.5 && vPadState < 3.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.006), 0.6);
+          // 1 px border: the zone colour at 60% (acid accent when selected, the "new" cyan when just found)
+          vec3 border = vPadState > 1.5 && vPadState < 2.5 ? vec3(0.565, 0.905, 0.045) : (vPadState > 3.5 ? vec3(0.084, 0.577, 0.914) : uZone);
           diffuseColor.rgb = mix(diffuseColor.rgb, border, edge * (vPadState > 1.5 ? 0.9 : 0.6));
         }`);
   }, 'pad-instanced');
