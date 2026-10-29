@@ -41,7 +41,8 @@ export const GroundsPads = memo(function GroundsPads() {
   const batches = useMemo(() => {
     if (!layout) return [] as KindBatch[];
     // one batch per kind and attachment: site-wide areas never carry building shadows, so they always use the
-    // cheap unlit material; pads on building lots receive shadows in the High tier
+    // cheap unlit material; pads on building lots receive shadows in the High tier and, in every tier, take the
+    // scene's light alone (no night floor), so they go dark at night like the lot they cover
     const byKind = new Map<string, ZonePlacement[]>();
     for (const z of layout.zones) { const k = `${z.kind}|${z.facilityId ? 'a' : 'l'}`; const a = byKind.get(k) ?? []; a.push(z); byKind.set(k, a); }
     const out: KindBatch[] = [];
@@ -51,7 +52,7 @@ export const GroundsPads = memo(function GroundsPads() {
       const uvs = new THREE.InstancedBufferAttribute(new Float32Array(zones.length * 2), 2);
       const state = new THREE.InstancedBufferAttribute(new Float32Array(zones.length), 1);
       geo.setAttribute('aUvScale', uvs); geo.setAttribute('aPadState', state);
-      const mesh = new THREE.InstancedMesh(geo, padMaterial(kind, padColor(kind), true, ZONE_COLORS[kind]), zones.length);
+      const mesh = new THREE.InstancedMesh(geo, padMaterial(kind, padColor(kind), true, ZONE_COLORS[kind], attached), zones.length);
       zones.forEach((z, i) => {
         const y = z.facilityId ? 0.085 : 0.05;
         m4.compose(v0.set(z.box.x, y, z.box.z), q0, s0.set(z.box.w, 1, z.box.d)); mesh.setMatrixAt(i, m4);
@@ -65,7 +66,7 @@ export const GroundsPads = memo(function GroundsPads() {
     return out;
   }, [layout]);
   useEffect(() => () => { for (const b of batches) b.mesh.geometry.dispose(); }, [batches]);
-  useEffect(() => { for (const b of batches) b.mesh.material = padMaterial(b.kind, padColor(b.kind), fast || !b.attached, ZONE_COLORS[b.kind]); invalidate(); }, [batches, fast, invalidate]);
+  useEffect(() => { for (const b of batches) b.mesh.material = padMaterial(b.kind, padColor(b.kind), fast || !b.attached, ZONE_COLORS[b.kind], b.attached); invalidate(); }, [batches, fast, invalidate]);
 
   useEffect(() => {
     const selId = selection.kind === 'grounds' ? selection.id : null;
