@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import type { Project } from '../shared/types';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const DIR = path.resolve(here, '../data/projects');
+// DATA_DIR puts projects on a persistent volume in a deployment (e.g. DATA_DIR=/data → /data/projects).
+const DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR, 'projects') : path.resolve(here, '../data/projects');
 
 export async function ensureDir() {
   await fs.mkdir(DIR, { recursive: true });

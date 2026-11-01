@@ -10,6 +10,7 @@ import { heuristicExtract } from './heuristic';
 import { aiAvailable, extractWithClaude, mergeFacility, topDownHeuristic, topDownWithClaude } from './ai';
 import { heuristicPriorAward } from './heuristic';
 import { emptyProject, listProjects, loadProject, saveProject } from './store';
+import { installPasswordGate } from './auth';
 import { CATEGORY_DEFAULTS, CREWS, FACTORS } from '../shared/factors';
 import { DEFAULT_ASSUMPTIONS, estimateInventory } from '../shared/estimate';
 import { AI_MODEL_PRESETS, type AiConfig, type DocumentInfo, type ExtractionEvent, type Inventory, type PriorAward, type Project, type TopDownEstimate } from '../shared/types';
@@ -29,7 +30,11 @@ const PORT = Number(process.env.PORT || 8787);
 // Document parsing itself runs in isolated workers (server/extract.ts), so a hostile upload cannot reach this.
 process.on('unhandledRejection', (reason) => { console.error('[server] unhandled rejection:', reason); });
 
-app.use(cors());
+// Behind a hosting proxy (Railway, Render, …) req.ip and req.secure come from X-Forwarded-*.
+app.set('trust proxy', 1);
+// A deployed instance sets APP_PASSWORD: every route then needs a session cookie, and the API is same-origin only.
+const gated = installPasswordGate(app, process.env.APP_PASSWORD);
+if (!gated) app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 
 app.get('/api/health', (_req, res) => {
@@ -338,5 +343,5 @@ app.get(/^\/(?!api\/).*/, async (_req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`BOS estimator server on http://localhost:${PORT}  (AI: ${aiAvailable() ? 'Claude enabled' : 'no API key → rule-based parser'})`);
+  console.log(`BOS estimator server on http://localhost:${PORT}  (AI: ${aiAvailable() ? 'Claude enabled' : 'no API key → rule-based parser'}${gated ? '; password required' : ''})`);
 });

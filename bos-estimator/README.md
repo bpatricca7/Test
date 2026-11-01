@@ -144,6 +144,21 @@ with `npx tsx scripts/eval.ts --provider replay --sim opus-sim tests/holdout*/*`
 fixes). The rule-based parser reaches 100 on batches 1–2 after fixes but stays near 48 on batch 3:
 it is a fallback for clean facility lists, and every row it reads is marked for review.
 
+## Deploying (phone or anywhere access)
+
+The `Dockerfile` builds the client and serves it with the API from one Node process; `railway.json` configures a
+Railway service (Dockerfile build, `/api/health` health check). Set these variables on the host:
+
+| Variable | Purpose |
+|---|---|
+| `APP_PASSWORD` | Required for any public URL: every page and API route then needs a sign-in (30-day cookie); failed sign-ins are rate-limited. |
+| `DATA_DIR` | Where projects are saved (`/data` in the image). Mount a persistent volume there or projects vanish on redeploy. |
+| `ANTHROPIC_API_KEY` | Optional: enables the AI reader. Without it the rule-based parser reads packages. |
+| `PORT` | Set by the host. |
+
+On Railway: point the service at this repository with root directory `/bos-estimator`, add a volume at `/data`, set
+`APP_PASSWORD`, and generate a domain.
+
 ## Layout
 
 ```
