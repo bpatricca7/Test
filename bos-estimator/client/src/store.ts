@@ -22,8 +22,9 @@ export type CenterView = 'map' | 'table';
 export type LayoutMode = 'desktop' | 'tablet' | 'phone';
 /** Phone bottom sheet snap points: peek ≈ 25 %, half ≈ 55 %, full ≈ 92 % of the viewport height. */
 export type SheetSnap = 'closed' | 'peek' | 'half' | 'full';
-/** Phone tab bar: which surface the sheet shows ('map' = no sheet content, the map alone). */
-export type SheetTab = 'map' | 'list' | 'inspector' | 'estimate' | 'documents';
+/** Phone sheet tabs: the tab bar's Map (no sheet), List, Inspector, Estimate and Documents, plus Crews (the crew clock
+ * and the read log, opened from the crew strip and the run strip). */
+export type SheetTab = 'map' | 'list' | 'inspector' | 'estimate' | 'documents' | 'crews';
 export interface SheetState { snap: SheetSnap; tab: string }
 export const PHONE_QUERY = '(max-width: 767.98px), (max-height: 539.98px) and (max-width: 1279.98px)';
 export const TABLET_QUERY = '(max-width: 1279.98px)';
@@ -116,6 +117,8 @@ const ZOOMS: UiZoom[] = ['auto', 0.9, 1, 1.125, 1.25];
 const mediaReduced = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 const readQuality = (): 'high' | 'fast' => { try { return localStorage.getItem('bos.quality') === 'fast' ? 'fast' : 'high'; } catch { return 'high'; } };
 const innerH = () => (typeof window === 'undefined' ? 900 : window.innerHeight);
+const SNAPS: SheetSnap[] = ['closed', 'peek', 'half', 'full'];
+const atLeast = (cur: SheetSnap, min: SheetSnap): SheetSnap => (SNAPS.indexOf(cur) >= SNAPS.indexOf(min) ? cur : min);
 
 // ---------------- run helpers ----------------
 const PHASE_ORDER: Record<RunPhase, number> = { idle: 0, uploading: 1, reading: 2, extracting: 3, merging: 4, crosscheck: 5, done: 6, failed: 7, cancelled: 7 };
@@ -336,6 +339,21 @@ function readJournal(id: string): Journal | null {
 function clearJournal(id: string) { try { localStorage.removeItem(journalKey(id)); } catch { /* storage unavailable */ } }
 const sameJson = (a: unknown, b: unknown) => { if (a === b) return true; try { return JSON.stringify(a ?? null) === JSON.stringify(b ?? null); } catch { return false; } };
 
+/** Phones show the side panels and the dock as tabs of one bottom sheet: opening a panel opens the sheet on that tab
+ * (at least at `min`). Elsewhere it returns nothing, so desktop and tablet behaviour is unchanged. */
+function phoneSheet(s: Pick<State, 'layoutMode' | 'sheet'>, tab: SheetTab, min: SheetSnap): Partial<State> {
+  if (s.layoutMode !== 'phone') return {};
+  return { sheet: { tab, snap: atLeast(s.sheet.tab === tab || s.sheet.snap !== 'closed' ? s.sheet.snap : 'closed', min) } };
+}
+/** Phone: selecting a building opens the Inspector at peek (or keeps the sheet's height); clearing the selection
+ * closes a sheet that only peeked at it. */
+function phoneSelectSheet(s: Pick<State, 'layoutMode' | 'sheet'>, sel: Selection): Partial<State> {
+  if (s.layoutMode !== 'phone') return {};
+  if (sel.kind !== null) return phoneSheet(s, 'inspector', 'peek');
+  if (s.sheet.tab === 'inspector' && s.sheet.snap === 'peek') return { sheet: { tab: 'map', snap: 'closed' } };
+  return {};
+}
+
 export const useStore = create<State>((set, get) => {
   const doSave = async (opts: { keepalive?: boolean } = {}): Promise<boolean> => {
     const p = get().project; if (!p) return true;
@@ -486,7 +504,8 @@ export const useStore = create<State>((set, get) => {
         const ranBefore = Boolean(project.extraction) || project.documents.length > 0;
         set({
           health, project, loading: false,
-          leftOpen: true, leftTab: empty || !ranBefore ? 'documents' : 'inventory',
+          // tablet: the left panel is a slide-over drawer, closed at load so the map shows
+          leftOpen: get().layoutMode !== 'tablet', leftTab: empty || !ranBefore ? 'documents' : 'inventory',
           rightOpen: !empty, rightTab: 'inspector',
           query: { ...get().query, tableTab: inv.facilities.length === 0 && inv.grounds.length > 0 ? 'grounds' : 'facilities' },
         });
@@ -606,7 +625,7 @@ export const useStore = create<State>((set, get) => {
       const s = get();
       const same = s.selection.kind === sel.kind && (sel.kind === null || (s.selection as { id: string }).id === sel.id);
       if (same) { if (s.selectedAgentId) set({ selectedAgentId: null }); return; }
-      set({ selection: sel, selectedAgentId: null, focusMode: sel.kind === 'facility' ? s.focusMode : 'site' });
+      set({ selection: sel, selectedAgentId: null, focusMode: sel.kind === 'facility' ? s.focusMode : 'site', ...phoneSelectSheet(s, sel) });
     },
     setFocusMode(m) { set({ focusMode: m }); },
     setBuildingTab(t) { set({ buildingTab: t }); },
@@ -940,7 +959,10 @@ export const useStore = create<State>((set, get) => {
     simSet(patch) { set((s) => ({ sim: { ...s.sim, ...patch } })); },
     setHover(id) { if (get().hoverId !== id) set({ hoverId: id }); },
     setView(v) {
-      const s = get(); if (s.view === v) return;
+      const s = get();
+      // phones have no Table view: the inventory list sheet replaces it
+      if (s.layoutMode === 'phone' && v === 'table') { set(phoneSheet(s, 'list', 'half')); return; }
+      if (s.view === v) return;
       // the table sheet spans from the rail: the left panel collapses while it shows and is restored on exit (§4.2)
       if (v === 'table') set({ view: v, leftOpen: false, leftBeforeTable: s.leftOpen });
       else set({ view: v, leftOpen: s.leftBeforeTable ?? s.leftOpen, leftBeforeTable: null });
@@ -999,7 +1021,10 @@ export const useStore = create<State>((set, get) => {
     },
 
     // ------------------------------------------------------------------ layout contract
-    setLayoutMode(m) { if (get().layoutMode !== m) set({ layoutMode: m }); },
+    setLayoutMode(m) {
+      const s = get(); if (s.layoutMode === m) return;
+      set({ layoutMode: m, ...(m === 'phone' && s.view === 'table' ? { view: 'map', leftOpen: s.leftBeforeTable ?? s.leftOpen, leftBeforeTable: null } : {}) });
+    },
     setSheet(patch) { set((s) => ({ sheet: { ...s.sheet, ...patch } })); },
     setSheetSnap(snap) { set((s) => (s.sheet.snap === snap ? {} : { sheet: { ...s.sheet, snap } })); },
     setSheetTab(tab) { set((s) => (s.sheet.tab === tab ? {} : { sheet: { ...s.sheet, tab } })); },
@@ -1007,14 +1032,14 @@ export const useStore = create<State>((set, get) => {
     // ------------------------------------------------------------------ SHELL-only UI
     setLeftOpen(v) { set({ leftOpen: v }); },
     setLeftTab(t) { set({ leftTab: t }); },
-    openLeft(t) { set({ leftOpen: true, leftTab: t }); },
+    openLeft(t) { set({ leftOpen: true, leftTab: t, ...phoneSheet(get(), t === 'inventory' ? 'list' : 'documents', 'half') }); },
     setRightOpen(v, opts) { set({ rightOpen: v, ...(opts?.user ? { rightUserCollapsed: !v } : {}) }); },
     setRightTab(t) { set({ rightTab: t }); },
-    openRight(t) { set({ rightOpen: true, rightTab: t }); },
-    openEstimate(section) { set((s) => ({ rightOpen: true, rightTab: 'estimate', estimateFocus: section ? { section, seq: (s.estimateFocus?.seq ?? 0) + 1 } : s.estimateFocus })); },
+    openRight(t) { set({ rightOpen: true, rightTab: t, ...phoneSheet(get(), t, t === 'inspector' ? 'peek' : 'half') }); },
+    openEstimate(section) { set((s) => ({ rightOpen: true, rightTab: 'estimate', estimateFocus: section ? { section, seq: (s.estimateFocus?.seq ?? 0) + 1 } : s.estimateFocus, ...phoneSheet(s, 'estimate', 'half') })); },
     setBottomOpen(v, opts) { set(opts?.auto ? { bottomOpen: v } : { bottomOpen: v, bottomTouched: true }); },
     setBottomTab(t) { set({ bottomTab: t, bottomTouched: true }); },
-    openLog(filter) { set((s) => ({ bottomOpen: true, bottomTab: 'log', bottomTouched: true, logFilter: filter ?? s.logFilter })); },
+    openLog(filter) { set((s) => ({ bottomOpen: true, bottomTab: 'log', bottomTouched: true, logFilter: filter ?? s.logFilter, ...phoneSheet(s, 'crews', 'half') })); },
     setLogFilter(f) { set({ logFilter: f }); },
     setUiZoom(z) { set({ uiZoom: z }); saveUi({ uiZoom: z }); },
     setReducedMotionPref(v) { set({ reducedMotionPref: v, reducedMotion: effectiveReduced(v) }); saveUi({ reducedMotion: v }); },
