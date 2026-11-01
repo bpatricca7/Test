@@ -11,7 +11,7 @@ import { buildingTint, NEUTRAL_ROOF } from '../components/lib/theme';
 import type { BuildingPlacement, SiteLayout } from './layout';
 import { BAYS, fieldMaterial, seeded, std, STYLES, styleOf, type FacadeStyle } from './assets';
 import { requestShadow, rt } from './runtime';
-import { hoverFromScene } from './hover';
+import { hoverFromScene, noteTap } from './hover';
 
 export const STATE = { normal: 0, hover: 1, hidden: 2, dim: 3, ghost: 4, recent: 5, refound: 6 } as const;
 const RECENT_MS = 2500;
@@ -284,6 +284,7 @@ export function BuildingField() {
     if (e.instanceId == null || !ids) return;
     e.stopPropagation();
     const id = ids[e.instanceId];
+    noteTap('facility', id);
     const s = useStore.getState();
     if (s.selection.kind === 'facility' && s.selection.id === id) return;
     select({ kind: 'facility', id });

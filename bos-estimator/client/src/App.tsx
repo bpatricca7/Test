@@ -13,6 +13,8 @@ import { LeftPanel, RightEdgeHandle, RightPanel } from './components/shell/Panel
 import { ShortcutsSheet } from './components/shell/ShortcutsSheet';
 import { DropOverlay } from './components/shell/DropOverlay';
 import { usePanelAutoRules, useInsetsWriter, useReducedMotionAttr, useUiZoomWriter } from './components/shell/layout';
+import { useLayoutModeSync } from './components/shell/responsive';
+import { PhoneChrome } from './components/shell/Phone';
 import { chooseFiles } from './components/shell/fileChooser';
 import { RunStrip } from './components/run/RunStrip';
 import { TableView } from './components/table/TableView';
@@ -25,6 +27,8 @@ import { analyzeNow } from './components/documents/reader';
 // register once at import, so they work in both views whichever panel is open.
 import './components/lib/history';
 import './components/inventory/reviewLoop';
+// phone and tablet layouts: after every feature stylesheet the imports above pulled in, so it wins ties
+import './styles/mobile.css';
 
 const FactorsDialog = lazy(() => import('./components/dialogs/FactorsDialog').then((m) => ({ default: m.FactorsDialog })));
 
@@ -84,6 +88,7 @@ const Stage = memo(function Stage() {
 });
 
 const Shell = memo(function Shell() {
+  const layoutMode = useStore((s) => s.layoutMode);
   const view = useStore((s) => s.view);
   const phase = useStore((s) => s.extraction.phase);
   const empty = useStore((s) => !s.project || s.project.inventory.facilities.length + s.project.inventory.grounds.length === 0);
@@ -93,6 +98,7 @@ const Shell = memo(function Shell() {
   const factorsOpen = useStore((s) => s.factorsOpen);
   const vpRef = useRef<HTMLDivElement>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
+  useLayoutModeSync();
   useUiZoomWriter();
   useReducedMotionAttr();
   useInsetsWriter(vpRef, chromeRef);
@@ -100,23 +106,29 @@ const Shell = memo(function Shell() {
   useGlobalHotkeys();
 
   return (
-    <div className="app" data-view={view} data-phase={phase} data-empty={empty ? 'true' : 'false'} data-lighting={lighting}>
+    <div className="app" data-layout={layoutMode} data-view={view} data-phase={phase} data-empty={empty ? 'true' : 'false'} data-lighting={lighting}>
       <Stage />
-      <div ref={chromeRef} className="chrome" data-left={leftOpen ? 'open' : 'closed'} data-right={rightOpen ? 'open' : 'closed'}>
-        <TopBar />
-        <Rail />
-        <aside className="panel-left" aria-label="Inventory and documents" inert={!leftOpen}><LeftPanel /></aside>
-        <section className="center" aria-label="Site">
-          <RunStrip />
-          <div ref={vpRef} className="vp-area">
-            {view === 'table' && <TableView />}
-            <ViewportOverlays />
-            <RightEdgeHandle />
-            <ToastHost />
-          </div>
-          <BottomPanel />
-        </section>
-        <aside className="panel-right" aria-label="Inspector and estimate" inert={!rightOpen}><RightPanel /></aside>
+      {/* one .chrome and one #portal in every layout (open dialogs and menus survive a mode change); phones swap the
+          grid's children for the sheet chrome, tablets restyle the desktop grid (slide-over drawers) */}
+      <div ref={chromeRef} className="chrome" data-layout={layoutMode} data-left={leftOpen ? 'open' : 'closed'} data-right={rightOpen ? 'open' : 'closed'}>
+        {layoutMode === 'phone' ? <PhoneChrome vpRef={vpRef} /> : (
+          <>
+            <TopBar />
+            <Rail />
+            <aside className="panel-left" aria-label="Inventory and documents" inert={!leftOpen} data-inset-cover={layoutMode === 'tablet' ? 'left' : undefined}><LeftPanel /></aside>
+            <section className="center" aria-label="Site">
+              <RunStrip />
+              <div ref={vpRef} className="vp-area">
+                {view === 'table' && <TableView />}
+                <ViewportOverlays />
+                <RightEdgeHandle />
+                <ToastHost />
+              </div>
+              <BottomPanel />
+            </section>
+            <aside className="panel-right" aria-label="Inspector and estimate" inert={!rightOpen} data-inset-cover={layoutMode === 'tablet' ? 'right' : undefined}><RightPanel /></aside>
+          </>
+        )}
         <div id="portal" />
       </div>
       <ConfirmHost />

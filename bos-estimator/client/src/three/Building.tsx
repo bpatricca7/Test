@@ -10,7 +10,7 @@ import { FINISH_COLORS } from '../components/lib/theme';
 import { useStore } from '../store';
 import type { BuildingPlacement } from './layout';
 import { BAYS, fieldMaterial, fieldUniforms, mat, seeded, std, styleOf } from './assets';
-import { hoverFromScene } from './hover';
+import { hoverFromScene, noteTap } from './hover';
 import { explodeGap, floorY } from './InteriorCrew';
 import { WALL_BASE, WALL_TINT } from './BuildingField';
 
@@ -167,7 +167,7 @@ export const HeroBuilding = memo(function HeroBuilding({ placement: b, estimate:
   useFrame(() => { const k = 1 + fieldUniforms.uNight.value * 0.7; if (Math.abs(outlineMat.color.g - ACCENT_C.g * k) > 1e-4) outlineMat.color.copy(ACCENT_C).multiplyScalar(k); });
 
   const onDouble = (ev: ThreeEvent<MouseEvent>) => { ev.stopPropagation(); select({ kind: 'facility', id: b.id }); setFocusMode('building'); };
-  const onClick = (ev: ThreeEvent<MouseEvent>) => { if (ev.delta > 4) return; ev.stopPropagation(); };
+  const onClick = (ev: ThreeEvent<MouseEvent>) => { if (ev.delta > 4) return; ev.stopPropagation(); noteTap('facility', b.id); };
   const onMove = (ev: ThreeEvent<PointerEvent>) => { ev.stopPropagation(); hoverFromScene(b.id); };
   const onOut = () => { if (useStore.getState().hoverId === b.id) hoverFromScene(null); };
 

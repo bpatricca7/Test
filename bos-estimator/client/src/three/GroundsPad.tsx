@@ -8,7 +8,7 @@ import { useStore } from '../store';
 import { useDerived } from '../derived';
 import { ZONE_COLORS, type ZonePlacement } from './layout';
 import { padMaterial } from './assets';
-import { hoverFromScene } from './hover';
+import { hoverFromScene, noteTap } from './hover';
 import { rt } from './runtime';
 
 const m4 = new THREE.Matrix4();
@@ -103,6 +103,7 @@ export const GroundsPads = memo(function GroundsPads() {
     const s = useStore.getState();
     if (s.focusMode === 'building') return; // inside a building the pads are context, not targets
     e.stopPropagation();
+    noteTap('grounds', id);
     select({ kind: 'grounds', id });
   };
 

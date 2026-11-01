@@ -16,6 +16,7 @@ import { rt, type LabelOut } from './runtime';
 import { hoverFromScene, hoverSrc } from './hover';
 import { fmtTime } from './sim';
 import { clock } from './clock';
+import { input, layoutModeOf, sheetSnapOf, touchUI } from './device';
 import './labels.css';
 
 const POOL = 160;
@@ -23,6 +24,14 @@ const POOL = 160;
 const PIN_TRIES: [number, number][] = [[0, 0], [0, -10], [-10, -4], [10, -4], [0, -20], [-14, -12], [14, -12], [-18, 0], [18, 0], [0, 12], [-22, -16], [22, -16]];
 const PACK_MS = 200;
 type Lod = 'chip' | 'full' | 'pin';
+/**
+ * Label metrics (px). Box sizes are measured here, so labels.css must match them: chip = text + chipPad wide and
+ * chipH tall, full = widest line + fullPad wide and fullH (fullH3 with the crew row) tall. Phones get fewer,
+ * larger labels (every text ≥ 12 px) in the `.compact` layer.
+ */
+interface Metrics { chip: number; l1: number; l2: number; zone: number; chipH: number; chipPad: number; fullH: number; fullH3: number; fullPad: number; pinW: number; pinH: number; maxFull: number; gap: number }
+const DESK: Metrics = { chip: 12, l1: 12.5, l2: 11.5, zone: 11.5, chipH: 20, chipPad: 17, fullH: 40, fullH3: 56, fullPad: 21, pinW: 12, pinH: 20, maxFull: 12, gap: 4 };
+const PHONE: Metrics = { chip: 13, l1: 13.5, l2: 12, zone: 12.5, chipH: 24, chipPad: 19, fullH: 46, fullH3: 64, fullPad: 23, pinW: 14, pinH: 24, maxFull: 3, gap: 6 };
 interface Rect { x0: number; y0: number; x1: number; y1: number }
 interface Cand {
   key: string; id: string; kind: 'facility' | 'grounds'; rank: number; lod: Lod; sel: boolean; hov: boolean;
@@ -58,12 +67,13 @@ const measurer = (() => {
   readFonts();
   try { document.fonts?.addEventListener?.('loadingdone', () => { cache.clear(); readFonts(); }); } catch { /* no font loading API */ }
   return {
-    width(text: string, font: 'chip' | 'l1' | 'l2' | 'zone'): number {
-      const k = `${font}|${text}`; const hit = cache.get(k); if (hit != null) return hit;
+    width(text: string, font: 'chip' | 'l1' | 'l2' | 'zone', M: Metrics = DESK): number {
+      const px = M[font];
+      const k = `${font}${px}|${text}`; const hit = cache.get(k); if (hit != null) return hit;
       if (!ctx) ctx = document.createElement('canvas').getContext('2d');
-      let w = text.length * 7.2;
+      let w = text.length * 0.6 * px;
       if (ctx) {
-        ctx.font = font === 'chip' ? `500 12px ${fonts.mono}` : font === 'l1' ? `500 12.5px ${fonts.sans}` : font === 'l2' ? `400 11.5px ${fonts.mono}` : `500 11.5px ${fonts.sans}`;
+        ctx.font = font === 'chip' ? `500 ${px}px ${fonts.mono}` : font === 'l1' ? `500 ${px}px ${fonts.sans}` : font === 'l2' ? `400 ${px}px ${fonts.mono}` : `500 ${px}px ${fonts.sans}`;
         w = ctx.measureText(text).width;
       }
       cache.set(k, w); if (cache.size > 6000) cache.clear();
@@ -134,7 +144,7 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     slots: [] as Slot[], tip: null as HTMLDivElement | null, card: null as HTMLDivElement | null,
     placed: [] as Placed[], dirty: true, lastPack: 0, camSig: '', restTimer: 0 as unknown as ReturnType<typeof setTimeout>,
     occ: [] as Rect[], occSig: '', tipId: null as string | null, tipSince: 0, tipHtml: '', cardHtml: '', cardAt: 0, drag: null as null | { x: number; y: number; id: number; ev: PointerEvent; fired: boolean },
-    suppressClick: false,
+    suppressClick: false, compact: false, touch: false, cardMax: '',
   });
 
   const markDirty = () => { S.current.dirty = true; invalidate(); };
@@ -150,7 +160,7 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     s.tip = document.createElement('div'); s.tip.className = 'tip3d'; s.tip.setAttribute('role', 'tooltip'); root.appendChild(s.tip);
     s.card = document.createElement('div'); s.card.className = 'worker-card'; root.appendChild(s.card);
     const target = (e: Event) => (e.target as HTMLElement | null)?.closest?.('[data-id]') as HTMLElement | null;
-    const onOver = (e: Event) => { const t = target(e); if (t?.dataset.id) hoverFromScene(t.dataset.id); };
+    const onOver = (e: Event) => { const t = target(e); if (t?.dataset.id) hoverFromScene(t.dataset.id); }; // fingers: ignored in hoverFromScene
     const onOut = (e: Event) => {
       const t = target(e); const rel = (e as PointerEvent).relatedTarget as HTMLElement | null;
       if (!t?.dataset.id || (rel && t.contains(rel))) return;
@@ -162,6 +172,8 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
       e.stopPropagation();
       const st = useStore.getState();
       st.select(t.dataset.kind === 'grounds' ? { kind: 'grounds', id: t.dataset.id } : { kind: 'facility', id: t.dataset.id });
+      // a tapped label opens the tooltip (the touch equivalent of hovering it)
+      if (input.touch && st.focusMode !== 'building') hoverFromScene(t.dataset.id, { touch: true });
     };
     const onDbl = (e: MouseEvent) => {
       const t = target(e); if (!t?.dataset.id || t.dataset.kind !== 'facility') return;
@@ -171,7 +183,8 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     // drags and wheel that start on a label go to the 3D controls
     const sink = () => (events.connected as HTMLElement | undefined) ?? root.parentElement?.querySelector('canvas')?.parentElement ?? null;
     const onWheel = (e: WheelEvent) => { const el = sink(); if (!el) return; e.preventDefault(); el.dispatchEvent(new WheelEvent('wheel', e)); };
-    const onDown = (e: PointerEvent) => { if (!target(e)) return; s.drag = { x: e.clientX, y: e.clientY, id: e.pointerId, ev: e, fired: false }; };
+    // fingers are handled by TouchControls on the scene root (drags that start on a label pan the map there)
+    const onDown = (e: PointerEvent) => { if (e.pointerType === 'touch' || !target(e)) return; s.drag = { x: e.clientX, y: e.clientY, id: e.pointerId, ev: e, fired: false }; };
     const onMove = (e: PointerEvent) => {
       const g = s.drag; if (!g || g.fired || e.pointerId !== g.id) return;
       if (Math.hypot(e.clientX - g.x, e.clientY - g.y) < 4) return;
@@ -243,9 +256,16 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     if (filterIds && filterIds.size) { needsChip = true; for (const id of filterIds) if (d.rowMeta.get(id)?.review !== 'needs') { needsChip = false; break; } }
     const needsRelevant = colorBy === 'confidence' || colorBy === 'review' || needsChip;
     const onRoof = (st.planView ?? false) && (camera as THREE.OrthographicCamera).isOrthographicCamera === true; // plan view: chips sit on the roofs
-    const budget = onRoof ? 200 : Math.max(24, Math.min(100, Math.floor((fr.w * fr.h) / 9000)));
+    const compact = layoutModeOf(st) === 'phone';
+    const M = compact ? PHONE : DESK;
+    // phones: fewer, larger labels (a chip per ~15,000 px² of free map, 8–28; plan view up to 60)
+    const budget = compact
+      ? (onRoof ? Math.min(60, Math.floor((fr.w * fr.h) / 6000)) : Math.max(8, Math.min(28, Math.floor((fr.w * fr.h) / 15000))))
+      : onRoof ? 200 : Math.max(24, Math.min(100, Math.floor((fr.w * fr.h) / 9000)));
+    // a free rect with no room for the map (a phone sheet pulled up to full) carries no labels
+    const tiny = fr.w < 80 || fr.h < 60;
 
-    if (layout && !(focused && st.buildingTab === 'interior')) {
+    if (layout && !tiny && !(focused && st.buildingTab === 'interior')) {
       for (const b of focused ? [] : layout.buildings) {
         const f = fmap.get(b.id); if (!f) continue;
         const sel = b.id === selId && st.selection.kind === 'facility', hov = b.id === hoverId;
@@ -332,14 +352,15 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     const onOcc = (r: Rect) => occ.some((o) => intersects(r, o));
     const pointInOcc = (x: number, y: number) => occ.some((o) => x >= o.x0 && x <= o.x1 && y >= o.y0 && y <= o.y1);
     const rectFor = (c: Cand, lod: Lod): Rect => {
-      if (lod === 'pin') return { x0: c.ax - 6, y0: c.ay - 20, x1: c.ax + 6, y1: c.ay };
+      if (lod === 'pin') return { x0: c.ax - M.pinW / 2, y0: c.ay - M.pinH, x1: c.ax + M.pinW / 2, y1: c.ay };
       if (lod === 'chip') {
-        const w = Math.ceil(measurer.width(c.text, c.kind === 'grounds' ? 'zone' : 'chip')) + 17;
-        const y1 = c.kind === 'grounds' || onRoof ? c.ay + 10 : c.ay - 4;
-        return { x0: c.ax - w / 2, y0: y1 - 20, x1: c.ax + w / 2, y1 };
+        const w = Math.ceil(measurer.width(c.text, c.kind === 'grounds' ? 'zone' : 'chip', M)) + M.chipPad;
+        const y1 = c.kind === 'grounds' || onRoof ? c.ay + M.chipH / 2 : c.ay - 4;
+        return { x0: c.ax - w / 2, y0: y1 - M.chipH, x1: c.ax + w / 2, y1 };
       }
-      const w = Math.min(320, Math.ceil(Math.max(measurer.width(c.l1 ?? c.text, 'l1'), measurer.width(c.l2 ?? '', 'l2'), measurer.width(c.l3 ?? '', 'l2'))) + 21);
-      const h = c.l3 ? 56 : 40;
+      const maxW = Math.min(320, fr.w - 16);
+      const w = Math.min(maxW, Math.ceil(Math.max(measurer.width(c.l1 ?? c.text, 'l1', M), measurer.width(c.l2 ?? '', 'l2', M), measurer.width(c.l3 ?? '', 'l2', M))) + M.fullPad);
+      const h = c.l3 ? M.fullH3 : M.fullH;
       return { x0: c.ax - w / 2, y0: c.ay - 4 - h, x1: c.ax + w / 2, y1: c.ay - 4 };
     };
     for (const c of cands) {
@@ -347,7 +368,7 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
       if (must && pointInOcc(c.ax, c.ay)) continue;
       let lod = c.lod;
       const toChip = () => { lod = 'chip'; if (c.chipText) { c.text = c.chipText; c.html = esc(c.chipText); } };
-      if (lod === 'full' && !must && fullCount >= 12) toChip();
+      if (lod === 'full' && !must && fullCount >= M.maxFull) toChip();
       const cost = lod === 'pin' ? 1 / 3 : 1;
       // the budget is in chip units; a pin counts as a third of a chip (§9.7)
       if (!must && units + cost > budget) continue;
@@ -360,23 +381,23 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
           let rr: Rect = { x0: r.x0 + dx, y0: r.y0 + dy, x1: r.x1 + dx, y1: r.y1 + dy };
           const sx = Math.max(0, area.x0 - rr.x0) - Math.max(0, rr.x1 - area.x1); const sy = Math.max(0, area.y0 - rr.y0) - Math.max(0, rr.y1 - area.y1);
           rr = { x0: rr.x0 + sx, y0: rr.y0 + sy, x1: rr.x1 + sx, y1: rr.y1 + sy };
-          if (!hash.hit(rr, 4) && !onOcc(rr)) { best = rr; break; }
+          if (!hash.hit(rr, M.gap) && !onOcc(rr)) { best = rr; break; }
           if (!best && !onOcc(rr)) best = rr;
         }
         if (!best) continue;
         r = best;
       } else {
         const free = (q: Rect, pad: number) => inside(q) && !onOcc(q) && !hash.hit(q, pad);
-        if (!free(r, lod === 'pin' ? 1 : 4)) {
+        if (!free(r, lod === 'pin' ? 1 : M.gap)) {
           if (lod === 'full') { toChip(); r = rectFor(c, 'chip'); }
-          if (lod === 'chip' && !free(r, 4) && c.pinHtml) { lod = 'pin'; c.html = c.pinHtml; r = rectFor(c, 'pin'); } // a priority item keeps at least its pin
+          if (lod === 'chip' && !free(r, M.gap) && c.pinHtml) { lod = 'pin'; c.html = c.pinHtml; r = rectFor(c, 'pin'); } // a priority item keeps at least its pin
           if (lod === 'pin') {
             // a pin may sit a little off its roof rather than drop out: the status must never rest on colour alone
             let ok: Rect | null = null;
             for (const [dx, dy] of PIN_TRIES) { const q: Rect = { x0: r.x0 + dx, y0: r.y0 + dy, x1: r.x1 + dx, y1: r.y1 + dy }; if (free(q, 1)) { ok = q; break; } }
             if (!ok) continue;
             r = ok;
-          } else if (!free(r, 4)) continue;
+          } else if (!free(r, M.gap)) continue;
         }
       }
       hash.add(r); placedRects.push(r);

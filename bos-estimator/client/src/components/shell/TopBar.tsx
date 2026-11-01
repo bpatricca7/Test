@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useRef, useState } from 'react';
-import { Calculator, ChevronDown, CircleAlert, Copy, Download, Ellipsis, FileJson, FileSpreadsheet, LoaderCircle, Map as MapIcon, Server, Table2 } from 'lucide-react';
+import { Calculator, ChevronDown, CircleAlert, Copy, Download, Ellipsis, FileJson, FileSpreadsheet, Keyboard, LayoutGrid, LoaderCircle, Map as MapIcon, Server, Table2 } from 'lucide-react';
 import { useStore, type UiZoom } from '../../store';
 import { useDerived, useTopDownLive } from '../../derived';
 import { api } from '../../api';
@@ -97,10 +97,10 @@ function AiChip() {
   );
 }
 
-interface Metric { id: string; value: number | null; fmt: (v: number) => string; label: string; title: string }
+export interface Metric { id: string; value: number | null; fmt: (v: number) => string; label: string; title: string }
 
-/** Priority metric strip: a ResizeObserver hides metrics from the lowest priority up; hidden ones go in a +N popover. */
-function MetricStrip() {
+/** The project metrics in priority order (the top bar's strip on desktop and tablet, the sheet's grid on phones). */
+export function useMetrics(): Metric[] {
   const { est, counts, facById, groundsById } = useDerived();
   const empty = !est || counts.total === 0;
   const m = est?.metrics;
@@ -116,7 +116,12 @@ function MetricStrip() {
     { id: 'meals', value: empty ? null : nonNeg(m?.mealsPerYear ?? 0), fmt: compact, label: 'Meals/yr', title: 'Meals per year' },
     { id: 'hrs', value: empty ? null : nonNeg(est?.directHours ?? 0), fmt: compact, label: 'Direct hrs', title: 'Direct labor hours per year' },
   ];
-  const metrics = groundsOnly ? ['ac', 'hrs', 'meals'].map((id) => all.find((x) => x.id === id)!).filter((x) => x.id !== 'meals' || (x.value ?? 0) > 0) : all;
+  return groundsOnly ? ['ac', 'hrs', 'meals'].map((id) => all.find((x) => x.id === id)!).filter((x) => x.id !== 'meals' || (x.value ?? 0) > 0) : all;
+}
+
+/** Priority metric strip: a ResizeObserver hides metrics from the lowest priority up; hidden ones go in a +N popover. */
+function MetricStrip() {
+  const metrics = useMetrics();
   const strip = useRef<HTMLDivElement>(null);
   const measure = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(metrics.length);
@@ -228,5 +233,104 @@ function Actions() {
         ]}
         trigger={(t) => <IconButton ref={t.ref} icon={Ellipsis} label="More" aria-haspopup="menu" aria-expanded={t.open} onClick={t.toggle} />} />
     </div>
+  );
+}
+
+// ------------------------------------------------------------------ phone (< 768 px or a short landscape window)
+
+/**
+ * Phone top bar: logo, project name, the hero FTE (tap: Estimate › Cross-check) and one ⋯ menu that holds what the
+ * desktop bar shows inline: reader status, save state, Factors, Export, the view options and the display settings.
+ * The metric strip moves into the sheet (MetricGrid on the List and Estimate tabs); nothing is dropped.
+ */
+export const PhoneTopBar = memo(function PhoneTopBar() {
+  return (
+    <header className="topbar m-top">
+      <div className="tb-logo" aria-hidden>BOS</div>
+      <ProjectName />
+      <PhoneSaveState />
+      <Hero />
+      <PhoneMore />
+    </header>
+  );
+});
+
+/** Saving shows a spinner, a failed save a tappable "Not saved" (Retry); a clean save shows nothing (it is in ⋯). */
+function PhoneSaveState() {
+  const saving = useStore((s) => s.saving);
+  const saveError = useStore((s) => s.saveError);
+  const retry = useStore((s) => s.retrySave);
+  if (saveError) return <button type="button" className="m-top__save is-failed" onClick={() => void retry()} aria-label={`Not saved: ${saveError}. Retry`}><CircleAlert size={14} aria-hidden />Retry</button>;
+  if (saving) return <span className="m-top__save" role="status" aria-label="Saving"><LoaderCircle size={14} className="spin" aria-hidden /></span>;
+  return null;
+}
+
+/** All project metrics, the hero's heads and implied FTE included, as a compact grid (phone sheet). */
+export const MetricGrid = memo(function MetricGrid({ className }: { className?: string }) {
+  const metrics = useMetrics();
+  const td = useTopDownLive();
+  const { counts } = useDerived();
+  const empty = counts.total === 0 || !td.td;
+  const cells: { id: string; v: string; l: string; title: string }[] = metrics.map((x) => ({ id: x.id, v: x.value == null ? '—' : x.fmt(x.value), l: x.label, title: x.title }));
+  cells.push({ id: 'heads', v: empty ? '—' : n0(td.heads), l: 'Heads', title: 'Heads (bottom-up manning)' });
+  if (!empty && td.deltaPct != null) cells.push({ id: 'implied', v: n1(td.impliedBase), l: 'Implied FTE', title: 'Implied from the previous award' });
+  return (
+    <dl className={cx('m-metrics', className)} aria-label="Project metrics">
+      {cells.map((c) => <div key={c.id} className="m-metric" title={c.title}><dt>{c.l}</dt><dd>{c.v}</dd></div>)}
+    </dl>
+  );
+});
+
+const COLOR_BY_ITEMS = [['category', 'Category'], ['confidence', 'Confidence'], ['review', 'Review'], ['fte', 'FTE']] as const;
+const LABEL_ITEMS = [['auto', 'Auto'], ['numbers', 'Numbers'], ['off', 'Off']] as const;
+
+function PhoneMore() {
+  const { counts, est, rowMeta } = useDerived();
+  const projectId = useStore((s) => s.projectId);
+  const download = (href: string) => { const a = document.createElement('a'); a.href = href; a.download = ''; document.body.appendChild(a); a.click(); a.remove(); };
+  const items = (): MenuItem[] => {
+    const s = useStore.getState();
+    const unreviewed = counts.total - counts.verified;
+    const empty = counts.total === 0;
+    const ok = Boolean(s.health?.aiAvailable);
+    const reader = s.health == null ? 'Checking reader…' : ok ? 'Claude reads the package' : 'Rule-based reader · no API key';
+    const save = s.saveError ? `Not saved: ${s.saveError}` : s.saving ? 'Saving…' : 'All changes saved';
+    return [
+      { kind: 'custom', node: (
+        <div className="m-more__status">
+          <span className={cx('tb-ai__dot', !ok && 'is-warn')} aria-hidden /><span>{reader}</span>
+          <span className={cx('m-more__save', s.saveError && 'is-failed')}>{save}</span>
+        </div>
+      ) },
+      { id: 'reader', label: 'Reader settings', icon: Server, hint: ok ? 'Model and effort, in Documents' : 'Add ANTHROPIC_API_KEY on the server for Claude', onSelect: () => s.openLeft('documents') },
+      { id: 'factors', label: 'RS Means factors', icon: Calculator, onSelect: () => s.setFactorsOpen(true) },
+      ...(s.saveError ? [{ id: 'retry', label: 'Retry saving', onSelect: () => void s.retrySave() } as MenuItem] : []),
+      { kind: 'separator' },
+      { kind: 'header', label: unreviewed > 0 && !empty ? `Export · ${unreviewed.toLocaleString()} rows not reviewed` : 'Export' },
+      { id: 'inv', label: 'Inventory with review (CSV)', icon: FileSpreadsheet, disabled: empty, onSelect: () => exportInventoryCsv(est, rowMeta, counts.needs) },
+      { id: 'est', label: 'Estimate detail (CSV)', icon: FileSpreadsheet, disabled: !est || empty, onSelect: () => exportEstimateCsv(est) },
+      { id: 'tsv', label: 'Copy visible rows (TSV)', icon: Copy, disabled: empty, onSelect: () => copyRowsTsv(currentOrder(), est, rowMeta) },
+      { id: 'json', label: 'Project backup (.json)', icon: FileJson, onSelect: exportBackup },
+      { id: 'csv', label: 'Estimate CSV (server)', icon: Download, hint: 'Uses the default wages', disabled: empty, onSelect: () => download(api.exportCsvUrl(projectId)) },
+      { kind: 'separator' },
+      { kind: 'header', label: 'Color buildings by' },
+      ...COLOR_BY_ITEMS.map(([id, label]): MenuItem => ({ id: `c-${id}`, label, checked: s.colorBy === id, onSelect: () => s.setColorBy(id) })),
+      { kind: 'header', label: 'Labels' },
+      ...LABEL_ITEMS.map(([id, label]): MenuItem => ({ id: `l-${id}`, label, checked: s.labelMode === id, onSelect: () => s.setLabelMode(id) })),
+      { kind: 'header', label: 'View' },
+      { id: 'live', label: 'Live lighting', hint: 'Follows the crew clock (day and night)', checked: s.lighting === 'live', onSelect: () => s.setLighting(s.lighting === 'live' ? 'review' : 'live') },
+      { id: 'plan', label: 'Plan view', hint: 'Top-down, north up', checked: s.planView, disabled: s.focusMode === 'building', onSelect: () => s.setPlanView(!s.planView) },
+      { id: 'fast', label: 'Fast rendering', hint: 'For large sites and older phones', checked: s.quality === 'fast', onSelect: () => s.setQuality(s.quality === 'fast' ? 'high' : 'fast') },
+      { id: 'orbit', label: 'Orbit when idle', checked: s.autoOrbit, onSelect: () => s.setAutoOrbit(!s.autoOrbit) },
+      { id: 'reduced', label: 'Reduced motion', hint: s.reducedMotionPref == null ? 'Following the system setting' : undefined, checked: s.reducedMotion, onSelect: () => s.setReducedMotionPref(!s.reducedMotion) },
+      { id: 'relayout', label: 'Re-layout site', icon: LayoutGrid, onSelect: () => s.relayout() },
+      { kind: 'separator' },
+      { id: 'keys', label: 'Keyboard shortcuts', icon: Keyboard, onSelect: () => s.setShortcutsOpen(true) },
+      { id: 'reset', label: 'Reset project…', danger: true, onSelect: () => void confirmResetProject() },
+    ];
+  };
+  return (
+    <MenuButton label="Project menu" placement="bottom-end" className="m-more" items={items}
+      trigger={(t) => <IconButton ref={t.ref} className="m-top__more" icon={Ellipsis} label="Project menu: factors, export, view, reader" tooltip={false} aria-haspopup="menu" aria-expanded={t.open} onClick={t.toggle} />} />
   );
 }

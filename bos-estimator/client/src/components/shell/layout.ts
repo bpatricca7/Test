@@ -12,16 +12,18 @@ export function effectiveZoom(z: UiZoom, width = typeof window === 'undefined' ?
   return z === 'auto' ? (width >= 2400 ? 1.125 : 1) : z;
 }
 
-/** Writes --ui-zoom on :root (applied as `zoom` on .chrome only; the canvas and label layer are never zoomed). */
+/** Writes --ui-zoom on :root (applied as `zoom` on .chrome only; the canvas and label layer are never zoomed).
+ * Phones always run at 100 % (their type scale is set for the hand, and a zoomed chrome would not fit). */
 export function useUiZoomWriter() {
   const uiZoom = useStore((s) => s.uiZoom);
+  const phone = useStore((s) => s.layoutMode === 'phone');
   useLayoutEffect(() => {
-    const apply = () => document.documentElement.style.setProperty('--ui-zoom', String(effectiveZoom(uiZoom)));
+    const apply = () => document.documentElement.style.setProperty('--ui-zoom', String(phone ? 1 : effectiveZoom(uiZoom)));
     apply();
-    if (uiZoom !== 'auto') return;
+    if (uiZoom !== 'auto' || phone) return;
     window.addEventListener('resize', apply);
     return () => window.removeEventListener('resize', apply);
-  }, [uiZoom]);
+  }, [uiZoom, phone]);
 }
 
 /** Mirrors the reduced-motion choice (OS or the ⋯ menu) onto :root[data-reduced-motion] so the --dur-* tokens drop to 0. */
@@ -37,6 +39,8 @@ export function useReducedMotionAttr() {
  * After the final event it enforces the 320 × 240 minimum free rect (collapse bottom, then left, then right).
  */
 export function useInsetsWriter(vpRef: RefObject<HTMLElement | null>, chromeRef: RefObject<HTMLElement | null>) {
+  // the phone and desktop chromes mount different .vp-area elements: re-attach when the layout mode changes
+  const mode = useStore((s) => s.layoutMode);
   useLayoutEffect(() => {
     const el = vpRef.current; if (!el) return;
     const root = document.documentElement;
@@ -46,7 +50,16 @@ export function useInsetsWriter(vpRef: RefObject<HTMLElement | null>, chromeRef:
 
     const measure = (): Insets => {
       const r = el.getBoundingClientRect(); // already includes CSS zoom and running track transitions
-      return { top: Math.round(r.top), left: Math.round(r.left), right: Math.round(window.innerWidth - r.right), bottom: Math.round(window.innerHeight - r.bottom) };
+      let left = r.left, right = window.innerWidth - r.right;
+      // tablet slide-over drawers lie over the free rect without resizing it: the free rect is what they leave
+      // uncovered (their rect follows the slide transform, so a closed drawer covers nothing)
+      chromeRef.current?.querySelectorAll<HTMLElement>('[data-inset-cover]').forEach((d) => {
+        const c = d.getBoundingClientRect();
+        if (c.width < 1 || c.bottom <= r.top || c.top >= r.bottom) return;
+        if (d.dataset.insetCover === 'left') left = Math.max(left, Math.min(r.right, c.right));
+        else right = Math.max(right, Math.min(window.innerWidth - r.left, window.innerWidth - c.left));
+      });
+      return { top: Math.round(r.top), left: Math.round(left), right: Math.round(right), bottom: Math.round(window.innerHeight - r.bottom) };
     };
     const publish = (animating: boolean) => {
       const i = measure();
@@ -64,12 +77,16 @@ export function useInsetsWriter(vpRef: RefObject<HTMLElement | null>, chromeRef:
       }
     };
     const enforceMinimum = () => {
+      const mode = useStore.getState().layoutMode;
+      // phones size the map around the sheet; tablet drawers are slid over the map by the user, never auto-closed
+      if (mode === 'phone') return;
       const r = el.getBoundingClientRect();
       const z = parseFloat(getComputedStyle(root).getPropertyValue('--ui-zoom')) || 1;
       const w = r.width / z, h = r.height / z;
       if (w >= 320 && h >= 240) return;
       const s = useStore.getState();
       if (h < 240 && s.bottomOpen) { s.setBottomOpen(false, { auto: true }); return; }
+      if (mode === 'tablet') return;
       if (w < 320 && s.leftOpen) { s.setLeftOpen(false); return; }
       if (w < 320 && s.rightOpen) { s.setRightOpen(false); }
     };
@@ -79,22 +96,32 @@ export function useInsetsWriter(vpRef: RefObject<HTMLElement | null>, chromeRef:
       settle = setTimeout(() => { settle = null; publish(false); enforceMinimum(); }, 150);
     };
 
+    // a slide-over drawer moves by transform, which resizes nothing: follow it frame by frame while it slides
+    let raf = 0, sliding = 0;
+    const mover = (e: Event) => e.target instanceof Element && e.target.matches('[data-inset-cover]') && /transform|translate/.test((e as TransitionEvent).propertyName);
+    const loop = () => { onChange(); raf = sliding > 0 ? requestAnimationFrame(loop) : 0; };
+    const onRun = (e: Event) => { onChange(); if (mover(e)) { sliding++; if (!raf) raf = requestAnimationFrame(loop); } };
+    const onEnd = (e: Event) => { if (mover(e)) sliding = Math.max(0, sliding - 1); onChange(); };
+
     publish(false);
     enforceMinimum();
     const ro = new ResizeObserver(onChange);
     ro.observe(el);
     window.addEventListener('resize', onChange);
     const chrome = chromeRef.current;
-    chrome?.addEventListener('transitionrun', onChange);
-    chrome?.addEventListener('transitionend', onChange);
+    chrome?.addEventListener('transitionrun', onRun);
+    chrome?.addEventListener('transitionend', onEnd);
+    chrome?.addEventListener('transitioncancel', onEnd);
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', onChange);
-      chrome?.removeEventListener('transitionrun', onChange);
-      chrome?.removeEventListener('transitionend', onChange);
+      chrome?.removeEventListener('transitionrun', onRun);
+      chrome?.removeEventListener('transitionend', onEnd);
+      chrome?.removeEventListener('transitioncancel', onEnd);
       if (settle) clearTimeout(settle);
+      if (raf) cancelAnimationFrame(raf);
     };
-  }, [vpRef, chromeRef]);
+  }, [vpRef, chromeRef, mode]);
 }
 
 /**
@@ -104,12 +131,15 @@ export function useInsetsWriter(vpRef: RefObject<HTMLElement | null>, chromeRef:
 export function usePanelAutoRules() {
   const count = useStore((s) => (s.project ? s.project.inventory.facilities.length + s.project.inventory.grounds.length : 0));
   const selKind = useStore((s) => s.selection.kind);
+  // phones have no side panels (the sheet follows the selection itself, see store.select)
   useEffect(() => {
     const s = useStore.getState();
+    if (s.layoutMode === 'phone') return;
     if (count > 0 && !s.rightOpen && !s.rightUserCollapsed) s.setRightOpen(true);
   }, [count > 0]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const s = useStore.getState();
+    if (s.layoutMode === 'phone') return;
     if (selKind && !s.rightOpen && !s.rightUserCollapsed) s.setRightOpen(true);
   }, [selKind]);
 }

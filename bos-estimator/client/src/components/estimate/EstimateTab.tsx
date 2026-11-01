@@ -2,7 +2,7 @@
 // result row, previous-award form in two columns, assumption rows with lock icons, waterfall, rationale, stale badge),
 // D manning per contract year, E estimating assumptions, F site. Every number comes from useDerived() and
 // useTopDownLive(), so the top bar and this tab cannot disagree (A11).
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { History, Lock, LockOpen, RefreshCw, Sparkles } from 'lucide-react';
 import { useStore } from '../../store';
 import { useDerived, useTopDownLive, type TopDownLive } from '../../derived';
@@ -37,7 +37,8 @@ const WF: { key: keyof TopDownEstimate['priceBreakdown']; label: string; color: 
 let handledFocusSeq = 0;
 
 
-export const EstimateTab = memo(function EstimateTab() {
+/** `lead`: content above the bottom line inside the same scroller (the phone sheet puts the project metrics there). */
+export const EstimateTab = memo(function EstimateTab({ lead }: { lead?: ReactNode } = {}) {
   const { est } = useDerived();
   const live = useTopDownLive();
   const hasProject = useStore((s) => Boolean(s.project));
@@ -57,6 +58,7 @@ export const EstimateTab = memo(function EstimateTab() {
   if (!hasProject) return null;
   return (
     <div ref={scroller} className="est panel__scroll">
+      {lead}
       <BottomLine est={est} live={live} />
       {est && <CrewsTable est={est} />}
       <CrossCheck est={est} live={live} />

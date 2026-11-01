@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore } from '../store';
+import { noteTap } from './hover';
 import { useDerived } from '../derived';
 import { clock } from './clock';
 import { fieldUniforms, flatLight, groundColor, groundMaterial, groundUniforms, padFloor, padNight, sitePalette } from './assets';
@@ -252,7 +253,7 @@ export function Ground() {
     // the open ground never carries building shadows (lots, roads and pads cover the campus), so it stays on the
     // cheap unlit × flat-light material in both tiers
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[b.x, 0, b.z]} material={groundMaterial(true, rings)} name="ground" renderOrder={-1}
-      onClick={(e) => { if (e.delta > 4 || useStore.getState().focusMode === 'building') return; e.stopPropagation(); select({ kind: null }); }}>
+      onClick={(e) => { if (e.delta > 4 || useStore.getState().focusMode === 'building') return; e.stopPropagation(); noteTap('ground'); select({ kind: null }); }}>
       <planeGeometry args={[size, size]} />
     </mesh>
   );

@@ -14,6 +14,8 @@ import { agentStates, type AgentState } from './sim';
 import { interiorAgents } from './InteriorCrew';
 import { basic, fieldUniforms, mat, std } from './assets';
 import { rt, type CrewPoint } from './runtime';
+import { noteTap } from './hover';
+import { touchUI } from './device';
 
 const m4 = new THREE.Matrix4();
 const q0 = new THREE.Quaternion();
@@ -164,10 +166,11 @@ export function Workers() {
     (meshes.ring.material as THREE.MeshBasicMaterial).color.setScalar(1 + nf * 0.9);
     (meshes.xbody.material as THREE.MeshBasicMaterial).color.setScalar(1 + nf * 0.6);
     const dm = meshes.dots.material as THREE.PointsMaterial; dm.color.setScalar(1 + nf * 1.6); dm.size = 5 + nf * 1.5;
-    // pick radius: 5 screen px at the agent's distance
+    // pick radius: 5 screen px at the agent's distance (12 px for a fingertip)
     const ortho = (camera as unknown as THREE.OrthographicCamera).isOrthographicCamera === true;
-    meshes.proxy.userData.k = ortho ? 0 : (5 * 2 * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1, size.height);
-    meshes.proxy.userData.r0 = ortho ? Math.max(0.9, 5 / Math.max(0.01, camera.zoom)) : 0.9;
+    const pickPx = touchUI() ? 12 : 5;
+    meshes.proxy.userData.k = ortho ? 0 : (pickPx * 2 * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1, size.height);
+    meshes.proxy.userData.r0 = ortho ? Math.max(0.9, pickPx / Math.max(0.01, camera.zoom)) : 0.9;
     if (!layout) { rt.crew = []; return; }
     const time = clock.time;
     const R = Math.hypot(layout.bounds.w, layout.bounds.d) / 2;
@@ -286,6 +289,7 @@ export function Workers() {
     if (e.instanceId == null) return;
     const id = meshes.ids[e.instanceId]; if (!id) return;
     e.stopPropagation();
+    noteTap('agent', id);
     setSelectedAgent(id);
   };
   const onOver = (e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; };

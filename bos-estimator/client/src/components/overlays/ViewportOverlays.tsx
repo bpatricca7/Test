@@ -32,6 +32,7 @@ const LABELS: { id: LabelMode; label: string; hint: string }[] = [
   { id: 'auto', label: 'Auto', hint: 'Names where they fit, numbers elsewhere' }, { id: 'numbers', label: 'Numbers', hint: 'Building numbers only' }, { id: 'off', label: 'Off', hint: 'Only the selected and hovered building' },
 ];
 const HINTS_KEY = 'bos.hints.v1';
+const coarse = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch { return false; } };
 const readHints = (): { mapHint?: number } => { try { const v = JSON.parse(localStorage.getItem(HINTS_KEY) ?? '{}'); return v && typeof v === 'object' ? v : {}; } catch { return {}; } };
 const writeHints = (patch: Record<string, unknown>) => { try { localStorage.setItem(HINTS_KEY, JSON.stringify({ ...readHints(), ...patch })); } catch { /* storage unavailable */ } };
 
@@ -76,9 +77,22 @@ export const ViewportOverlays = memo(function ViewportOverlays() {
   const view = useStore((s) => s.view);
   const empty = useStore((s) => !s.project || s.project.inventory.facilities.length + s.project.inventory.grounds.length === 0);
   const running = useStore((s) => s.extraction.running);
+  const phone = useStore((s) => s.layoutMode === 'phone');
   useMapHotkeys(view === 'map');
   if (view !== 'map') return null;
   if (empty) return running ? null : <EmptyCard />;
+  if (phone) {
+    // phone: the selection lives in the sheet; the map keeps the building breadcrumb (or Site | Inside while a
+    // building is selected), a vertical stack of 44 px map buttons, the centre chips, legend and hint
+    return (
+      <>
+        <PhoneSiteBar />
+        <PhoneMapButtons />
+        <CenterChips />
+        <BottomOverlays />
+      </>
+    );
+  }
   return (
     <>
       <SiteToolbar />
@@ -176,6 +190,29 @@ function SiteToolbar() {
           <button type="button" aria-label="Clear selection" title="Clear selection (Esc)" onClick={() => select({ kind: null })}><X size={14} aria-hidden /></button>
         </span>
       )}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ phone: site bar and map buttons
+function PhoneSiteBar() {
+  const show = useStore((s) => s.focusMode === 'building' || s.selection.kind === 'facility');
+  return show ? <SiteToolbar /> : null;
+}
+
+/** Phone map buttons (top-right, 44 px): legend and colour-by, lighting, fit. The rest of the view options are in ⋯. */
+function PhoneMapButtons() {
+  const lighting = useStore((s) => s.lighting);
+  const colorBy = useStore((s) => s.colorBy);
+  const st = useStore.getState;
+  const legend = usePopover<HTMLButtonElement>();
+  return (
+    <div className="vo-mapbtns" data-occluder="" role="toolbar" aria-label="Map display" aria-orientation="vertical">
+      <IconButton ref={legend.anchorRef} icon={Layers} label={`Legend and colour: ${COLOR_BY.find((c) => c.id === colorBy)?.label}`} tooltip={false} pressed={legend.open} aria-expanded={legend.open} aria-haspopup="dialog" onClick={legend.toggle} />
+      <LegendPopover open={legend.open} anchor={legend.anchorRef} onClose={legend.close} />
+      <IconButton icon={lighting === 'review' ? Sun : Moon} label={lighting === 'review' ? 'Lighting: review (daylight). Switch to live' : 'Lighting: live (follows the crew clock). Switch to review'} tooltip={false}
+        pressed={lighting === 'live'} onClick={() => st().setLighting(lighting === 'review' ? 'live' : 'review')} />
+      <IconButton icon={Focus} label="Fit the site" tooltip={false} onClick={() => st().requestCamera('fit-site')} />
     </div>
   );
 }
@@ -306,6 +343,7 @@ function BottomOverlays() {
 }
 
 function HintChip({ hintRef, raised, onHide }: { hintRef: RefObject<HTMLDivElement | null>; raised: boolean; onHide: () => void }) {
+  const touch = useStore((s) => s.layoutMode !== 'desktop') && coarse();
   useEffect(() => {
     let n = readHints().mapHint ?? 0;
     const isCanvas = (t: EventTarget | null) => t instanceof HTMLCanvasElement && Boolean(t.closest('.stage'));
@@ -321,7 +359,7 @@ function HintChip({ hintRef, raised, onHide }: { hintRef: RefObject<HTMLDivEleme
   return (
     <div className="vo-hint-row" aria-hidden={false}>
       <div ref={hintRef} className={cx('vo-hint', raised && 'is-raised')} data-occluder="" role="note">
-        <span>Drag to pan · Right-drag to orbit · Scroll to zoom · Double-click a building to go inside</span>
+        <span>{touch ? 'Drag to pan · Pinch to zoom · Twist to rotate · Double-tap a building to go inside' : 'Drag to pan · Right-drag to orbit · Scroll to zoom · Double-click a building to go inside'}</span>
         <button type="button" aria-label="Hide this hint" title="Hide this hint" onClick={() => { writeHints({ mapHint: 3 }); onHide(); }}><X size={12} aria-hidden /></button>
       </div>
     </div>

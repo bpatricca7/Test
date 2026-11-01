@@ -44,18 +44,30 @@ function usePeakHourDefault() {
   }, [roster, projectId, simSet]);
 }
 
-export const BottomPanel = memo(function BottomPanel() {
-  const visible = useBottomVisible();
-  const open = useStore((s) => s.bottomOpen);
+/** Play / pause and speed for the crew clock (the dock, the phone's crew strip and its sheet). */
+function useClockControls() {
+  const simSet = useStore((s) => s.simSet);
+  const togglePlay = useCallback(() => { clock.playing = !useStore.getState().sim.playing; simSet({ playing: clock.playing }); }, [simSet]);
+  const setSpeed = useCallback((v: number) => { clock.speed = v; simSet({ speed: v }); }, [simSet]);
+  return { togglePlay, setSpeed };
+}
+
+/**
+ * The dock (desktop, tablet) or, with variant "sheet", the phone sheet's Crews tab: always expanded, no collapse
+ * toggle, shown whenever the sheet asks for it (the sheet itself is the visibility rule there).
+ */
+export const BottomPanel = memo(function BottomPanel({ variant = 'dock' }: { variant?: 'dock' | 'sheet' }) {
+  const sheet = variant === 'sheet';
+  const dockVisible = useBottomVisible();
+  const visible = sheet || dockVisible;
+  const open = useStore((s) => s.bottomOpen) || sheet;
   const tab = useStore((s) => s.bottomTab);
   const setTab = useStore((s) => s.setBottomTab);
   const setOpen = useStore((s) => s.setBottomOpen);
   const warnings = useStore((s) => s.extraction.warnings.length);
-  const simSet = useStore((s) => s.simSet);
   usePeakHourDefault();
 
-  const togglePlay = useCallback(() => { clock.playing = !useStore.getState().sim.playing; simSet({ playing: clock.playing }); }, [simSet]);
-  const setSpeed = useCallback((v: number) => { clock.speed = v; simSet({ speed: v }); }, [simSet]);
+  const { togglePlay, setSpeed } = useClockControls();
   const step = (d: number) => { const i = SPEEDS.indexOf(useStore.getState().sim.speed); setSpeed(SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, (i < 0 ? 2 : i) + d))]); };
   useHotkey('space', togglePlay, { label: 'Play / pause the crew clock', group: 'Map', enabled: visible, when: () => useStore.getState().view === 'map' });
   useHotkey('-', () => step(-1), { label: 'Slower crew clock', group: 'Map', enabled: visible });
@@ -63,13 +75,13 @@ export const BottomPanel = memo(function BottomPanel() {
 
   if (!visible) return null;
   return (
-    <section className={cx('bottom-panel', open ? 'is-open' : 'is-collapsed', open && tab === 'log' && 'is-log')} aria-label="Crews and log">
+    <section className={cx('bottom-panel', open ? 'is-open' : 'is-collapsed', open && tab === 'log' && 'is-log', sheet && 'bottom-panel--sheet')} aria-label="Crews and log">
       <div className="bp__head">
         <Tabs idBase="bottom" label="Bottom panel" size="sm" value={tab} onChange={(t) => { setTab(t); if (!open) setOpen(true); }}
           items={[{ id: 'crews', label: 'Crews' }, { id: 'log', label: 'Log', badge: warnings ? <><TriangleAlert size={12} aria-hidden />{warnings}</> : undefined }]} />
         {!open && tab === 'crews' && <CollapsedCrews onPlay={togglePlay} onSpeed={setSpeed} />}
         {!open && tab === 'log' && <LastLogLine />}
-        <IconButton className="bp__toggle" size="sm" icon={open ? ChevronDown : ChevronUp} label={open ? 'Collapse the bottom panel' : 'Expand the bottom panel'} tooltip={`${open ? 'Collapse' : 'Expand'} (\\)`} tooltipPlacement="top-end" onClick={() => setOpen(!open)} />
+        {!sheet && <IconButton className="bp__toggle" size="sm" icon={open ? ChevronDown : ChevronUp} label={open ? 'Collapse the bottom panel' : 'Expand the bottom panel'} tooltip={`${open ? 'Collapse' : 'Expand'} (\\)`} tooltipPlacement="top-end" onClick={() => setOpen(!open)} />}
       </div>
       {open && (tab === 'crews'
         ? <div role="tabpanel" id="bottom-panel-crews" aria-labelledby="bottom-tab-crews" className="bp__body"><CrewsBody onPlay={togglePlay} onSpeed={setSpeed} /></div>
@@ -123,6 +135,35 @@ function CollapsedCrews({ onPlay, onSpeed }: { onPlay: () => void; onSpeed: (v: 
     </div>
   );
 }
+
+/**
+ * Phone map tab: the dock as one compact strip above the tab bar: clock, play / pause, crew chips (tap filters the
+ * map) and an expand button that opens the Crews sheet (cards, scrubber, speed and the log).
+ */
+export const CrewMiniStrip = memo(function CrewMiniStrip({ onExpand }: { onExpand: () => void }) {
+  const { togglePlay } = useClockControls();
+  const { now, time } = useCrewNow();
+  const playing = useStore((s) => s.sim.playing);
+  const crewFilter = useStore((s) => s.crewFilter);
+  const setCrewFilter = useStore((s) => s.setCrewFilter);
+  const warnings = useStore((s) => s.extraction.warnings.length);
+  usePeakHourDefault();
+  return (
+    <section className="m-mini" aria-label="Crew clock" data-occluder="">
+      <span className="m-mini__time" aria-label={`Crew clock ${fmtTime(time)}, ${dayPart(time)}`}><b>{fmtTime(time)}</b><span>{dayPart(time)}</span></span>
+      <IconButton className="m-mini__play" variant="secondary" icon={playing ? Pause : Play} label={playing ? 'Pause the crew clock' : 'Play the crew clock'} tooltip={false} onClick={togglePlay} />
+      <div className="m-mini__crews" role="group" aria-label="Show one crew">
+        {now.map((c) => (
+          <Chip key={c.crew} className="m-mini__chip" dot={crewColor(c.crew)} icon={CREW_ICON[c.crew]} selected={crewFilter === c.crew} onClick={() => setCrewFilter(crewFilter === c.crew ? null : c.crew)}
+            count={`${fitNum(c.onShift, 4)}/${fitNum(c.heads, 4)}`}>
+            <span className="m-mini__name">{crewMeta(c.crew).short}</span>
+          </Chip>
+        ))}
+      </div>
+      <IconButton className="m-mini__expand" icon={ChevronUp} badge={warnings || undefined} label={`Open the crew cards and the log${warnings ? ` (${warnings} warnings)` : ''}`} tooltip={false} onClick={onExpand} />
+    </section>
+  );
+});
 
 function CrewsBody({ onPlay, onSpeed }: { onPlay: () => void; onSpeed: (v: number) => void }) {
   const { now, time } = useCrewNow();
