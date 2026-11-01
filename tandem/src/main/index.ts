@@ -14,6 +14,7 @@ import { InAppBrowser } from './services/inAppBrowser'
 import { BrowserMcpServer } from './services/browserMcp'
 import { lanAddresses, newRemoteToken, RemoteServer } from './services/remote'
 import type { RemoteInfo } from '@shared/types'
+import QRCode from 'qrcode'
 import { claudePermissionMode } from '@shared/policy'
 import { setClaudeComputerUseEnabled } from './agents/claude/ClaudeSession'
 
@@ -149,10 +150,24 @@ async function syncRemote(): Promise<void> {
   if (st.remoteEnabled && !r.running) {
     try {
       await r.start(st.remotePort ?? REMOTE_DEFAULT_PORT)
+      await printPairing()
     } catch (e) {
       emit({ type: 'toast', level: 'error', text: `Phone remote could not start: ${(e as Error).message}` })
+      console.error(`[tandem] phone remote could not start: ${(e as Error).message}`)
     }
   } else if (!st.remoteEnabled && r.running) await r.stop()
+}
+/** `npm run phone` prints the pairing link and a scannable QR code to the terminal. */
+async function printPairing(): Promise<void> {
+  if (process.env.TANDEM_REMOTE !== '1') return
+  const info = remoteInfo()
+  const url = info.urls[0]
+  if (!url) {
+    console.log('\n[tandem] Phone remote is running, but this Mac has no network address. Join Wi-Fi and restart.\n')
+    return
+  }
+  const qr = await QRCode.toString(url, { type: 'terminal', small: true })
+  console.log(`\n  Tandem phone remote is on.\n  Scan this with your phone camera (same Wi-Fi as this Mac):\n\n${qr}\n  or open: ${url}\n${info.urls.slice(1).map((u) => `  also:    ${u}\n`).join('')}`)
 }
 function remoteInfo(): RemoteInfo {
   const st = settings.get()
@@ -372,6 +387,7 @@ void app.whenReady().then(async () => {
   } catch (e) {
     console.error('[tandem] browser MCP server failed to start:', (e as Error).message)
   }
+  if (process.env.TANDEM_REMOTE === '1' && !settings.get().remoteEnabled) settings.set({ remoteEnabled: true })
   registerIpc()
   createWindow()
   void refreshAccounts(true)

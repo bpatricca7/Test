@@ -118,6 +118,11 @@ reload stay usable by you. Toggle it per session with the **Tandem browser** chi
 
 ### The phone remote
 
+Quickest way to try it on a Mac: `npm install && npm run phone`. That builds Tandem, launches it
+with the remote switched on, and prints a QR code in the terminal. Scan it with your phone camera
+on the same Wi-Fi.
+
+
 `src/main/services/remote.ts` runs a plain Node HTTP server on all interfaces (default port 47831)
 when **Settings → Phone remote** is on. It serves the PWA built from `src/remote/` and a JSON API
 (`/api/state`, `/api/sessions/:id/items`, `/api/sessions/:id/send|interrupt|policy`,

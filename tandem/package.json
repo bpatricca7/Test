@@ -22,7 +22,8 @@
     "license:sign": "node scripts/license-sign.mjs",
     "rebuild": "electron-builder install-app-deps",
     "build:remote": "vite build --config vite.remote.config.ts",
-    "e2e:remote": "node e2e/live-remote.mjs"
+    "e2e:remote": "node e2e/live-remote.mjs",
+    "phone": "npm run build && TANDEM_REMOTE=1 electron-vite preview"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
