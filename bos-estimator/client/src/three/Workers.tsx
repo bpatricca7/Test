@@ -14,7 +14,7 @@ import { agentStates, type AgentState } from './sim';
 import { interiorAgents } from './InteriorCrew';
 import { basic, fieldUniforms, mat, std } from './assets';
 import { rt, type CrewPoint } from './runtime';
-import { noteTap } from './hover';
+import { noteTap, tapCtx } from './hover';
 import { touchUI } from './device';
 
 const m4 = new THREE.Matrix4();
@@ -62,8 +62,10 @@ const HIST_SLACK = 1.5;
  * The hit is reported at the agent's own depth, so a building in front still wins and ground behind loses.
  */
 function proxyRaycast(this: THREE.InstancedMesh, raycaster: THREE.Raycaster, out: THREE.Intersection[]) {
-  const k = (this.userData.k as number | undefined) ?? 0;
-  const r0 = (this.userData.r0 as number | undefined) ?? 0.9;
+  // per-pixel factors (set per frame) times the pick radius in px: the input's own, or the tap's (TouchControls)
+  const px = tapCtx.active && tapCtx.agentPx != null ? tapCtx.agentPx : ((this.userData.px as number | undefined) ?? 5);
+  const k = ((this.userData.kPx as number | undefined) ?? 0) * px;
+  const r0 = Math.max(0.9, ((this.userData.r0Px as number | undefined) ?? 0) * px);
   const ids = this.userData.ids as string[] | undefined;
   const hist = this.userData.hist as Map<string, { x: number; y: number; z: number; t: number }[]> | undefined;
   const o = raycaster.ray.origin, dir = raycaster.ray.direction;
@@ -169,8 +171,9 @@ export function Workers() {
     // pick radius: 5 screen px at the agent's distance (12 px for a fingertip)
     const ortho = (camera as unknown as THREE.OrthographicCamera).isOrthographicCamera === true;
     const pickPx = touchUI() ? 12 : 5;
-    meshes.proxy.userData.k = ortho ? 0 : (pickPx * 2 * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1, size.height);
-    meshes.proxy.userData.r0 = ortho ? Math.max(0.9, pickPx / Math.max(0.01, camera.zoom)) : 0.9;
+    meshes.proxy.userData.px = pickPx;
+    meshes.proxy.userData.kPx = ortho ? 0 : (2 * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1, size.height);
+    meshes.proxy.userData.r0Px = ortho ? 1 / Math.max(0.01, camera.zoom) : 0;
     if (!layout) { rt.crew = []; return; }
     const time = clock.time;
     const R = Math.hypot(layout.bounds.w, layout.bounds.d) / 2;

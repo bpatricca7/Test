@@ -24,6 +24,8 @@ import { disposeAssets, fieldUniforms, groundUniforms } from './assets';
 import { rt } from './runtime';
 import { freeRect, insets, insetsSettling } from './insets';
 import { PerfGovernor, usePerfLevel } from './perf';
+import { TouchControls } from './TouchControls';
+import { lowPower, useLayoutMode, useSheetSnap } from './device';
 import type { Box2 } from './layout';
 
 export { dayFactor, nightFactor } from './Lighting';
@@ -261,12 +263,36 @@ function Post() {
   );
 }
 
+/**
+ * Battery (phones and coarse-pointer tablets): while the crews animate, frames are requested at most 30 times a
+ * second instead of on every display refresh (gestures and camera transitions still render at full rate).
+ */
+const CAP_FPS = 30;
+function FrameCap({ on }: { on: boolean }) {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    rt.frameCap = on;
+    if (!on) return;
+    const t = setInterval(() => { if (!document.hidden) invalidate(); }, 1000 / CAP_FPS);
+    return () => { clearInterval(t); rt.frameCap = false; };
+  }, [on, invalidate]);
+  return null;
+}
+
+/** A frameloop coming back from 'never' (table view, a phone sheet pulled up to full) needs one frame. */
+function Wake() {
+  const frameloop = useThree((s) => s.frameloop);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => { if (frameloop !== 'never') invalidate(); }, [frameloop, invalidate]);
+  return null;
+}
+
 function Cleanup() {
   useEffect(() => () => disposeAssets(), []);
   return null;
 }
 
-function SceneContents({ layer }: { layer: React.RefObject<HTMLDivElement | null> }) {
+function SceneContents({ layer, capped }: { layer: React.RefObject<HTMLDivElement | null>; capped: boolean }) {
   return (
     <>
       <Lighting />
@@ -280,6 +306,7 @@ function SceneContents({ layer }: { layer: React.RefObject<HTMLDivElement | null
       <ScanSweep />
       <PlanCamera />
       <CameraRig />
+      <TouchControls />
       <SimClock />
       <SimFollower />
       <Animator />
@@ -288,6 +315,8 @@ function SceneContents({ layer }: { layer: React.RefObject<HTMLDivElement | null
       <FreeRectScissor />
       <PerfGovernor />
       <Post />
+      <FrameCap on={capped} />
+      <Wake />
       <Cleanup />
     </>
   );
@@ -317,7 +346,33 @@ export function Scene() {
     return () => window.removeEventListener('resize', on);
   }, [quality, level]);
   useEffect(() => { clock.playing = playing; }, [playing]);
-  const frameloop = view === 'table' ? 'never' : (playing && roster.length > 0) || running ? 'always' : 'demand';
+  const mode = useLayoutMode();
+  const snap = useSheetSnap();
+  const [battery, setBattery] = useState(lowPower);
+  useEffect(() => { setBattery(lowPower()); }, [mode]);
+  // phones and coarse-pointer tablets start on the Fast tier unless the user chose a tier on this device
+  useEffect(() => {
+    let saved = false; try { saved = localStorage.getItem('bos.quality') != null; } catch { /* storage unavailable */ }
+    if (!saved && lowPower() && useStore.getState().quality === 'high') useStore.setState({ quality: 'fast' });
+  }, []);
+  // no frames while the map cannot be seen: the table view, or a phone sheet pulled up to full height
+  const sheetHidden = mode === 'phone' && snap === 'full';
+  const hidden = view === 'table' || sheetHidden;
+  // with no frames the render loop's clock stands still: under a full phone sheet the crews' day keeps going
+  // (the dock's clock and the crew counts read it), advanced once a second instead
+  useEffect(() => {
+    if (!sheetHidden || !playing) return;
+    let last = performance.now();
+    const t = setInterval(() => {
+      const now = performance.now(); const dt = Math.min(5, (now - last) / 1000); last = now;
+      if (!clock.playing) return;
+      clock.time = (clock.time + (dt * clock.speed) / 60) % 24;
+      useStore.getState().simSet({ time: clock.time });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [sheetHidden, playing]);
+  const animating = (playing && roster.length > 0) || running;
+  const frameloop = hidden ? 'never' : animating && !battery ? 'always' : 'demand';
   const gl = useMemo(() => ({ antialias: false, powerPreference: 'high-performance' as const, toneMapping: THREE.NeutralToneMapping, toneMappingExposure: 1.0, stencil: false }), []);
   return (
     <div className="scene-root">
@@ -325,7 +380,7 @@ export function Scene() {
         camera={{ position: [140, 150, 200], fov: 42, near: 0.5, far: 6000 }}
         onPointerMissed={() => useStore.getState().setSelectedAgent(null)}>
         <Suspense fallback={null}>
-          <SceneContents layer={layer} />
+          <SceneContents layer={layer} capped={!hidden && animating && battery} />
         </Suspense>
       </Canvas>
       <div className="label-layer" ref={layer} />

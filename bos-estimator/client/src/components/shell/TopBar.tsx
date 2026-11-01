@@ -4,7 +4,7 @@ import { useStore, type UiZoom } from '../../store';
 import { useDerived, useTopDownLive } from '../../derived';
 import { api } from '../../api';
 import { compact, n0, n1, nonNeg, signedPct } from '../../fmt';
-import { Button, IconButton, MenuButton, Num, Popover, Segmented, TextField, Tooltip, usePopover, type MenuItem } from '../ui';
+import { Button, IconButton, MenuButton, Num, Popover, Segmented, TextField, Tooltip, clickWord, usePopover, type MenuItem } from '../ui';
 import { cx } from '../lib/cx';
 import { deltaTone } from '../lib/theme';
 import { currentOrder } from '../lib/query';
@@ -43,7 +43,7 @@ function ProjectName() {
     );
   }
   return (
-    <Tooltip content={name ? `${name} · click to rename` : 'Name this project'} placement="bottom">
+    <Tooltip content={name ? `${name} · ${clickWord()} to rename` : 'Name this project'} placement="bottom">
       <button ref={btn} type="button" className="tb-name" onClick={() => setEditing(true)}>{name || 'Untitled'}</button>
     </Tooltip>
   );
@@ -197,7 +197,7 @@ export function displayMenuItems(): MenuItem[] {
     { kind: 'header', label: 'UI zoom' },
     ...ZOOM_OPTIONS.map((z): MenuItem => ({ id: `zoom-${z.value}`, label: z.label, checked: s.uiZoom === z.value, onSelect: () => s.setUiZoom(z.value) })),
     { kind: 'separator' },
-    { id: 'reduced', label: 'Reduced motion', hint: s.reducedMotionPref == null ? 'Following the system setting' : undefined, checked: s.reducedMotion, onSelect: () => s.setReducedMotionPref(!s.reducedMotion) },
+    { id: 'reduced', label: 'Reduced motion', toggle: true, hint: s.reducedMotionPref == null ? 'Following the system setting' : undefined, checked: s.reducedMotion, onSelect: () => s.setReducedMotionPref(!s.reducedMotion) },
   ];
 }
 
@@ -284,6 +284,18 @@ export const MetricGrid = memo(function MetricGrid({ className }: { className?: 
 const COLOR_BY_ITEMS = [['category', 'Category'], ['confidence', 'Confidence'], ['review', 'Review'], ['fte', 'FTE']] as const;
 const LABEL_ITEMS = [['auto', 'Auto'], ['numbers', 'Numbers'], ['off', 'Off']] as const;
 
+/** Colour-by and label mode as one-row switches inside the phone menu (they stay open while you try them). */
+function ColorBySeg() {
+  const v = useStore((s) => s.colorBy);
+  const set = useStore((s) => s.setColorBy);
+  return <div className="m-seg"><Segmented block label="Color buildings by" value={v} onChange={set} options={COLOR_BY_ITEMS.map(([value, label]) => ({ value, label }))} /></div>;
+}
+function LabelSeg() {
+  const v = useStore((s) => s.labelMode);
+  const set = useStore((s) => s.setLabelMode);
+  return <div className="m-seg"><Segmented block label="Labels" value={v} onChange={set} options={LABEL_ITEMS.map(([value, label]) => ({ value, label }))} /></div>;
+}
+
 function PhoneMore() {
   const { counts, est, rowMeta } = useDerived();
   const projectId = useStore((s) => s.projectId);
@@ -314,15 +326,15 @@ function PhoneMore() {
       { id: 'csv', label: 'Estimate CSV (server)', icon: Download, hint: 'Uses the default wages', disabled: empty, onSelect: () => download(api.exportCsvUrl(projectId)) },
       { kind: 'separator' },
       { kind: 'header', label: 'Color buildings by' },
-      ...COLOR_BY_ITEMS.map(([id, label]): MenuItem => ({ id: `c-${id}`, label, checked: s.colorBy === id, onSelect: () => s.setColorBy(id) })),
+      { kind: 'custom', node: <ColorBySeg /> },
       { kind: 'header', label: 'Labels' },
-      ...LABEL_ITEMS.map(([id, label]): MenuItem => ({ id: `l-${id}`, label, checked: s.labelMode === id, onSelect: () => s.setLabelMode(id) })),
+      { kind: 'custom', node: <LabelSeg /> },
       { kind: 'header', label: 'View' },
-      { id: 'live', label: 'Live lighting', hint: 'Follows the crew clock (day and night)', checked: s.lighting === 'live', onSelect: () => s.setLighting(s.lighting === 'live' ? 'review' : 'live') },
-      { id: 'plan', label: 'Plan view', hint: 'Top-down, north up', checked: s.planView, disabled: s.focusMode === 'building', onSelect: () => s.setPlanView(!s.planView) },
-      { id: 'fast', label: 'Fast rendering', hint: 'For large sites and older phones', checked: s.quality === 'fast', onSelect: () => s.setQuality(s.quality === 'fast' ? 'high' : 'fast') },
-      { id: 'orbit', label: 'Orbit when idle', checked: s.autoOrbit, onSelect: () => s.setAutoOrbit(!s.autoOrbit) },
-      { id: 'reduced', label: 'Reduced motion', hint: s.reducedMotionPref == null ? 'Following the system setting' : undefined, checked: s.reducedMotion, onSelect: () => s.setReducedMotionPref(!s.reducedMotion) },
+      { id: 'live', label: 'Live lighting', toggle: true, hint: 'Follows the crew clock (day and night)', checked: s.lighting === 'live', onSelect: () => s.setLighting(s.lighting === 'live' ? 'review' : 'live') },
+      { id: 'plan', label: 'Plan view', toggle: true, hint: 'Top-down, north up', checked: s.planView, disabled: s.focusMode === 'building', onSelect: () => s.setPlanView(!s.planView) },
+      { id: 'fast', label: 'Fast rendering', toggle: true, hint: 'For large sites and older phones', checked: s.quality === 'fast', onSelect: () => s.setQuality(s.quality === 'fast' ? 'high' : 'fast') },
+      { id: 'orbit', label: 'Orbit when idle', toggle: true, checked: s.autoOrbit, onSelect: () => s.setAutoOrbit(!s.autoOrbit) },
+      { id: 'reduced', label: 'Reduced motion', toggle: true, hint: s.reducedMotionPref == null ? 'Following the system setting' : undefined, checked: s.reducedMotion, onSelect: () => s.setReducedMotionPref(!s.reducedMotion) },
       { id: 'relayout', label: 'Re-layout site', icon: LayoutGrid, onSelect: () => s.relayout() },
       { kind: 'separator' },
       { id: 'keys', label: 'Keyboard shortcuts', icon: Keyboard, onSelect: () => s.setShortcutsOpen(true) },

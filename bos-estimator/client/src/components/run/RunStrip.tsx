@@ -8,7 +8,8 @@ import { useStore, type ExtractionDoc, type ExtractionState, type RunPhase } fro
 import { useDerived } from '../../derived';
 import { clockMs, duration } from '../../fmt';
 import { cx } from '../lib/cx';
-import { Button, IconButton, Tooltip } from '../ui';
+import { Button, IconButton, MenuButton, Popover, Tooltip, usePopover, type MenuItem } from '../ui';
+import { Ellipsis } from 'lucide-react';
 import { startReview } from '../inventory/reviewLoop';
 import { roleLabel } from '../documents/reader';
 import { editsSince } from '../lib/runMerge';
@@ -56,6 +57,15 @@ function docsTip(docs: ExtractionDoc[]) {
       {docs.length > 8 && <div className="row muted">+{docs.length - 8} more</div>}
     </div>
   );
+}
+
+/** Phones keep the strip to one line: the secondary actions (Restore previous, Documents, Open log) fold into ⋯. */
+const usePhone = () => useStore((s) => s.layoutMode === 'phone');
+function MoreActions({ items }: { items: (MenuItem | false | null | undefined)[] }) {
+  const list = items.filter(Boolean) as MenuItem[];
+  if (!list.length) return null;
+  return <MenuButton label="Read actions" placement="bottom-end" items={list}
+    trigger={(t) => <IconButton ref={t.ref} icon={Ellipsis} size="sm" label="More read actions" tooltip={false} aria-haspopup="menu" aria-expanded={t.open} onClick={t.toggle} />} />;
 }
 
 export const RunStrip = memo(function RunStrip() {
@@ -153,6 +163,7 @@ function useRestore(x: ExtractionState) {
 }
 
 interface Seg { key: string; text: string; tone?: 'warn'; onClick?: () => void; label?: string }
+const coarsePointer = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch { return false; } };
 
 /**
  * One line of summary segments in priority order. Segments that do not fit wrap onto a hidden second line and are
@@ -160,6 +171,7 @@ interface Seg { key: string; text: string; tone?: 'warn'; onClick?: () => void; 
  */
 function SegLine({ segs }: { segs: Seg[] }) {
   const box = useRef<HTMLDivElement>(null);
+  const touch = useStore((s) => s.layoutMode === 'phone' || (s.layoutMode === 'tablet' && coarsePointer()));
   const [shown, setShown] = useState(segs.length);
   const sig = segs.map((x) => x.text).join('|');
   useLayoutEffect(() => {
@@ -169,6 +181,8 @@ function SegLine({ segs }: { segs: Seg[] }) {
       const top = kids[0]?.offsetTop ?? 0;
       let n = kids.length;
       for (let i = 0; i < kids.length; i++) if (kids[i].offsetTop > top + 2) { n = i; break; }
+      // not even the first phrase fits (a narrow strip): it joins the "+N" instead of showing a clipped letter
+      if (n > 0 && kids[0].offsetWidth > el.clientWidth + 1) n = 0;
       setShown(n);
     };
     fit();
@@ -180,16 +194,36 @@ function SegLine({ segs }: { segs: Seg[] }) {
     <>
       <div ref={box} className="rs-segs">
         {segs.map((x, i) => (
-          <span key={x.key} className={cx('rs-seg', x.tone === 'warn' && 'is-warn')} aria-hidden={i >= shown || undefined}>
+          <span key={x.key} className={cx('rs-seg', x.tone === 'warn' && 'is-warn', shown === 0 && 'is-out')} aria-hidden={i >= shown || undefined}>
             {x.onClick ? <button type="button" className="rs-seg__btn" tabIndex={i >= shown ? -1 : undefined} aria-label={x.label} onClick={x.onClick}>{x.text}</button> : <span title={x.label}>{x.text}</span>}
           </span>
         ))}
       </div>
-      {hidden.length > 0 && (
+      {hidden.length > 0 && (touch ? <MoreSegs hidden={hidden} /> : (
         <Tooltip content={<div className="rs-more-tip">{hidden.map((x) => <div key={x.key}>{x.text}</div>)}</div>} placement="bottom">
           <span className="rs-more" tabIndex={0} aria-label={`${hidden.length} more: ${hidden.map((x) => x.text).join(', ')}`}>+{hidden.length}</span>
         </Tooltip>
-      )}
+      ))}
+    </>
+  );
+}
+
+/** Touch screens have no hover: "+N" is a button whose popover lists the segments that did not fit (actions too). */
+function MoreSegs({ hidden }: { hidden: Seg[] }) {
+  const pop = usePopover<HTMLButtonElement>();
+  return (
+    <>
+      <button ref={pop.anchorRef} type="button" className="rs-more rs-more--btn" aria-expanded={pop.open} aria-haspopup="dialog"
+        aria-label={`${hidden.length} more: ${hidden.map((x) => x.text).join(', ')}`} onClick={pop.toggle}>+{hidden.length}</button>
+      <Popover {...pop.props} placement="bottom-start" label="More about this read" className="rs-more-pop" initialFocus="none">
+        <ul className="rs-more-pop__list">
+          {hidden.map((x) => (
+            <li key={x.key} className={cx(x.tone === 'warn' && 'is-warn')}>
+              {x.onClick ? <button type="button" className="rs-more-pop__btn" aria-label={x.label} onClick={() => { pop.close(); x.onClick!(); }}>{x.text}</button> : <span>{x.text}</span>}
+            </li>
+          ))}
+        </ul>
+      </Popover>
     </>
   );
 }
@@ -203,6 +237,7 @@ function Done({ x, elapsed }: { x: ExtractionState; elapsed: number }) {
   const askRestore = useRestore(x);
   const ruleRead = useStore((s) => s.project?.extraction?.provider === 'heuristic');
   const r = x.result;
+  const phone = usePhone();
   const took = x.endedAt && x.startedAt ? x.endedAt - x.startedAt : elapsed;
   // [Review N]: the Needs review chip sorted by Impact, and its first row selected (§5.5)
   const review = () => { startReview((id) => estById.get(id)?.fte ?? gestById.get(id)?.fte ?? 0, { needsChip: true }); };
@@ -228,7 +263,8 @@ function Done({ x, elapsed }: { x: ExtractionState; elapsed: number }) {
       <SegLine segs={segs} />
       <div className="runstrip__actions">
         {counts.needs > 0 && <Button size="sm" variant="secondary" onClick={review}>Review {counts.needs.toLocaleString()}</Button>}
-        {x.restorable && <Button size="sm" variant="ghost" onClick={() => void askRestore()}>Restore previous</Button>}
+        {phone ? <MoreActions items={[{ id: 'log', label: 'Open the log', onSelect: () => openLog() }, x.restorable && { id: 'restore', label: 'Restore previous', onSelect: () => void askRestore() }]} />
+          : x.restorable && <Button size="sm" variant="ghost" onClick={() => void askRestore()}>Restore previous</Button>}
         <IconButton icon={X} size="sm" label="Dismiss" tooltip="Dismiss" onClick={dismiss} />
       </div>
     </div>
@@ -244,14 +280,17 @@ function EmptyRead({ x, took }: { x: ExtractionState; took: number }) {
   const first = x.warnings[0];
   const why = first ? first.message : 'No facilities or grounds were found in these documents.';
   const all = x.warnings.map((w) => `${w.file ? `${w.file}: ` : ''}${w.message}`).join('\n');
+  const phone = usePhone();
   return (
     <div className="runstrip runstrip--warn" role="status" aria-label="Read found nothing">
       <TriangleAlert size={16} className="runstrip__icon" aria-hidden />
       <span className="runstrip__msg" title={all || why}><b>The read found nothing</b> ({duration(took)}): {why}</span>
       <div className="runstrip__actions">
         {x.warnings.length > 0 && <Button size="sm" variant="secondary" icon={TriangleAlert} onClick={() => openLog('warnings')}>{x.warnings.length > 1 ? `Open log (${x.warnings.length})` : 'Open log'}</Button>}
-        <Button size="sm" variant="ghost" onClick={() => openLeft('documents')}>Documents</Button>
-        {x.restorable && <Button size="sm" variant="ghost" onClick={() => void askRestore()}>Restore previous</Button>}
+        {phone ? <MoreActions items={[{ id: 'docs', label: 'Documents', onSelect: () => openLeft('documents') }, x.restorable && { id: 'restore', label: 'Restore previous', onSelect: () => void askRestore() }]} /> : <>
+          <Button size="sm" variant="ghost" onClick={() => openLeft('documents')}>Documents</Button>
+          {x.restorable && <Button size="sm" variant="ghost" onClick={() => void askRestore()}>Restore previous</Button>}
+        </>}
         <IconButton icon={X} size="sm" label="Dismiss" tooltip="Dismiss" onClick={dismiss} />
       </div>
     </div>
@@ -264,14 +303,17 @@ function Failed({ x, elapsed }: { x: ExtractionState; elapsed: number }) {
   const openLog = useStore((s) => s.openLog);
   const askRestore = useRestore(x);
   const took = x.endedAt && x.startedAt ? x.endedAt - x.startedAt : elapsed;
+  const phone = usePhone();
   return (
     <div className="runstrip runstrip--failed" role="alert" aria-label="Read failed">
       <CircleAlert size={16} className="runstrip__icon" aria-hidden />
       <span className="runstrip__msg" title={x.error}>Read failed after {duration(took)}: {x.error ?? 'unknown error'}{x.restorable ? ' · The inventory differs from before the run.' : ''}</span>
       <div className="runstrip__actions">
         <Button size="sm" variant="secondary" onClick={() => void retry()}>Retry</Button>
-        <Button size="sm" variant="ghost" onClick={() => openLog('errors')}>Open log</Button>
-        {x.restorable && <Button size="sm" variant="ghost" onClick={() => void askRestore()}>Restore previous</Button>}
+        {phone ? <MoreActions items={[{ id: 'log', label: 'Open the log', onSelect: () => openLog('errors') }, x.restorable && { id: 'restore', label: 'Restore previous', onSelect: () => void askRestore() }]} /> : <>
+          <Button size="sm" variant="ghost" onClick={() => openLog('errors')}>Open log</Button>
+          {x.restorable && <Button size="sm" variant="ghost" onClick={() => void askRestore()}>Restore previous</Button>}
+        </>}
         <IconButton icon={X} size="sm" label="Dismiss" tooltip="Dismiss" onClick={dismiss} />
       </div>
     </div>

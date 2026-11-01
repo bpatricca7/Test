@@ -16,6 +16,9 @@ import { Button, Dialog, IconButton, NumField, Popover, Segmented, Toggle, Toolt
 import { CREW_ICON, hhmm } from '../bottom/crewIcons';
 import '../../styles/dialogs.css';
 
+/** touch screens: focusing the filter on open would raise the keyboard over the list (and zoom iOS) */
+const coarsePointer = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch { return false; } };
+
 const fracTimes = (n: number) => (Math.abs(n - 1 / 3) < 0.01 ? '⅓' : Math.abs(n - 0.5) < 0.01 ? '½' : Math.abs(n - 0.25) < 0.01 ? '¼' : Math.abs(n - 2 / 3) < 0.01 ? '⅔' : Number.isInteger(n) ? String(n) : n.toFixed(2));
 export const freqLabel = (f: FrequencyRule): string => {
   switch (f.kind) {
@@ -76,7 +79,7 @@ function FactorsBody({ onClose }: { onClose: () => void }) {
   };
   return (
     <Dialog open onClose={onClose} title="RS Means-style productivity factors" subtitle={`${FACTORS.length} lines · ${overridden} overridden${hours.has ? ` · ${compact(hours.total)} direct hrs/yr` : ''}`}
-      width="min(1180px, 94vw)" height="min(820px, 90vh)" className="factors" initialFocus=".factors__search input"
+      width="min(1180px, 94vw)" height="min(820px, 90vh)" className="factors" initialFocus={coarsePointer() ? undefined : '.factors__search input'}
       headerExtra={<label className="factors__search"><Search size={14} aria-hidden /><input placeholder="Filter tasks, refs, crews…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter factors" /></label>}>
       <div className="factors__body">
         <aside className="factors__side">

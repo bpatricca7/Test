@@ -24,6 +24,9 @@ export type ListItem =
 
 export const ROW_H = 40;
 export const HEAD_H = 28;
+/** phones: 52 px rows (a 44 px touch target with room between), 32 px section heads */
+const PHONE_ROW_H = 52;
+const PHONE_HEAD_H = 32;
 const MAX_MOUNTED = 40;
 
 export const itemId = (it: ListItem) => (it.t === 'head' ? `head-${it.key}` : it.t === 'f' ? it.f.id : it.g.id);
@@ -76,16 +79,19 @@ export const InventoryList = memo(forwardRef<InventoryListHandle, Props>(functio
   const reduced = useStore((s) => s.reducedMotion);
   const selectedId = useStore((s) => (s.selection.kind === null ? null : s.selection.id));
   const recent = useStore((s) => (s.extraction.running ? s.extraction.recent : null));
+  const phone = useStore((s) => s.layoutMode === 'phone');
+  const rowH = phone ? PHONE_ROW_H : ROW_H, headH = phone ? PHONE_HEAD_H : HEAD_H;
 
   // geometry: cumulative tops (heads 28, rows 40)
   const { tops, total, index } = useMemo(() => {
     const t = new Float64Array(items.length + 1); let y = 0;
     const idx = new Map<string, number>();
-    // the first section header lives in the column header row (zero height in the list)
-    for (let i = 0; i < items.length; i++) { t[i] = y; y += items[i].t === 'head' ? (i === 0 ? 0 : HEAD_H) : ROW_H; idx.set(itemId(items[i]), i); }
+    // the first section header lives in the column header row (zero height in the list); phones have no column
+    // header (sorting is in the toolbar's menu), so there it is a row like the others
+    for (let i = 0; i < items.length; i++) { t[i] = y; y += items[i].t === 'head' ? (i === 0 && !phone ? 0 : headH) : rowH; idx.set(itemId(items[i]), i); }
     t[items.length] = y;
     return { tops: t, total: y, index: idx };
-  }, [items]);
+  }, [items, rowH, headH, phone]);
   const at = useCallback((y: number) => { // first item whose bottom is below y
     let lo = 0, hi = items.length - 1;
     while (lo < hi) { const mid = (lo + hi) >> 1; if (tops[mid + 1] <= y) lo = mid + 1; else hi = mid; }
@@ -130,7 +136,7 @@ export const InventoryList = memo(forwardRef<InventoryListHandle, Props>(functio
     setCursor(selectedId);
     if (local && !firstRender.current) return;
     const s = el.current;
-    const far = s ? tops[i] < s.scrollTop - 4 * ROW_H || tops[i] > s.scrollTop + s.clientHeight + 4 * ROW_H : false;
+    const far = s ? tops[i] < s.scrollTop - 4 * rowH || tops[i] > s.scrollTop + s.clientHeight + 4 * rowH : false;
     scrollToIndex(i, far ? 'center' : 'nearest');
     if (!firstRender.current && !reduced) { setFlash(selectedId); const t = setTimeout(() => setFlash(null), 650); return () => clearTimeout(t); }
   }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -153,7 +159,7 @@ export const InventoryList = memo(forwardRef<InventoryListHandle, Props>(functio
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const cur = cursor != null ? index.get(cursor) ?? -1 : -1;
-    const page = Math.max(1, Math.floor(vp.h / ROW_H) - 1);
+    const page = Math.max(1, Math.floor(vp.h / rowH) - 1);
     let next = -2;
     switch (e.key) {
       case 'ArrowDown': next = cur < 0 ? step(-1, 1) : step(cur, 1); break;
@@ -203,7 +209,7 @@ export const InventoryList = memo(forwardRef<InventoryListHandle, Props>(functio
     const id = itemId(it);
     const style = { top: tops[i], height: tops[i + 1] - tops[i] };
     let node: ReactNode;
-    if (it.t === 'head') { if (i === 0) continue; node = <SectionHead label={it.label} count={it.count} note={it.note} />; }
+    if (it.t === 'head') { if (i === 0 && !phone) continue; node = <SectionHead label={it.label} count={it.count} note={it.note} />; }
     else if (it.t === 'f') node = <FacilityRow f={it.f} meta={it.incoming ? undefined : rowMeta.get(id)} fte={it.incoming ? undefined : fteOf(id)} maxFte={maxFte} incoming={it.incoming} flash={flash === id} cursor={kbd && cursor === id} />;
     else node = <GroundsRow g={it.g} meta={it.incoming ? undefined : rowMeta.get(id)} fte={it.incoming ? undefined : fteOf(id)} maxFte={maxFte} host={it.g.facilityId ? hostName(it.g.facilityId) : undefined} incoming={it.incoming} flash={flash === id} cursor={kbd && cursor === id} />;
     rows.push(<div key={id} className="inv-vrow" style={style}>{node}</div>);

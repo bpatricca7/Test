@@ -13,7 +13,7 @@ import { n0 } from '../fmt';
 import type { BuildingPlacement, ZonePlacement } from './layout';
 import { freeRect, onInsetsChange } from './insets';
 import { rt, type LabelOut } from './runtime';
-import { hoverFromScene, hoverSrc } from './hover';
+import { tapCtx, hoverFromScene, hoverSrc } from './hover';
 import { fmtTime } from './sim';
 import { clock } from './clock';
 import { input, layoutModeOf, sheetSnapOf, touchUI } from './device';
@@ -31,6 +31,7 @@ type Lod = 'chip' | 'full' | 'pin';
  */
 interface Metrics { chip: number; l1: number; l2: number; zone: number; chipH: number; chipPad: number; fullH: number; fullH3: number; fullPad: number; pinW: number; pinH: number; maxFull: number; gap: number }
 const DESK: Metrics = { chip: 12, l1: 12.5, l2: 11.5, zone: 11.5, chipH: 20, chipPad: 17, fullH: 40, fullH3: 56, fullPad: 21, pinW: 12, pinH: 20, maxFull: 12, gap: 4 };
+const TABLET: Metrics = { ...DESK, l2: 12, zone: 12 };
 const PHONE: Metrics = { chip: 13, l1: 13.5, l2: 12, zone: 12.5, chipH: 24, chipPad: 19, fullH: 46, fullH3: 64, fullPad: 23, pinW: 14, pinH: 24, maxFull: 3, gap: 6 };
 interface Rect { x0: number; y0: number; x1: number; y1: number }
 interface Cand {
@@ -144,7 +145,7 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     slots: [] as Slot[], tip: null as HTMLDivElement | null, card: null as HTMLDivElement | null,
     placed: [] as Placed[], dirty: true, lastPack: 0, camSig: '', restTimer: 0 as unknown as ReturnType<typeof setTimeout>,
     occ: [] as Rect[], occSig: '', tipId: null as string | null, tipSince: 0, tipHtml: '', cardHtml: '', cardAt: 0, drag: null as null | { x: number; y: number; id: number; ev: PointerEvent; fired: boolean },
-    suppressClick: false, compact: false, touch: false, cardMax: '',
+    suppressClick: false, mode: '' as string, touch: false, cardMax: '',
   });
 
   const markDirty = () => { S.current.dirty = true; invalidate(); };
@@ -169,6 +170,8 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     const onClick = (e: MouseEvent) => {
       if (s.suppressClick) { s.suppressClick = false; return; }
       const t = target(e); if (!t?.dataset.id) return;
+      // a finger's tap on this label already went to the roof under it (TouchControls)
+      if (performance.now() - tapCtx.labelTapAt < 700) { tapCtx.labelTapAt = -Infinity; e.stopPropagation(); return; }
       e.stopPropagation();
       const st = useStore.getState();
       st.select(t.dataset.kind === 'grounds' ? { kind: 'grounds', id: t.dataset.id } : { kind: 'facility', id: t.dataset.id });
@@ -256,14 +259,30 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     if (filterIds && filterIds.size) { needsChip = true; for (const id of filterIds) if (d.rowMeta.get(id)?.review !== 'needs') { needsChip = false; break; } }
     const needsRelevant = colorBy === 'confidence' || colorBy === 'review' || needsChip;
     const onRoof = (st.planView ?? false) && (camera as THREE.OrthographicCamera).isOrthographicCamera === true; // plan view: chips sit on the roofs
-    const compact = layoutModeOf(st) === 'phone';
-    const M = compact ? PHONE : DESK;
+    const mode = layoutModeOf(st);
+    const compact = mode === 'phone';
+    const M = compact ? PHONE : mode === 'tablet' ? TABLET : DESK;
     // phones: fewer, larger labels (a chip per ~15,000 px² of free map, 8–28; plan view up to 60)
     const budget = compact
       ? (onRoof ? Math.min(60, Math.floor((fr.w * fr.h) / 6000)) : Math.max(8, Math.min(28, Math.floor((fr.w * fr.h) / 15000))))
       : onRoof ? 200 : Math.max(24, Math.min(100, Math.floor((fr.w * fr.h) / 9000)));
     // a free rect with no room for the map (a phone sheet pulled up to full) carries no labels
     const tiny = fr.w < 80 || fr.h < 60;
+    // phones: the selected building's screen footprint stays clear of other labels (a finger aimed at its roof must
+    // not land on a neighbour's chip); its own card sits above it rather than on it
+    let selFoot: Rect | null = null;
+    if (compact && layout && st.selection.kind === 'facility' && !focused) {
+      const b = layout.buildings.find((q) => q.id === selId);
+      if (b) {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, ok = true;
+        for (const hy of [0, Math.max(0.6, b.height)]) for (const sx of [-0.5, 0.5]) for (const sz of [-0.5, 0.5]) {
+          const p = project(_v.set(b.box.x + sx * b.box.w, hy, b.box.z + sz * b.box.d).clone(), W, H);
+          if (!p.front) ok = false;
+          x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+        }
+        if (ok) selFoot = { x0: x0 - 6, y0: y0 - 6, x1: x1 + 6, y1: y1 + 6 };
+      }
+    }
 
     if (layout && !tiny && !(focused && st.buildingTab === 'interior')) {
       for (const b of focused ? [] : layout.buildings) {
@@ -368,11 +387,17 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
       if (must && pointInOcc(c.ax, c.ay)) continue;
       let lod = c.lod;
       const toChip = () => { lod = 'chip'; if (c.chipText) { c.text = c.chipText; c.html = esc(c.chipText); } };
+      // phones: a map strip under 200 px tall (the sheet at half) gets a one-line chip for the selection, not a card
+      if (compact && c.sel && lod === 'full' && fr.h < 200 && c.kind === 'facility') { lod = 'chip'; c.text = ell(c.l1 ?? c.text, 24); c.html = esc(c.text); }
       if (lod === 'full' && !must && fullCount >= M.maxFull) toChip();
       const cost = lod === 'pin' ? 1 / 3 : 1;
       // the budget is in chip units; a pin counts as a third of a chip (§9.7)
       if (!must && units + cost > budget) continue;
       let r = rectFor(c, lod);
+      // phones: other labels never sit on the selected building's footprint (they would take the finger's tap)
+      if (selFoot && !c.sel && intersects(r, selFoot)) continue;
+      // ... and the selection's own card goes above its footprint when there is room there
+      if (selFoot && c.sel && c.kind === 'facility' && r.y1 > selFoot.y0 && selFoot.y0 - (r.y1 - r.y0) - 4 >= area.y0) { const dy = selFoot.y0 - 4 - r.y1; r = { x0: r.x0, y0: r.y0 + dy, x1: r.x1, y1: r.y1 + dy }; }
       if (must) {
         // never culled: clamp into the free rect, then try a few positions to stay clear of others
         const tries: [number, number][] = [[0, 0], [0, (r.y1 - r.y0) + 14], [(r.x1 - r.x0) / 2 + 10, 0], [-(r.x1 - r.x0) / 2 - 10, 0], [0, -(r.y1 - r.y0) - 6]];
@@ -465,10 +490,18 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     const s = S.current; const tip = s.tip; if (!tip) return;
     const st = useStore.getState();
     const id = st.hoverId ?? null;
-    const fromScene = id != null && hoverSrc.sceneId === id && st.view !== 'table';
+    // a tap's tooltip shows only where nothing else shows the tapped building: not over a phone's open bottom
+    // sheet, nor beside a tablet's open Inspector (both already carry these figures)
+    const mode = layoutModeOf(st);
+    const inspectorOpen = (st as { rightOpen?: boolean }).rightOpen === true && (st as { rightTab?: string }).rightTab === 'inspector';
+    const tapHidden = hoverSrc.touch && ((mode === 'phone' && sheetSnapOf(st) !== 'closed') || (mode === 'tablet' && inspectorOpen));
+    const fromScene = id != null && hoverSrc.sceneId === id && st.view !== 'table' && !tapHidden;
     if (!fromScene) { if (s.tipId) { tip.classList.remove('is-on'); s.tipId = null; } return; }
-    if (s.tipId !== id) { s.tipId = id; s.tipSince = now; tip.classList.remove('is-on'); invalidateLater(160); return; }
-    if (now - s.tipSince < 150) { invalidateLater(160 - (now - s.tipSince)); return; }
+    // a hover waits 150 ms (passing pointers do not flash it); a tap shows it at once
+    const delay = hoverSrc.touch ? 0 : 150;
+    if (s.tipId !== id) { s.tipId = id; s.tipSince = now; tip.classList.remove('is-on'); if (delay) { invalidateLater(delay + 10); return; } }
+    if (now - s.tipSince < delay) { invalidateLater(delay + 10 - (now - s.tipSince)); return; }
+    const fingers = touchUI();
     const b = bmap.get(id); const z = b ? undefined : zmap.get(id);
     let html = '';
     let anchor: THREE.Vector3 | null = null;
@@ -483,13 +516,13 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
         + `<div class="g"><div><span>Gross SF</span><b>${n0(f.grossSqft)}</b></div><div><span>Cleanable SF</span><b>${n0(e?.resolved.cleanableSqft ?? f.cleanableSqft ?? 0)}</b></div>`
         + `<div><span>FTE</span><b>${(e?.fte ?? 0).toFixed(2)}</b></div><div><span>Confidence</span><b style="color:${CONF_COLOR[band]}">${CONF_GLYPH[band]} ${Math.round(f.confidence * 100)}%</b></div></div>`
         + `<div class="r ${rv === 'needs' ? 'warn' : rv === 'flagged' ? 'flag' : rv === 'verified' ? 'ok' : ''}">${rvText}</div>`
-        + `<div class="h">Click select · Double-click inside</div>`;
+        + `<div class="h">${fingers ? 'Double-tap to go inside' : 'Click select · Double-click inside'}</div>`;
       anchor = new THREE.Vector3(b.box.x, Math.max(0.6, b.height) + 0.3, b.box.z);
     } else if (z) {
       const g = gmap.get(id); if (!g) return;
       const ge = d.gestById.get(id);
       html = `<div class="t">${esc(g.name)}</div><div class="s">${esc(g.documentLabel ? `${g.documentLabel} · ` : '')}${esc(qtyText(g))}</div>`
-        + `<div class="g"><div><span>FTE</span><b>${(ge?.fte ?? 0).toFixed(2)}</b></div><div><span>Confidence</span><b>${Math.round(g.confidence * 100)}%</b></div></div><div class="h">Click select</div>`;
+        + `<div class="g"><div><span>FTE</span><b>${(ge?.fte ?? 0).toFixed(2)}</b></div><div><span>Confidence</span><b>${Math.round(g.confidence * 100)}%</b></div></div>${fingers ? '' : '<div class="h">Click select</div>'}`;
       anchor = new THREE.Vector3(z.box.x, 0.2, z.box.z);
     }
     if (!html || !anchor) { tip.classList.remove('is-on'); return; }
@@ -497,7 +530,10 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     const W = size.width, H = size.height; const fr = freeRect(W, H);
     const a = project(anchor, W, H);
     if (!a.front) { tip.classList.remove('is-on'); return; }
-    const w = 260, h = tip.offsetHeight || 150;
+    // the tooltip is 260 px wide, narrower when the free map is (a phone in portrait)
+    const w = Math.max(160, Math.min(260, fr.w - 16));
+    const ws = `${Math.round(w)}px`; if (tip.style.width !== ws) tip.style.width = ws;
+    const h = tip.offsetHeight || 150;
     const lbl = s.placed.find((p) => p.id === id && p.visible);
     const opts: [number, number][] = lbl
       ? [[lbl.x + lbl.w + 8, lbl.y], [lbl.x - 8 - w, lbl.y], [lbl.x, lbl.y + lbl.h + 8], [lbl.x, lbl.y - 8 - h]]
@@ -533,6 +569,9 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     }
     card.classList.add('is-on');
     const W = size.width, H = size.height; const fr = freeRect(W, H);
+    // the card wraps inside the free map: at most 320 px, less on a narrow phone
+    const maxW = `${Math.round(Math.max(160, Math.min(320, fr.w - 16)))}px`;
+    if (s.cardMax !== maxW) { card.style.maxWidth = maxW; s.cardMax = maxW; }
     const a = project(_v.set(p.wx, p.wy + 1.2, p.wz).clone(), W, H);
     if (!a.front) { card.classList.remove('is-on'); return; }
     const w = card.offsetWidth || 200, h = card.offsetHeight || 50;
@@ -558,6 +597,13 @@ export function LabelLayerDriver({ layer }: { layer: React.RefObject<HTMLDivElem
     const s = S.current;
     if (!s.slots.length) return;
     const now = performance.now();
+    // phone sizing and finger hit areas follow the layout mode and the input in use
+    const mode = layoutModeOf(useStore.getState()), fingers = touchUI();
+    if (mode !== s.mode || fingers !== s.touch) {
+      s.mode = mode; s.touch = fingers; s.dirty = true;
+      const root = layer.current;
+      if (root) { root.classList.toggle('compact', mode === 'phone'); root.classList.toggle('mid', mode === 'tablet'); root.classList.toggle('touch', fingers); }
+    }
     camera.updateMatrixWorld();
     const e = camera.matrixWorld.elements; const pe = camera.projectionMatrix.elements;
     const sig = `${e[12].toFixed(3)},${e[13].toFixed(3)},${e[14].toFixed(3)},${e[8].toFixed(4)},${e[9].toFixed(4)},${e[10].toFixed(4)},${pe[0].toFixed(5)},${pe[8].toFixed(5)},${pe[9].toFixed(5)},${size.width},${size.height}`;

@@ -30,7 +30,7 @@ export function PerfGovernor() {
     if (quality !== 'high') { p.samples.length = 0; if (p.level) setLevel(0); return; }
     // only frames rendered back to back say anything about the renderer's cost
     const st = useStore.getState();
-    if (get().frameloop !== 'always' || st.extraction.running || document.hidden || dt <= 0 || dt > 3000) { p.samples.length = 0; p.since = now; return; }
+    if ((get().frameloop !== 'always' && !rt.frameCap) || st.extraction.running || document.hidden || dt <= 0 || dt > 3000) { p.samples.length = 0; p.since = now; return; }
     p.samples.push(dt);
     if (p.samples.length > 60) p.samples.shift();
     if (now - p.since < WINDOW_MS || now - p.changedAt < WINDOW_MS || p.samples.length < 6) return;

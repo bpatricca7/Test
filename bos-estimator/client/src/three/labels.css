@@ -19,11 +19,11 @@
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 6px 14px -6px rgba(0,0,0,.9),0 1px 2px rgba(0,0,0,.6)}
 .label-layer .lbl--chip{height:20px;padding:0 6px 0 6px;font:500 12px/18px var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .label-layer .lbl--full{height:40px;padding:2px 8px 2px 8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 24px -10px rgba(0,0,0,.9),0 1px 2px rgba(0,0,0,.6)}
-.label-layer .lbl--full .l1{font:500 var(--fs-sm)/17px var(--font-sans);letter-spacing:var(--track-snug);overflow:hidden;text-overflow:ellipsis}
+.label-layer .lbl--full .l1{font:500 12.5px/17px var(--font-sans);letter-spacing:var(--track-snug);overflow:hidden;text-overflow:ellipsis}
 .label-layer .lbl--full .l1 .n{font-family:var(--font-mono);font-weight:500;letter-spacing:-.01em}
-.label-layer .lbl--full .l2{font:400 var(--fs-xs)/17px var(--font-mono);color:var(--text-2);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
-.label-layer .lbl--full .l3{font:400 var(--fs-xs)/16px var(--font-mono);color:var(--text-2)}
-.label-layer .lbl--zone{font:500 var(--fs-xs)/18px var(--font-sans);color:var(--text-2);letter-spacing:0}
+.label-layer .lbl--full .l2{font:400 11.5px/17px var(--font-mono);color:var(--text-2);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.label-layer .lbl--full .l3{font:400 11.5px/16px var(--font-mono);color:var(--text-2)}
+.label-layer .lbl--zone{font:500 11.5px/18px var(--font-sans);color:var(--text-2);letter-spacing:0}
 .label-layer .lbl--hover{border-color:rgba(255,255,255,.34);border-left-color:var(--stripe);color:#ffffff;background:#181818;z-index:1}
 .label-layer .lbl--new{border-color:var(--new);border-left-color:var(--stripe)}
 .label-layer .lbl--warn{--state:var(--warn);border-top-color:var(--state);box-shadow:inset 0 1px 0 var(--state),0 6px 14px -6px rgba(0,0,0,.9),0 1px 2px rgba(0,0,0,.6)}
@@ -65,3 +65,34 @@
 .label-layer .worker-card b{display:block;font:600 var(--fs-sm)/18px var(--font-sans);letter-spacing:var(--track-snug);color:var(--text-hi,#f2f2f2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .label-layer .worker-card .t{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 .label-layer .worker-card .c{color:var(--text-2)}
+
+/* ---- touch and phone (mobile contract) ----
+   Fingers: the map owns every touch (TouchControls), so no element in the layer may start a browser pan / zoom or a
+   long-press callout. Pins and chips get an invisible ≥ 44 px hit area around their visual box (the packer still
+   packs the visual box). */
+.scene-root,.label-layer,.label-layer .lbl,.label-layer .pin{touch-action:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.scene-root{-webkit-user-select:none;user-select:none}
+.label-layer.touch .lbl,.label-layer.touch .pin{overflow:visible}
+.label-layer.touch .lbl::after,.label-layer.touch .pin::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
+.label-layer.touch .lbl--full::after{width:100%;height:100%}
+
+/* tablets (layoutMode 'tablet'): desktop boxes, the small mono / zone text at 12 px (TABLET in LabelLayer.tsx) */
+.label-layer.mid .lbl--zone{font-size:12px}
+.label-layer.mid .lbl--full .l2,.label-layer.mid .lbl--full .l3{font-size:12px}
+
+/* phones (layoutMode 'phone'): sizes match PHONE in LabelLayer.tsx — chip = text + 19 px × 24 px,
+   full = widest line + 23 px × 46 px (64 px with the crew row); every text ≥ 12 px */
+.label-layer.compact .lbl--chip{height:24px;padding:0 7px;font:500 13px/22px var(--font-mono)}
+.label-layer.compact .lbl--zone{font:500 12.5px/22px var(--font-sans)}
+.label-layer.compact .lbl--full{height:46px;padding:3px 9px}
+.label-layer.compact .lbl--full .l1{font:500 13.5px/19px var(--font-sans)}
+.label-layer.compact .lbl--full .l2{font:400 12px/19px var(--font-mono)}
+.label-layer.compact .lbl--full .l3{font:400 12px/18px var(--font-mono)}
+.label-layer.compact .pin{width:14px;height:24px}
+.label-layer.compact .pin__dot{width:14px;height:14px;font:11px/14px var(--font-sans)}
+.label-layer.compact .pin__stem{left:6.5px;top:14px;height:10px}
+.label-layer.compact .tip3d{padding:10px 12px;font:400 12px/17px var(--font-sans)}
+.label-layer.compact .tip3d .t{font:600 13.5px/19px var(--font-sans)}
+.label-layer.compact .tip3d .g b{font:500 13px/18px var(--font-mono)}
+.label-layer.compact .worker-card{font:400 12px/17px var(--font-sans);padding:8px 11px 8px 12px}
+.label-layer.compact .worker-card b{font:600 13.5px/19px var(--font-sans)}

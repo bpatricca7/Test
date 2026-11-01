@@ -4,7 +4,7 @@ export { Segmented, type SegOption } from './Segmented';
 export { Tabs, type TabItem } from './Tabs';
 export { Chip, type ChipTone } from './Chip';
 export { Kbd } from './Kbd';
-export { Tooltip } from './Tooltip';
+export { Tooltip, clickWord } from './Tooltip';
 export { Popover, usePopover, type PopoverProps } from './Popover';
 export { Menu, MenuButton, type MenuItem } from './Menu';
 export { Dialog, ConfirmDialog, type DialogProps, type ConfirmOptions, type ConfirmAction } from './Dialog';

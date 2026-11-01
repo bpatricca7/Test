@@ -18,6 +18,10 @@ export const layoutModeNow = () => layoutModeOf(useStore.getState());
 export const useLayoutMode = () => useStore((s) => layoutModeOf(s));
 export const useSheetSnap = () => useStore((s) => sheetSnapOf(s));
 
+/** a phone's on-screen keyboard is open (the shell sets :root[data-kb="open"]): the map is behind the sheet or the
+ * window is briefly shorter, so the camera keeps its framing (no refits, no selection pans) until it closes */
+export const keyboardUp = () => typeof document !== 'undefined' && document.documentElement.dataset.kb === 'open';
+
 /** the primary pointer is coarse (a phone or tablet without a mouse) */
 export const coarsePointer = () => mq('(pointer: coarse)');
 

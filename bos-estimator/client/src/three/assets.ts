@@ -26,18 +26,52 @@ function canvasTex(c: HTMLCanvasElement, srgb = true): THREE.CanvasTexture {
   return track(t);
 }
 
-/** Copies canvases into the layers of one sRGB, mipmapped, repeat-wrapped array texture (rows flipped like a CanvasTexture). */
-function arrayTexture(canvases: HTMLCanvasElement[]): THREE.DataArrayTexture {
-  const w = canvases[0].width, h = canvases[0].height, layer = w * h * 4, stride = w * 4;
-  const data = new Uint8Array(layer * canvases.length);
+// sRGB <-> linear for the CPU mip chain (the GPU filters sRGB textures in linear light; so does this)
+const toLin = new Float32Array(256);
+for (let i = 0; i < 256; i++) { const c = i / 255; toLin[i] = c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }
+const toSrgb = new Uint8Array(4096);
+for (let i = 0; i < 4096; i++) { const l = i / 4095; toSrgb[i] = Math.round(255 * (l <= 0.0031308 ? l * 12.92 : 1.055 * l ** (1 / 2.4) - 0.055)); }
+
+/** One mip level down (2 × 2 box filter in linear light, alpha straight), for every layer. */
+function halve(src: Uint8Array, w: number, h: number, depth: number): { data: Uint8Array; width: number; height: number } {
+  const nw = Math.max(1, w >> 1), nh = Math.max(1, h >> 1);
+  const out = new Uint8Array(nw * nh * depth * 4);
+  for (let l = 0; l < depth; l++) {
+    const si = l * w * h * 4, di = l * nw * nh * 4;
+    for (let y = 0; y < nh; y++) {
+      const y0 = Math.min(h - 1, y * 2), y1 = Math.min(h - 1, y * 2 + 1);
+      for (let x = 0; x < nw; x++) {
+        const x0 = Math.min(w - 1, x * 2), x1 = Math.min(w - 1, x * 2 + 1);
+        const a = si + (y0 * w + x0) * 4, b = si + (y0 * w + x1) * 4, c = si + (y1 * w + x0) * 4, d = si + (y1 * w + x1) * 4;
+        const o = di + (y * nw + x) * 4;
+        for (let k = 0; k < 3; k++) out[o + k] = toSrgb[Math.round(((toLin[src[a + k]] + toLin[src[b + k]] + toLin[src[c + k]] + toLin[src[d + k]]) / 4) * 4095)];
+        out[o + 3] = (src[a + 3] + src[b + 3] + src[c + 3] + src[d + 3] + 2) >> 2;
+      }
+    }
+  }
+  return { data: out, width: nw, height: nh };
+}
+
+/**
+ * Copies canvases into the layers of one sRGB, mipmapped, repeat-wrapped array texture (rows flipped like a
+ * CanvasTexture). The mip chain is built here on the CPU and uploaded with the base level: GPUs (ANGLE) without a
+ * native mip generator for sRGB 2D arrays fall back to a synchronous ReadPixels round trip for generateMipmap, a
+ * stall a phone feels. (CompressedArrayTexture with RGBA / unsigned byte is three's path for an uncompressed array
+ * texture with its own mipmaps.)
+ */
+function arrayTexture(canvases: HTMLCanvasElement[]): THREE.CompressedArrayTexture {
+  const w = canvases[0].width, h = canvases[0].height, layer = w * h * 4, stride = w * 4, depth = canvases.length;
+  const data = new Uint8Array(layer * depth);
   canvases.forEach((c, i) => {
-    const px = c.getContext('2d')!.getImageData(0, 0, w, h).data;
+    const px = c.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, w, h).data;
     for (let y = 0; y < h; y++) data.set(px.subarray((h - 1 - y) * stride, (h - y) * stride), i * layer + y * stride);
   });
-  const t = new THREE.DataArrayTexture(data, w, h, canvases.length);
-  t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType; t.colorSpace = THREE.SRGBColorSpace;
+  const mipmaps: { data: Uint8Array; width: number; height: number }[] = [{ data, width: w, height: h }];
+  for (let m = mipmaps[0]; m.width > 1 || m.height > 1;) { m = halve(m.data, m.width, m.height, depth); mipmaps.push(m); }
+  const t = new THREE.CompressedArrayTexture(mipmaps as unknown as THREE.CompressedTextureMipmap[], w, h, depth, THREE.RGBAFormat as unknown as THREE.CompressedPixelFormat, THREE.UnsignedByteType);
+  t.colorSpace = THREE.SRGBColorSpace;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true;
+  t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = false;
   t.needsUpdate = true;
   return track(t);
 }
@@ -47,7 +81,8 @@ function makeFacade(style: FacadeStyle) {
   const W = 256, H = 256, { bays } = BAYS[style], floors = 4;
   const diffuse = document.createElement('canvas'); diffuse.width = W; diffuse.height = H;
   const emis = document.createElement('canvas'); emis.width = W; emis.height = H;
-  const d = diffuse.getContext('2d')!; const e = emis.getContext('2d')!;
+  // read back once into the array texture (arrayTexture): a CPU-backed canvas, so getImageData never stalls the GPU
+  const d = diffuse.getContext('2d', { willReadFrequently: true })!; const e = emis.getContext('2d', { willReadFrequently: true })!;
   const rnd = seeded(`facade-${style}`);
   d.fillStyle = '#ffffff'; d.fillRect(0, 0, W, H);
   d.strokeStyle = 'rgba(0,0,0,0.22)'; d.lineWidth = 2;
@@ -84,9 +119,9 @@ function makeFacade(style: FacadeStyle) {
   return { diffuse, emis };
 }
 
-let facades: THREE.DataArrayTexture | null = null;
+let facades: THREE.CompressedArrayTexture | null = null;
 /** One array texture: layers 0–2 are the office / barracks / industrial diffuse tiles, layers 3–5 their lit windows. */
-export function facadeTextures(): THREE.DataArrayTexture {
+export function facadeTextures(): THREE.CompressedArrayTexture {
   if (!facades) { const f = STYLES.map(makeFacade); facades = arrayTexture([...f.map((x) => x.diffuse), ...f.map((x) => x.emis)]); }
   return facades;
 }
@@ -94,7 +129,7 @@ export function facadeTextures(): THREE.DataArrayTexture {
 /** 128² white-based pattern per grounds kind; tinted by the material colour, tiled per zone via UV scale. */
 function patternCanvas(kind: GroundsKind): HTMLCanvasElement {
   const c = document.createElement('canvas'); c.width = 128; c.height = 128;
-  const ctx = c.getContext('2d')!;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!; // read back by arrayTexture (no GPU readback)
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 128, 128);
   const rnd = seeded(`pattern-${kind}`);
   if (kind === 'improved_turf' || kind === 'athletic_field') {
@@ -117,9 +152,9 @@ function patternCanvas(kind: GroundsKind): HTMLCanvasElement {
   return c;
 }
 export const PAD_KINDS: GroundsKind[] = ['improved_turf', 'semi_improved', 'unimproved', 'athletic_field', 'shrub_bed', 'parking', 'sidewalk', 'tree_canopy'];
-let patterns: THREE.DataArrayTexture | null = null;
+let patterns: THREE.CompressedArrayTexture | null = null;
 /** All grounds-kind patterns in one array texture; the layer of a kind is PAD_KINDS.indexOf(kind). */
-export function kindTextures(): THREE.DataArrayTexture {
+export function kindTextures(): THREE.CompressedArrayTexture {
   if (!patterns) patterns = arrayTexture(PAD_KINDS.map(patternCanvas));
   return patterns;
 }

@@ -16,8 +16,8 @@ export type Selection = { kind: 'facility'; id: string } | { kind: 'grounds'; id
 export type CenterView = 'map' | 'table';
 /**
  * Responsive layout mode (mobile contract). The SHELL keeps it in sync from matchMedia (client/src/components/shell/
- * responsive.ts); the scene reads it and never writes it. phone: width < 768, or a short landscape window
- * (height < 540 and width < 1280); tablet: 768–1279; desktop: >= 1280 (unchanged).
+ * responsive.ts); the scene reads it and never writes it. phone: width < 768, or a phone on its side (a touch-first
+ * device with a short screen, in landscape, width < 1280); tablet: 768–1279; desktop: >= 1280 (unchanged).
  */
 export type LayoutMode = 'desktop' | 'tablet' | 'phone';
 /** Phone bottom sheet snap points: peek ≈ 25 %, half ≈ 55 %, full ≈ 92 % of the viewport height. */
@@ -26,14 +26,42 @@ export type SheetSnap = 'closed' | 'peek' | 'half' | 'full';
  * and the read log, opened from the crew strip and the run strip). */
 export type SheetTab = 'map' | 'list' | 'inspector' | 'estimate' | 'documents' | 'crews';
 export interface SheetState { snap: SheetSnap; tab: string }
-export const PHONE_QUERY = '(max-width: 767.98px), (max-height: 539.98px) and (max-width: 1279.98px)';
+export const PHONE_QUERY = '(max-width: 767.98px)';
 export const TABLET_QUERY = '(max-width: 1279.98px)';
-/** Layout mode for a window size (the same thresholds as PHONE_QUERY / TABLET_QUERY). */
-export function layoutModeFor(width: number, height: number): LayoutMode {
-  if (width < 768 || (height < 540 && width < 1280)) return 'phone';
-  if (width < 1280) return 'tablet';
+/** What decides a phone on its side besides the window: the primary pointer, the device's screen and the tallest
+ * window seen at this width (an on-screen keyboard shortens the window, never the device). */
+export interface LayoutDevice { coarse: boolean; screenShort: number; tallest: number }
+/**
+ * Layout mode for a window size. A short landscape window is a phone only on a touch-first device whose screen (and
+ * tallest window at this width) is under 540 px: a tablet whose window an on-screen keyboard shortened, or a desktop
+ * window dragged short, keeps its mode.
+ */
+export function layoutModeFor(width: number, height: number, dev?: LayoutDevice): LayoutMode {
+  if (width < 768) return 'phone';
+  if (width < 1280) {
+    if (dev?.coarse && width > height && Math.max(height, dev.tallest) < 540 && dev.screenShort < 540) return 'phone';
+    return 'tablet';
+  }
   return 'desktop';
 }
+/** tallest window height seen per window width (a rotation changes the width; a keyboard only the height) */
+const tallestAt = new Map<number, number>();
+/** The device facts for layoutModeFor, from this window (records the current height as seen at this width). */
+export function layoutDevice(): LayoutDevice {
+  if (typeof window === 'undefined') return { coarse: false, screenShort: Infinity, tallest: 0 };
+  const w = window.innerWidth, h = window.innerHeight;
+  const tallest = Math.max(h, tallestAt.get(w) ?? 0);
+  tallestAt.set(w, tallest);
+  let coarse = false;
+  try { coarse = window.matchMedia('(pointer: coarse)').matches; } catch { /* no matchMedia */ }
+  const scr = window.screen;
+  const screenShort = scr && scr.width > 0 && scr.height > 0 ? Math.min(scr.width, scr.height) : Infinity;
+  return { coarse, screenShort, tallest };
+}
+/** The tallest window height seen at the current width (see layoutDevice). */
+export const tallestWindowHeight = () => (typeof window === 'undefined' ? 0 : Math.max(window.innerHeight, tallestAt.get(window.innerWidth) ?? 0));
+/** Layout mode of this window right now. */
+export const detectLayoutMode = (): LayoutMode => (typeof window === 'undefined' ? 'desktop' : layoutModeFor(window.innerWidth, window.innerHeight, layoutDevice()));
 export type ColorBy = 'category' | 'confidence' | 'review' | 'fte';
 export type LabelMode = 'auto' | 'numbers' | 'off';
 export type Lighting = 'review' | 'live';
@@ -117,6 +145,8 @@ const ZOOMS: UiZoom[] = ['auto', 0.9, 1, 1.125, 1.25];
 const mediaReduced = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 const readQuality = (): 'high' | 'fast' => { try { return localStorage.getItem('bos.quality') === 'fast' ? 'fast' : 'high'; } catch { return 'high'; } };
 const innerH = () => (typeof window === 'undefined' ? 900 : window.innerHeight);
+/** a short phone window (or one on its side): the List sheet opens at full height there */
+const shortPhoneWindow = () => typeof window !== 'undefined' && (window.innerHeight < 700 || window.innerWidth > window.innerHeight);
 const SNAPS: SheetSnap[] = ['closed', 'peek', 'half', 'full'];
 const atLeast = (cur: SheetSnap, min: SheetSnap): SheetSnap => (SNAPS.indexOf(cur) >= SNAPS.indexOf(min) ? cur : min);
 
@@ -343,7 +373,7 @@ const sameJson = (a: unknown, b: unknown) => { if (a === b) return true; try { r
  * (at least at `min`). Elsewhere it returns nothing, so desktop and tablet behaviour is unchanged. */
 function phoneSheet(s: Pick<State, 'layoutMode' | 'sheet'>, tab: SheetTab, min: SheetSnap): Partial<State> {
   if (s.layoutMode !== 'phone') return {};
-  return { sheet: { tab, snap: atLeast(s.sheet.tab === tab || s.sheet.snap !== 'closed' ? s.sheet.snap : 'closed', min) } };
+  return { sheet: { tab, snap: atLeast(s.sheet.snap, min) } };
 }
 /** Phone: selecting a building opens the Inspector at peek (or keeps the sheet's height); clearing the selection
  * closes a sheet that only peeked at it. */
@@ -458,7 +488,7 @@ export const useStore = create<State>((set, get) => {
     filterIds: null,
     camCmd: { kind: 'fit-site', seq: 0 },
     layoutEpoch: 0,
-    layoutMode: layoutModeFor(typeof window === 'undefined' ? 1440 : window.innerWidth, innerH()),
+    layoutMode: detectLayoutMode(),
     sheet: { snap: 'closed', tab: 'map' },
     leftOpen: true,
     leftTab: 'documents',
@@ -961,7 +991,7 @@ export const useStore = create<State>((set, get) => {
     setView(v) {
       const s = get();
       // phones have no Table view: the inventory list sheet replaces it
-      if (s.layoutMode === 'phone' && v === 'table') { set(phoneSheet(s, 'list', 'half')); return; }
+      if (s.layoutMode === 'phone' && v === 'table') { set(phoneSheet(s, 'list', shortPhoneWindow() ? 'full' : 'half')); return; }
       if (s.view === v) return;
       // the table sheet spans from the rail: the left panel collapses while it shows and is restored on exit (§4.2)
       if (v === 'table') set({ view: v, leftOpen: false, leftBeforeTable: s.leftOpen });
@@ -1032,7 +1062,7 @@ export const useStore = create<State>((set, get) => {
     // ------------------------------------------------------------------ SHELL-only UI
     setLeftOpen(v) { set({ leftOpen: v }); },
     setLeftTab(t) { set({ leftTab: t }); },
-    openLeft(t) { set({ leftOpen: true, leftTab: t, ...phoneSheet(get(), t === 'inventory' ? 'list' : 'documents', 'half') }); },
+    openLeft(t) { set({ leftOpen: true, leftTab: t, ...phoneSheet(get(), t === 'inventory' ? 'list' : 'documents', t === 'inventory' && shortPhoneWindow() ? 'full' : 'half') }); },
     setRightOpen(v, opts) { set({ rightOpen: v, ...(opts?.user ? { rightUserCollapsed: !v } : {}) }); },
     setRightTab(t) { set({ rightTab: t }); },
     openRight(t) { set({ rightOpen: true, rightTab: t, ...phoneSheet(get(), t, t === 'inspector' ? 'peek' : 'half') }); },

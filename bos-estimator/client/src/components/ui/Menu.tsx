@@ -8,8 +8,10 @@ import type { Placement } from './Portal';
 
 export type MenuItem =
   | { kind?: 'item'; id: string; label: ReactNode; icon?: IconType; kbd?: string; hint?: ReactNode; disabled?: boolean; danger?: boolean;
-      /** radio/checkbox state; renders a check mark and role=menuitemradio */
-      checked?: boolean; onSelect: () => void; keepOpen?: boolean }
+      /** radio/checkbox state; renders a check mark and role=menuitemradio (role=menuitemcheckbox with `toggle`) */
+      checked?: boolean; onSelect: () => void; keepOpen?: boolean;
+      /** an independent on/off setting rather than one choice of a group */
+      toggle?: boolean }
   | { kind: 'separator' }
   | { kind: 'header'; label: ReactNode }
   | { kind: 'custom'; node: ReactNode };
@@ -43,7 +45,7 @@ export function Menu({ open, anchor, onClose, items, label, placement = 'bottom-
           if (it.kind === 'custom') return <div key={`c${i}`} className="ui-menu__custom">{it.node}</div>;
           const radio = it.checked !== undefined;
           return (
-            <button key={it.id} type="button" data-menuitem="" role={radio ? 'menuitemradio' : 'menuitem'} aria-checked={radio ? it.checked : undefined}
+            <button key={it.id} type="button" data-menuitem="" role={radio ? (it.toggle ? 'menuitemcheckbox' : 'menuitemradio') : 'menuitem'} aria-checked={radio ? it.checked : undefined}
               disabled={it.disabled} tabIndex={-1} className={cx('ui-menu__item', it.danger && 'is-danger', radio && 'is-radio')}
               onClick={() => { it.onSelect(); if (!it.keepOpen) onClose(); }}>
               <span className="ui-menu__icon" aria-hidden>{radio ? (it.checked ? <Check size={14} strokeWidth={2} /> : null) : it.icon ? <it.icon size={16} strokeWidth={1.75} /> : null}</span>

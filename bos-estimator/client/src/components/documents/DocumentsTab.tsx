@@ -3,7 +3,7 @@
 // project (kind, role, amendment, scanned pages, warnings), the last read, the previous-award summary and the
 // browser's source-file cache (P1). Pending files, reader settings and analyze() live in the store, so the empty
 // card and the drop overlay share them.
-import { memo, useEffect, useState, type DragEvent } from 'react';
+import { memo, useEffect, useRef, useState, type DragEvent } from 'react';
 import { CircleAlert, CloudUpload, Info, LoaderCircle, Plus, ScanLine, TriangleAlert, X } from 'lucide-react';
 import { useStore } from '../../store';
 import { AI_MODEL_PRESETS, type AiConfig, type DocumentInfo } from '@shared/types';
@@ -55,8 +55,12 @@ export const DocumentsTab = memo(function DocumentsTab() {
 });
 
 // ------------------------------------------------------------------ 1. dropzone
+const coarsePointer = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch { return false; } };
+
 function Dropzone({ compact, running }: { compact: boolean; running: boolean }) {
   const addPending = useStore((s) => s.addPendingFiles);
+  // phones and tablets have no file drag-and-drop: the zone is a button that opens the system picker
+  const touch = useStore((s) => s.layoutMode !== 'desktop') && coarsePointer();
   const [drag, setDrag] = useState(false);
   const onDrop = (e: DragEvent) => {
     e.preventDefault(); setDrag(false);
@@ -70,12 +74,12 @@ function Dropzone({ compact, running }: { compact: boolean; running: boolean }) 
       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDrag(false); }}
       onDrop={onDrop}>
       {compact ? (
-        <Button variant="secondary" block icon={Plus} kbd="mod+o" disabled={running} tooltip={running ? 'Wait for the current read to finish' : 'Add documents (or drop files here)'} onClick={chooseFiles}>{drag ? 'Drop to add' : 'Add documents'}</Button>
+        <Button variant="secondary" block icon={Plus} kbd={touch ? undefined : 'mod+o'} disabled={running} tooltip={touch ? undefined : running ? 'Wait for the current read to finish' : 'Add documents (or drop files here)'} onClick={chooseFiles}>{drag ? 'Drop to add' : 'Add documents'}</Button>
       ) : (
         <button type="button" className="docs__drop-btn" disabled={running} onClick={chooseFiles} aria-describedby="docs-types">
           <CloudUpload size={26} strokeWidth={1.5} aria-hidden />
-          <span className="docs__drop-title">{drag ? 'Drop to add to the package' : 'Drop PWS, technical exhibits, workload tables'}</span>
-          <span className="docs__drop-sub">or click to choose files · <Kbd combo="mod+o" /></span>
+          <span className="docs__drop-title">{drag ? 'Drop to add to the package' : touch ? 'Choose PWS, technical exhibits, workload tables' : 'Drop PWS, technical exhibits, workload tables'}</span>
+          {touch ? <span className="docs__drop-sub">Opens your device's files</span> : <span className="docs__drop-sub">or click to choose files · <Kbd combo="mod+o" /></span>}
           <span className="docs__types" id="docs-types">{ACCEPT_LABELS.map((t) => <span key={t}>{t}</span>)}</span>
         </button>
       )}
@@ -168,9 +172,13 @@ function Cta({ running }: { running: boolean }) {
   const pending = useStore((s) => s.pendingFiles.length);
   const cancel = useStore((s) => s.cancelExtraction);
   useStore((s) => s.reader); useStore((s) => s.health); useStore((s) => s.project?.ai); // re-render the reader line
+  const phone = useStore((s) => s.layoutMode === 'phone');
+  const ref = useRef<HTMLDivElement>(null);
+  // phone: files were just picked; the CTA (a sticky footer of the sheet) is where the finger goes next
+  useEffect(() => { if (phone && pending) ref.current?.querySelector<HTMLElement>('.docs__analyze')?.scrollIntoView?.({ block: 'nearest' }); }, [phone, pending]);
   if (running) return <div className="docs__cta"><Button variant="danger" block onClick={cancel}>Cancel run</Button></div>;
   return (
-    <div className="docs__cta">
+    <div ref={ref} className={cx('docs__cta', pending > 0 && 'is-ready')}>
       <button type="button" className="docs__analyze" disabled={!pending} onClick={() => void analyzeNow()}
         title={pending ? undefined : 'Add documents first (drop them above or press Ctrl/⌘+O)'}>
         <span className="l1">Analyze {pending ? `${pending} file${pending > 1 ? 's' : ''}` : 'files'} <Kbd combo="mod+enter" /></span>

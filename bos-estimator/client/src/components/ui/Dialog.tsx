@@ -33,6 +33,9 @@ export interface DialogProps {
  * Dialog (UI spec §5.11): role=dialog aria-modal, focus trap, initial focus, Esc closes (dialog layer of the
  * Esc stack, which also blocks plain hotkeys), focus returns to the invoker, --scrim backdrop, radius 12, --sh-dialog.
  */
+const TEXT_ENTRY = 'input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=submit]), textarea';
+const coarsePointer = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch { return false; } };
+
 export function Dialog({ open, onClose, title, subtitle, headerExtra, children, footer, width, height, className, initialFocus, role = 'dialog', dismissOnScrim = true, hideClose }: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -44,7 +47,10 @@ export function Dialog({ open, onClose, title, subtitle, headerExtra, children, 
     const pop = pushEscape(() => { onCloseRef.current(); return true; }, 'dialog');
     const raf = requestAnimationFrame(() => {
       const el = ref.current; if (!el) return;
-      const target = (initialFocus && el.querySelector<HTMLElement>(initialFocus)) || el.querySelector<HTMLElement>('[data-autofocus]') || el.querySelector<HTMLElement>(`.ui-dialog__body ${FOCUSABLE}`) || el.querySelector<HTMLElement>(FOCUSABLE) || el;
+      let target = (initialFocus && el.querySelector<HTMLElement>(initialFocus)) || el.querySelector<HTMLElement>('[data-autofocus]') || el.querySelector<HTMLElement>(`.ui-dialog__body ${FOCUSABLE}`) || el.querySelector<HTMLElement>(FOCUSABLE) || el;
+      // touch screens: a text field focused on open would raise the on-screen keyboard over the dialog; the dialog
+      // itself takes focus (screen readers still start at its title)
+      if (coarsePointer() && target.matches(TEXT_ENTRY)) target = el;
       target.focus({ preventScroll: true });
       if (target instanceof HTMLInputElement) target.select();
     });

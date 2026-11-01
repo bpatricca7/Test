@@ -31,6 +31,8 @@ export const rt = {
   /** set by components that animate; Scene keeps rendering while any is true */
   animating: new Set<string>(),
   /** High-tier frame-rate governor (perf.ts): 0 = full spec; 1 = no SMAA; 2 = + 0.75× DPR; 3 = + no Live glow */
+  /** frames are paced by the battery frame cap (Scene FrameCap) rather than the display: still back to back */
+  frameCap: false,
   perf: { level: 0, changedAt: 0, since: 0, last: 0, median: 0, noUpUntil: 0, samples: [] as number[] },
 };
 

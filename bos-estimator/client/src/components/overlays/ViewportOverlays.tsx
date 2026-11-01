@@ -78,9 +78,11 @@ export const ViewportOverlays = memo(function ViewportOverlays() {
   const empty = useStore((s) => !s.project || s.project.inventory.facilities.length + s.project.inventory.grounds.length === 0);
   const running = useStore((s) => s.extraction.running);
   const phone = useStore((s) => s.layoutMode === 'phone');
+  // phone: an open sheet (Documents, mostly) has the same actions as the empty card; the card would show half-hidden
+  const sheetOpen = useStore((s) => s.layoutMode === 'phone' && s.sheet.tab !== 'map' && s.sheet.snap !== 'closed');
   useMapHotkeys(view === 'map');
   if (view !== 'map') return null;
-  if (empty) return running ? null : <EmptyCard />;
+  if (empty) return running || sheetOpen ? null : <EmptyCard />;
   if (phone) {
     // phone: the selection lives in the sheet; the map keeps the building breadcrumb (or Site | Inside while a
     // building is selected), a vertical stack of 44 px map buttons, the centre chips, legend and hint
@@ -177,7 +179,7 @@ function SiteToolbar() {
     );
   }
   const insideTip = noBuildings ? 'This project has grounds areas only; there is no building to go inside'
-    : !f ? 'Select a building first (or double-click one)'
+    : !f ? `Select a building first (or double-${coarse() ? 'tap' : 'click'} one)`
       : !inScope ? 'Out-of-scope buildings have no crews to show'
         : 'Cut-away view of the selected building (I)';
   return (
@@ -195,8 +197,10 @@ function SiteToolbar() {
 }
 
 // ------------------------------------------------------------------ phone: site bar and map buttons
+/** Phone: only the "← Site / 5995" breadcrumb while inside a building. Going inside is the Inspector's Inside button
+ * (or a double tap), so the Site | Inside switch would only cost a row of a map strip that is short already. */
 function PhoneSiteBar() {
-  const show = useStore((s) => s.focusMode === 'building' || s.selection.kind === 'facility');
+  const show = useStore((s) => s.focusMode === 'building');
   return show ? <SiteToolbar /> : null;
 }
 
@@ -231,9 +235,9 @@ function ViewToolbar() {
       { id: 'q-high', label: 'High', hint: 'Shadows, ambient occlusion, bloom in live lighting', checked: s.quality === 'high', onSelect: () => s.setQuality('high') },
       { id: 'q-fast', label: 'Fast', hint: 'For large sites and slower machines', checked: s.quality === 'fast', onSelect: () => s.setQuality('fast') },
       { kind: 'separator' },
-      { id: 'plan', label: 'Plan view', hint: 'Top-down, north up, numbers on the roofs', kbd: 'p', checked: s.planView, disabled: s.focusMode === 'building', onSelect: () => s.setPlanView(!s.planView) },
-      { id: 'orbit', label: 'Orbit when idle', checked: s.autoOrbit, onSelect: () => s.setAutoOrbit(!s.autoOrbit) },
-      { id: 'reduced', label: 'Reduced motion', checked: s.reducedMotion, onSelect: () => s.setReducedMotionPref(!s.reducedMotion) },
+      { id: 'plan', label: 'Plan view', toggle: true, hint: 'Top-down, north up, numbers on the roofs', kbd: 'p', checked: s.planView, disabled: s.focusMode === 'building', onSelect: () => s.setPlanView(!s.planView) },
+      { id: 'orbit', label: 'Orbit when idle', toggle: true, checked: s.autoOrbit, onSelect: () => s.setAutoOrbit(!s.autoOrbit) },
+      { id: 'reduced', label: 'Reduced motion', toggle: true, checked: s.reducedMotion, onSelect: () => s.setReducedMotionPref(!s.reducedMotion) },
       { kind: 'separator' },
       { id: 'relayout', label: 'Re-layout site', icon: LayoutGrid, hint: 'Re-pack buildings by category', onSelect: () => s.relayout() },
     ];
@@ -260,6 +264,7 @@ function LegendPopover({ open, anchor, onClose, placement = 'bottom-end' }: { op
   const colorBy = useStore((s) => s.colorBy);
   const setColorBy = useStore((s) => s.setColorBy);
   const lg = useLegend();
+  const touch = useStore((s) => s.layoutMode !== 'desktop') && coarse();
   return (
     <Popover open={open} anchor={anchor} onClose={onClose} placement={placement} label="Legend" className="vo-legend-pop" initialFocus="none">
       <div className="vo-legend-pop__head">
@@ -269,7 +274,7 @@ function LegendPopover({ open, anchor, onClose, placement = 'bottom-end' }: { op
       <ul className="vo-legend-pop__list">
         {lg.items.map((it) => <li key={it.label}><span className="sw" style={{ background: it.color }} aria-hidden>{it.glyph}</span>{it.label}</li>)}
       </ul>
-      <p className="vo-legend-pop__note">Out-of-scope buildings are greyed; hover a building for its numbers.</p>
+      <p className="vo-legend-pop__note">Out-of-scope buildings are greyed; {touch ? 'tap' : 'hover'} a building for its numbers.</p>
     </Popover>
   );
 }
@@ -320,6 +325,8 @@ function BottomOverlays() {
   const [raised, setRaised] = useState(false);
   const [hintVisible, setHintVisible] = useState(() => (readHints().mapHint ?? 0) < 3);
   const hideHint = useCallback(() => setHintVisible(false), []);
+  // phone: the map strip above a sheet at half (or full) height is too short to share with the hint
+  const sheetUp = useStore((s) => s.layoutMode === 'phone' && s.sheet.tab !== 'map' && (s.sheet.snap === 'half' || s.sheet.snap === 'full'));
   const place = useCallback(() => {
     const l = legendRef.current, h = hintRef.current;
     if (!l || !h) { setRaised(false); return; }
@@ -337,7 +344,7 @@ function BottomOverlays() {
         {lg.items.length > shown.length && <span className="vo-legend__more">+{lg.items.length - shown.length}</span>}
       </button>
       <LegendPopover open={pop.open} anchor={legendRef} onClose={pop.close} placement="top-start" />
-      {hintVisible && <HintChip hintRef={hintRef} raised={raised} onHide={hideHint} />}
+      {hintVisible && !sheetUp && <HintChip hintRef={hintRef} raised={raised} onHide={hideHint} />}
     </>
   );
 }
@@ -356,6 +363,25 @@ function HintChip({ hintRef, raised, onHide }: { hintRef: RefObject<HTMLDivEleme
     window.addEventListener('wheel', bump, { capture: true, passive: true });
     return () => { window.removeEventListener('pointerdown', bump, true); window.removeEventListener('wheel', bump, true); };
   }, [onHide]);
+  // touch screens: the first pan or pinch shows the gesture was found; the hint goes then (for good), else after 6 s
+  useEffect(() => {
+    if (!touch) return;
+    const start = new Map<number, { x: number; y: number }>();
+    const done = () => { writeHints({ mapHint: 3 }); onHide(); };
+    const down = (e: PointerEvent) => { if (e.pointerType === 'touch' && (e.target as Element | null)?.closest?.('.stage')) start.set(e.pointerId, { x: e.clientX, y: e.clientY }); };
+    const move = (e: PointerEvent) => { const p = start.get(e.pointerId); if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 24) done(); };
+    const up = (e: PointerEvent) => { start.delete(e.pointerId); };
+    const t = setTimeout(onHide, 6000);
+    window.addEventListener('pointerdown', down, true);
+    window.addEventListener('pointermove', move, true);
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', up, true);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('pointerdown', down, true); window.removeEventListener('pointermove', move, true);
+      window.removeEventListener('pointerup', up, true); window.removeEventListener('pointercancel', up, true);
+    };
+  }, [touch, onHide]);
   return (
     <div className="vo-hint-row" aria-hidden={false}>
       <div ref={hintRef} className={cx('vo-hint', raised && 'is-raised')} data-occluder="" role="note">
@@ -391,6 +417,8 @@ function EmptyCard() {
     return null;
   });
   const docCount = useStore((s) => Math.max(s.project?.documents.length ?? 0, s.extraction.docs.length));
+  // touch screens cannot drag files in: the drop zone becomes the list of accepted types, "Choose files" opens the picker
+  const touch = useStore((s) => s.layoutMode === 'phone') || coarse();
   return (
     <div className={cx('vo-empty', nothing && 'is-nothing')} data-occluder="" role="region" aria-label={nothing ? 'The last read found nothing' : 'New solicitation'}>
       {nothing ? (
@@ -402,11 +430,11 @@ function EmptyCard() {
       ) : (
         <>
           <div className="vo-empty__eyebrow">New solicitation</div>
-          <h2 className="vo-empty__title">Drop the solicitation package to build the estimate</h2>
+          <h2 className="vo-empty__title">{touch ? 'Add the solicitation package to build the estimate' : 'Drop the solicitation package to build the estimate'}</h2>
           <p className="vo-empty__body">PWS / SOW, technical exhibits (facility lists, grounds maps), workload tables. PDF, DOCX, XLSX, CSV, TSV, TXT, MD or a ZIP package.</p>
         </>
       )}
-      <div className={cx('vo-empty__drop', drag && 'is-drag', pending.length > 0 && 'has-files')}
+      <div className={cx('vo-empty__drop', drag && 'is-drag', pending.length > 0 && 'has-files', touch && 'is-touch')}
         onDragEnter={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDrag(true); } }}
         onDragOver={(e) => { if (!e.dataTransfer.types.includes('Files')) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setDrag(true); }}
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDrag(false); }}
@@ -421,8 +449,8 @@ function EmptyCard() {
           </ul>
         ) : (
           <>
-            <CloudUpload size={28} strokeWidth={1.5} aria-hidden className="vo-empty__up" />
-            <span className="vo-empty__drop-t">{drag ? 'Drop to add' : 'Drop files here'}</span>
+            {!touch && <CloudUpload size={28} strokeWidth={1.5} aria-hidden className="vo-empty__up" />}
+            {!touch && <span className="vo-empty__drop-t">{drag ? 'Drop to add' : 'Drop files here'}</span>}
             <span className="vo-empty__types">{TYPE_ICONS.map((t) => <span key={t.label}><t.icon size={14} strokeWidth={1.6} aria-hidden />{t.label}</span>)}</span>
             <span className="sr-only">Accepted: {ACCEPT_LABELS.join(', ')}</span>
           </>

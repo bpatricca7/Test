@@ -17,7 +17,8 @@ export const LeftPanel = memo(function LeftPanel() {
   return (
     <div className="panel__inner">
       <Tabs idBase="left" label="Left panel" value={tab} onChange={setTab}
-        items={[{ id: 'inventory', label: 'Inventory', count: counts.total || undefined }, { id: 'documents', label: 'Documents', count: docs || undefined }]} />
+        items={[{ id: 'inventory', label: 'Inventory', count: counts.total || undefined }, { id: 'documents', label: 'Documents', count: docs || undefined }]}
+        end={<IconButton className="panel__close" icon={ChevronLeft} size="sm" label="Close the panel" tooltip="Close the panel ([)" onClick={() => useStore.getState().setLeftOpen(false)} />} />
       <div role="tabpanel" id={`left-panel-${tab}`} aria-labelledby={`left-tab-${tab}`} className="panel__body">
         {tab === 'inventory' ? <InventoryTab /> : <DocumentsTab />}
       </div>

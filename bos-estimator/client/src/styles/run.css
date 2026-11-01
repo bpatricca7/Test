@@ -16,6 +16,7 @@
 /* done summary: one line of segments; segments that do not fit wrap onto a hidden second line and count into +N */
 .rs-segs{display:flex;flex-wrap:wrap;align-items:center;flex:1 1 0;min-width:0;height:24px;overflow:hidden;line-height:24px;font-size:var(--fs-sm)}
 .rs-seg{white-space:nowrap;flex-shrink:0}
+.rs-seg.is-out{visibility:hidden}
 .rs-seg + .rs-seg::before{content:"·";margin:0 6px;color:var(--text-3)}
 .rs-seg.is-warn{color:var(--warn-text)}
 .rs-seg__btn{all:unset;cursor:pointer;border-radius:var(--r-1);padding:0 4px;margin:0 -4px;color:var(--warn-text)}

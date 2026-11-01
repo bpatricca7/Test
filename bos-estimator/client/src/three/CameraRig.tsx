@@ -14,6 +14,10 @@ import { freeRect, insets, insetsSettling, onInsetsAnimating, onInsetsChange, re
 import { bridge } from './bridge';
 import { rt } from './runtime';
 import { explodeGap } from './InteriorCrew';
+import { keyboardUp, layoutModeNow } from './device';
+
+/** a free rect smaller than this (a phone sheet pulled up to full height) is not a place to frame anything in */
+const MIN_RECT = 120;
 
 const DEG = Math.PI / 180;
 const AZIMUTH = 35 * DEG;
@@ -96,6 +100,21 @@ export function computeFit(camera: THREE.Camera, W: number, H: number, spec: Fit
   return { target, pos: target.clone().addScaledVector(dir, d), dist: d };
 }
 
+const _ray = new THREE.Raycaster();
+const _ndc = new THREE.Vector2();
+const hold0 = { ok: false, p: new THREE.Vector3(), q: new THREE.Vector3() };
+/** The point on the plane y = planeY under viewport point (sx, sy); false when the ray misses it. */
+function groundUnder(cam: THREE.Camera, W: number, H: number, sx: number, sy: number, planeY: number, out: THREE.Vector3): boolean {
+  _ndc.set((sx / W) * 2 - 1, -(sy / H) * 2 + 1);
+  _ray.setFromCamera(_ndc, cam);
+  const r = _ray.ray;
+  if (r.direction.y > -1e-3) return false;
+  const t = (planeY - r.origin.y) / r.direction.y;
+  if (!(t > 0)) return false;
+  out.copy(r.origin).addScaledVector(r.direction, t);
+  return true;
+}
+
 /** Grow a box by `k` around its centre in x and mostly to the south in z (streamed rows are appended south). */
 const grow = (b: Box2, k: number): Box2 => {
   if (k === 1) return b;
@@ -136,7 +155,8 @@ export function CameraRig() {
     inRun: false, runFits: 0, runUserMoved: false, lastAutoAt: -1e9, lastGrowthAt: -1e9, lastGrowthCheck: 0,
     fitBounds: null as Box2 | null, lastSpec: null as FitSpec | null, fitRect: '', lastInteract: performance.now(), lastChange: 0,
     preEnter: null as Pose | null, inBuilding: false, damping: true, camSeq: camCmd?.seq ?? 0, maxDist: 400,
-    fitLayout: null as SiteLayout | null, lastCmdFitAt: -1e9,
+    fitLayout: null as SiteLayout | null, lastCmdFitAt: -1e9, selRect: '', portraitAz: null as number | null,
+    lastBase: null as FitSpec | null, lastOrient: '',
   });
   const layoutRef = useRef<SiteLayout | null>(layout);
   layoutRef.current = layout;
@@ -170,7 +190,32 @@ export function CameraRig() {
         else bounds = grow(b, headroom);
       }
     }
-    return { bounds, maxH: l?.maxHeight ?? 0, az: AZIMUTH, polar: defaultPolar(n) };
+    const spec: FitSpec = { bounds, maxH: l?.maxHeight ?? 0, az: AZIMUTH, polar: defaultPolar(n) };
+    st.current.lastBase = spec; st.current.lastOrient = orientation();
+    return portraitSpec(spec);
+  };
+  const orientation = () => (size.height > size.width * 1.2 ? 'portrait' : 'landscape');
+  /**
+   * A phone or tablet held upright frames a site through a tall, narrow free rect, where the desktop 3/4 view leaves most of
+   * the height empty. There the camera looks a little more from above and, when that frames the site clearly
+   * larger (≥ 12%), turns so the site's long side runs up the screen. Headings stay on the key light's side
+   * (−40°…80°: side and back light keep the massing modelled). The choice is sticky (kept unless another is 15%
+   * better), so a growing site does not swing the camera between fits, and a sheet snap never turns it (refits
+   * keep the heading; only turning the phone re-chooses it).
+   */
+  const portraitSpec = (spec: FitSpec): FitSpec => {
+    if (layoutModeNow() === 'desktop' || isOrtho(camera)) return spec;
+    if (orientation() !== 'portrait') { st.current.portraitAz = null; return spec; }
+    const polar = spec.polar - 8 * DEG;
+    const heads = [35, 50, 65, 80, 20, 5, -10, -25, -40].map((d) => d * DEG);
+    const cands = heads.map((az) => ({ az, dist: computeFit(camera, size.width, size.height, { ...spec, az, polar }).dist }));
+    const prev = st.current.portraitAz;
+    let best = cands.reduce((a, b) => (b.dist < a.dist ? b : a));
+    const kept = prev != null ? cands.find((c) => Math.abs(c.az - prev) < 1e-6) : undefined;
+    if (kept && kept.dist <= best.dist * 1.15) best = kept;
+    else if (!kept && best.dist > cands[0].dist * 0.88) best = cands[0]; // turn only for a clear gain
+    st.current.portraitAz = best.az;
+    return { ...spec, az: best.az, polar };
   };
   const fitSite = (opts: { cut?: boolean; count?: boolean; headroom?: number; kind?: Anim['kind'] } = {}) => {
     const l = layoutRef.current;
@@ -196,7 +241,7 @@ export function CameraRig() {
   // ---- project change: next layout gets a first fit
   useEffect(() => {
     const s = st.current;
-    if (s.project !== projectId) { s.project = projectId; s.fitted = false; s.pendingFit = false; s.atFit = false; s.preEnter = null; s.inBuilding = false; }
+    if (s.project !== projectId) { s.project = projectId; s.fitted = false; s.pendingFit = false; s.atFit = false; s.preEnter = null; s.inBuilding = false; s.portraitAz = null; }
   }, [projectId]);
 
   // ---- run lifecycle and phase triggers
@@ -356,6 +401,13 @@ export function CameraRig() {
   // a new free rect, or the end of a panel transition, needs a frame for the view offset and the refit check
   useEffect(() => { const a = onInsetsChange(invalidate); const b = onInsetsAnimating(invalidate); return () => { a(); b(); }; }, [invalidate]);
 
+  /** the selected building's or grounds area's footprint, when there is one */
+  const selectedBox = (): Box2 | null => {
+    const l = layoutRef.current; const sel = useStore.getState().selection;
+    if (!l || (sel.kind !== 'facility' && sel.kind !== 'grounds')) return null;
+    return (sel.kind === 'facility' ? l.buildings.find((x) => x.id === sel.id)?.box : l.zones.find((x) => x.id === sel.id)?.box) ?? null;
+  };
+
   // ---- per-frame: view offset, insets-driven refit, animation, near/far, orbit, bridge
   const lastFrame = useRef(performance.now());
   useFrame(() => {
@@ -364,19 +416,67 @@ export function CameraRig() {
     const s = st.current;
     const v = view.current;
     if (v.W !== W || v.H !== H || v.version !== insets.version) {
+      // phones and tablets: a sheet or drawer sliding over the map does not drag the map along (the desktop view
+      // offset would shift the picture by half the panel's travel). The selected building (else the ground at the
+      // centre of the new free rect) stays where it was on screen, so a building tapped a moment ago is still
+      // under the finger for the second tap of a double tap. Camera transitions and automatic refits frame the
+      // new rect themselves.
+      const hold = v.W === W && v.H === H && v.version >= 0 && c != null && !anim.current && !s.inBuilding && layoutModeNow() !== 'desktop';
+      let ref: { x: number; y: number } | null = null;
+      if (hold && c) {
+        const fr = freeRect(W, H); ref = { x: fr.cx, y: fr.cy };
+        camera.updateMatrixWorld();
+        const box = selectedBox();
+        if (box) { _v.set(box.x, c.target.y, box.z).project(camera); const x = ((_v.x + 1) / 2) * W, y = ((1 - _v.y) / 2) * H; if (_v.z < 1 && x >= 0 && x <= W && y >= 0 && y <= H) ref = { x, y }; }
+        hold0.ok = groundUnder(camera, W, H, ref.x, ref.y, c.target.y, hold0.p);
+      }
       v.W = W; v.H = H; v.version = insets.version;
       camera.setViewOffset(W, H, (insets.right - insets.left) / 2, (insets.bottom - insets.top) / 2, W, H);
       camera.updateProjectionMatrix();
+      if (hold && c && ref && hold0.ok && groundUnder(camera, W, H, ref.x, ref.y, c.target.y, hold0.q)) {
+        const dx = hold0.p.x - hold0.q.x, dz = hold0.p.z - hold0.q.z;
+        camera.position.x += dx; camera.position.z += dz; c.target.x += dx; c.target.z += dz;
+        camera.updateMatrixWorld();
+      }
     }
     // the free rect settled somewhere other than where the last automatic fit framed the site: re-frame the
     // same bounds there (not a fit trigger: it repeats the last fit's framing; counted in camera().refits).
     // Events that repeat the same rect, or only flip `animating`, never move the camera.
-    if (s.atFit && s.fitRect && !s.inBuilding && s.lastSpec && !rt.cam.userMoved && !insetsSettling()) {
+    const frNow = freeRect(W, H);
+    const roomy = frNow.w >= MIN_RECT && frNow.h >= MIN_RECT && !keyboardUp();
+    if (roomy && s.atFit && s.fitRect && !s.inBuilding && s.lastSpec && !rt.cam.userMoved && !insetsSettling()) {
       const key = rectKey(W, H);
       if (key !== s.fitRect) {
         s.fitRect = key;
+        // a phone turned between portrait and landscape re-chooses its heading (see portraitSpec)
+        if (s.lastBase && s.lastOrient && s.lastOrient !== orientation() && layoutModeNow() !== 'desktop') { s.lastOrient = orientation(); s.lastSpec = portraitSpec(s.lastBase); }
         startAnim(computeFit(camera, W, H, s.lastSpec), 400, 'refit', s.lastSpec);
         rt.cam.refits++;
+      }
+    }
+    // phones and tablets: a sheet or drawer that settles over (or right next to) the selected building pans it
+    // back into the free rect, just far enough to sit clear of the edge (camera distance and angle unchanged)
+    if (roomy && !insetsSettling() && layoutModeNow() !== 'desktop') {
+      const key = rectKey(W, H);
+      if (key !== s.selRect) {
+        s.selRect = key;
+        const box = selectedBox();
+        if (box && c && !s.inBuilding && !anim.current) {
+          camera.updateMatrixWorld();
+          const pb = projectBox(camera, corners(box, 0), W, H);
+          const mx = Math.min(frNow.w * 0.18, 60), my = Math.min(frNow.h * 0.22, 90);
+          const tx = THREE.MathUtils.clamp(pb.cx, frNow.x0 + mx, frNow.x1 - mx), ty = THREE.MathUtils.clamp(pb.cy, frNow.y0 + my, frNow.y1 - my);
+          const a = new THREE.Vector3(), b = new THREE.Vector3();
+          if (!pb.front) {
+            const target = new THREE.Vector3(box.x, c.target.y, box.z);
+            startAnim({ target, pos: target.clone().add(camera.position.clone().sub(c.target)), zoom: camera.zoom }, 350, 'frame');
+            s.atFit = false;
+          } else if (Math.hypot(tx - pb.cx, ty - pb.cy) > 2 && groundUnder(camera, W, H, pb.cx, pb.cy, c.target.y, a) && groundUnder(camera, W, H, tx, ty, c.target.y, b)) {
+            const d = a.sub(b); d.y = 0;
+            startAnim({ target: c.target.clone().add(d), pos: camera.position.clone().add(d), zoom: camera.zoom }, 350, 'frame');
+            s.atFit = false;
+          }
+        }
       }
     }
     growthCheck(W, H);

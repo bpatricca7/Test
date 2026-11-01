@@ -12,7 +12,7 @@ import { Rail } from './components/shell/Rail';
 import { LeftPanel, RightEdgeHandle, RightPanel } from './components/shell/Panels';
 import { ShortcutsSheet } from './components/shell/ShortcutsSheet';
 import { DropOverlay } from './components/shell/DropOverlay';
-import { usePanelAutoRules, useInsetsWriter, useReducedMotionAttr, useUiZoomWriter } from './components/shell/layout';
+import { usePanelAutoRules, useInsetsWriter, useReducedMotionAttr, useTabletDrawers, useUiZoomWriter } from './components/shell/layout';
 import { useLayoutModeSync } from './components/shell/responsive';
 import { PhoneChrome } from './components/shell/Phone';
 import { chooseFiles } from './components/shell/fileChooser';
@@ -103,6 +103,7 @@ const Shell = memo(function Shell() {
   useReducedMotionAttr();
   useInsetsWriter(vpRef, chromeRef);
   usePanelAutoRules();
+  useTabletDrawers();
   useGlobalHotkeys();
 
   return (
@@ -115,7 +116,7 @@ const Shell = memo(function Shell() {
           <>
             <TopBar />
             <Rail />
-            <aside className="panel-left" aria-label="Inventory and documents" inert={!leftOpen} data-inset-cover={layoutMode === 'tablet' ? 'left' : undefined}><LeftPanel /></aside>
+            <aside className="panel-left" aria-label="Inventory and documents" inert={!leftOpen}><LeftPanel /></aside>
             <section className="center" aria-label="Site">
               <RunStrip />
               <div ref={vpRef} className="vp-area">
@@ -126,7 +127,7 @@ const Shell = memo(function Shell() {
               </div>
               <BottomPanel />
             </section>
-            <aside className="panel-right" aria-label="Inspector and estimate" inert={!rightOpen} data-inset-cover={layoutMode === 'tablet' ? 'right' : undefined}><RightPanel /></aside>
+            <aside className="panel-right" aria-label="Inspector and estimate" inert={!rightOpen}><RightPanel /></aside>
           </>
         )}
         <div id="portal" />

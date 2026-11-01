@@ -15,6 +15,7 @@ import type { MapControls as MapControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { useStore } from '../store';
 import { useDerived } from '../derived';
+import { layoutModeOf, sheetSnapOf } from './device';
 import type { SiteLayout } from './layout';
 import { hoverFromScene, hoverSrc, tapCtx } from './hover';
 import { bridge } from './bridge';
@@ -23,7 +24,7 @@ import { rt } from './runtime';
 /** a touch that moves less than this (CSS px) is a tap */
 export const TAP_SLOP = 10;
 const TAP_MS = 600;
-const DOUBLE_MS = 320;
+const DOUBLE_MS = 350;
 const DOUBLE_PX = 34;
 /** a tap that misses every pickable object selects the nearest building within this radius (CSS px) */
 const NEAR_PX = 24;
@@ -34,9 +35,12 @@ const UP = new THREE.Vector3(0, 1, 0);
 
 interface Pt { x: number; y: number; x0: number; y0: number }
 interface Two { cx: number; cy: number; d: number; a: number }
-type Controls = MapControlsImpl & { touches: { ONE: number; TWO: number } };
+type Controls = MapControlsImpl;
+type TapHit = NonNullable<typeof tapCtx.hit>;
 
 const metrics = (a: Pt, b: Pt): Two => ({ cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, d: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)), a: Math.atan2(b.y - a.y, b.x - a.x) });
+/** an event's time stamp on the performance.now() clock (falls back to now) */
+const evTime = (e: Event) => (e.timeStamp > 0 && Math.abs(performance.now() - e.timeStamp) < 10000 ? e.timeStamp : performance.now());
 const wrap = (a: number) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 
 export function TouchControls() {
@@ -52,7 +56,8 @@ export function TouchControls() {
   useEffect(() => {
     if (!controls) return;
     const prev = controls.touches;
-    controls.touches = { ONE: -1, TWO: -1 };
+    // an action value MapControls does not know: it treats one- and two-finger touches as "no gesture"
+    controls.touches = { ONE: -1, TWO: -1 } as unknown as Controls['touches'];
     return () => { controls.touches = prev; };
   }, [controls]);
 
@@ -66,6 +71,8 @@ export function TouchControls() {
     fling: null as null | { vx: number; vz: number; last: number },
     tween: null as null | { x: number; y: number; factor: number; applied: number; t0: number; dur: number },
     lastTap: null as null | { t: number; x: number; y: number },
+    /** the tap was resolved here (to the roof under a label): cancel the browser's click on the label */
+    eatClick: false,
   });
 
   // ---- camera helpers (read the current camera / controls at call time: plan view swaps both)
@@ -184,31 +191,106 @@ export function TouchControls() {
     return best;
   };
 
-  const onTap = (x: number, y: number, target: Element | null) => {
-    const g = G.current; const now = performance.now();
+  /** a building (instanced field or the selected hero) under a viewport point */
+  const onBuilding = (x: number, y: number) => {
+    const s = get(); const c = cam();
+    const r = gl.domElement.getBoundingClientRect();
+    const objs: THREE.Object3D[] = [];
+    s.scene.traverseVisible((o) => {
+      const h = (o as unknown as { __r3f?: { handlers?: Record<string, unknown> } }).__r3f?.handlers;
+      if (h?.onClick && (o.name.startsWith('field-') || o.name === 'hero-massing')) objs.push(o);
+    });
+    _n.current.set(((x - r.left) / Math.max(1, r.width)) * 2 - 1, -((y - r.top) / Math.max(1, r.height)) * 2 + 1);
+    c.updateMatrixWorld();
+    rc.current.setFromCamera(_n.current, c);
+    return rc.current.intersectObjects(objs, false).length > 0;
+  };
+
+  /** the building whose roof or walls are under a viewport point (the selected hero included), or null */
+  const buildingAt = (x: number, y: number): string | null => {
+    const s = get(); const c = cam();
+    const r = gl.domElement.getBoundingClientRect();
+    const objs: THREE.Object3D[] = [];
+    s.scene.traverseVisible((o) => {
+      const h = (o as unknown as { __r3f?: { handlers?: Record<string, unknown> } }).__r3f?.handlers;
+      if (h?.onClick && (o.name.startsWith('field-') || o.name === 'hero-massing')) objs.push(o);
+    });
+    _n.current.set(((x - r.left) / Math.max(1, r.width)) * 2 - 1, -((y - r.top) / Math.max(1, r.height)) * 2 + 1);
+    c.updateMatrixWorld();
+    rc.current.setFromCamera(_n.current, c);
+    for (const hit of rc.current.intersectObjects(objs, false)) {
+      if (hit.object.name === 'hero-massing') { const sel = useStore.getState().selection; if (sel.kind === 'facility') return sel.id; continue; }
+      const ids = hit.object.userData.ids as string[] | undefined;
+      if (ids && hit.instanceId != null && ids[hit.instanceId]) return ids[hit.instanceId];
+    }
+    return null;
+  };
+
+  /** distance (CSS px) from a viewport point to the selected building's screen footprint, or Infinity */
+  const distToSelected = (x: number, y: number): number => {
+    const st = useStore.getState(); const l = layoutRef.current;
+    if (st.selection.kind !== 'facility' || !l) return Infinity;
+    const id = st.selection.id;
+    const b = l.buildings.find((q) => q.id === id); if (!b) return Infinity;
+    const c = cam(); c.updateMatrixWorld();
+    const r = gl.domElement.getBoundingClientRect();
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    const v = _a.current;
+    for (const hy of [0, Math.max(0.6, b.height)]) for (const sx of [-0.5, 0.5]) for (const sz of [-0.5, 0.5]) {
+      v.set(b.box.x + sx * b.box.w, hy, b.box.z + sz * b.box.d).project(c);
+      if (v.z > 1 || v.z < -1) return Infinity;
+      const px = r.left + ((v.x + 1) / 2) * r.width, py = r.top + ((1 - v.y) / 2) * r.height;
+      x0 = Math.min(x0, px); y0 = Math.min(y0, py); x1 = Math.max(x1, px); y1 = Math.max(y1, py);
+    }
+    return Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1));
+  };
+
+  /** `now`: the event's own time stamp, so a busy main thread does not split a double tap */
+  const onTap = (x: number, y: number, target: Element | null, now: number) => {
+    const g = G.current;
     const st = useStore.getState();
     const dbl = g.lastTap != null && now - g.lastTap.t < DOUBLE_MS && Math.hypot(x - g.lastTap.x, y - g.lastTap.y) < DOUBLE_PX;
     g.lastTap = dbl ? null : { t: now, x, y };
     const label = (target as HTMLElement | null)?.closest?.('.label-layer [data-id]') as HTMLElement | null;
+    const inside = st.focusMode === 'building';
+    // a roof under the finger beats a neighbour's label floating over it; and a double tap on (or within a
+    // fingertip of) the selected building goes inside it, whatever label lies there
+    const roof = !inside && (label || dbl) ? buildingAt(x, y) : null;
+    const selId = st.selection.kind === 'facility' ? st.selection.id : null;
+    const goInside = (id: string) => { st.select({ kind: 'facility', id }); st.setFocusMode('building'); hoverFromScene(null, { touch: true }); };
     if (label) {
+      const lid = label.dataset.id ?? null;
+      // the selected building's own card is what the finger meant (it hides what is under it)
+      const own = lid != null && lid === selId;
+      if (roof && roof !== lid && !own) {
+        g.eatClick = true; tapCtx.labelTapAt = performance.now();
+        if (dbl) goInside(roof);
+        else { st.select({ kind: 'facility', id: roof }); hoverFromScene(roof, { touch: true }); }
+        return;
+      }
+      if (dbl && !roof && selId && lid !== selId && distToSelected(x, y) <= NEAR_PX) { g.eatClick = true; tapCtx.labelTapAt = performance.now(); goInside(selId); return; }
       // the label's own (native) click selects it; a double tap on a building's label goes inside
-      if (dbl && label.dataset.kind === 'facility' && label.dataset.id) { st.select({ kind: 'facility', id: label.dataset.id }); st.setFocusMode('building'); }
+      if (dbl && label.dataset.kind === 'facility' && lid) goInside(lid);
       return;
     }
+    if (dbl && !inside && !roof && selId && distToSelected(x, y) <= NEAR_PX) { goInside(selId); return; }
     if (!g.onCanvas) return;
     const opts: MouseEventInit = { clientX: x, clientY: y, screenX: x, screenY: y, bubbles: true, cancelable: true, button: 0, view: window };
+    // a fingertip may miss a crew figure by a few pixels, but a crew member standing next to the building the
+    // finger is on must not steal the tap: the crew's touch slack applies only off buildings
+    tapCtx.agentPx = onBuilding(x, y) ? 5 : 12;
     tapCtx.active = true; tapCtx.hit = null;
     try {
       gl.domElement.dispatchEvent(new MouseEvent('click', { ...opts, detail: dbl ? 2 : 1 }));
       if (dbl) gl.domElement.dispatchEvent(new MouseEvent('dblclick', { ...opts, detail: 2 }));
-    } finally { tapCtx.active = false; }
-    const hit = tapCtx.hit as typeof tapCtx.hit;
+    } finally { tapCtx.active = false; tapCtx.agentPx = null; }
+    const hit = (tapCtx as { hit: TapHit | null }).hit;
     tapCtx.hit = null;
     const s2 = useStore.getState();
-    const inside = s2.focusMode === 'building';
-    if (hit && (hit.kind === 'facility' || hit.kind === 'grounds') && hit.id) { hoverFromScene(inside ? null : hit.id, { touch: true }); return; }
+    const inside2 = s2.focusMode === 'building';
+    if (hit && (hit.kind === 'facility' || hit.kind === 'grounds') && hit.id) { hoverFromScene(inside2 ? null : hit.id, { touch: true }); return; }
     if (hit?.kind === 'agent') { hoverFromScene(null, { touch: true }); return; }
-    if (inside) return;
+    if (inside2) return;
     // nothing pickable under the finger (or only the ground): small roofs and pins forward to the nearest building
     const near = nearestBuilding(x, y);
     if (near) {
@@ -245,7 +327,7 @@ export function TouchControls() {
       if (useStore.getState().view === 'table') return;
       if (g.pts.has(e.pointerId)) return;
       if (g.pts.size === 0) {
-        g.t0 = performance.now(); g.x0 = e.clientX; g.y0 = e.clientY; g.maxPts = 0; g.moved = 0;
+        g.t0 = evTime(e); g.x0 = e.clientX; g.y0 = e.clientY; g.maxPts = 0; g.moved = 0;
         g.target = e.target as Element; g.onCanvas = canvasBox().contains(e.target as Node);
         g.fling = null; g.tween = null; rt.animating.delete('touch');
       }
@@ -272,15 +354,18 @@ export function TouchControls() {
         const dx = g.anchor.x - v.x, dz = g.anchor.z - v.z;
         translate(dx, dz);
         commit();
-        const now = performance.now();
-        g.vel.push({ t: now, x: dx, z: dz });
-        while (g.vel.length && now - g.vel[0].t > 120) g.vel.shift();
+        // velocity samples on the events' own clock: a slow frame between two moves must not read as a pause
+        const at = evTime(e);
+        g.vel.push({ t: at, x: dx, z: dz });
+        while (g.vel.length && at - g.vel[0].t > 150) g.vel.shift();
       } else if (g.mode === 'two') {
         const tp = twoPts(); if (!tp || !g.prev || !g.twoStart || !g.twoP0) return;
         const cur = metrics(tp[0], tp[1]);
         if (g.two === 'undecided') {
           const d0 = { x: tp[0].x - g.twoP0[0].x, y: tp[0].y - g.twoP0[0].y }, d1 = { x: tp[1].x - g.twoP0[1].x, y: tp[1].y - g.twoP0[1].y };
-          if (Math.max(Math.hypot(d0.x, d0.y), Math.hypot(d1.x, d1.y)) < CLASSIFY_PX) return;
+          // fingers report one at a time: decide once both have moved (or one has clearly moved alone)
+          const m0 = Math.hypot(d0.x, d0.y), m1 = Math.hypot(d1.x, d1.y);
+          if (Math.max(m0, m1) < CLASSIFY_PX || (Math.min(m0, m1) < CLASSIFY_PX / 2 && Math.max(m0, m1) < CLASSIFY_PX * 3)) return;
           const c = cam(); const k = ctl();
           const sideBySide = Math.abs(g.twoP0[1].y - g.twoP0[0].y) < 1.2 * Math.abs(g.twoP0[1].x - g.twoP0[0].x);
           const vertical = d0.y * d1.y > 0 && Math.abs(d0.y) > 1.5 * Math.abs(d0.x) && Math.abs(d1.y) > 1.5 * Math.abs(d1.x);
@@ -297,7 +382,7 @@ export function TouchControls() {
 
     const onUp = (e: PointerEvent) => {
       if (e.pointerType !== 'touch' || !g.pts.has(e.pointerId)) return;
-      const now = performance.now();
+      const now = performance.now(), at = evTime(e);
       g.pts.delete(e.pointerId);
       g.order = g.order.filter((id) => id !== e.pointerId);
       if (g.pts.size === 1) { resetPan(g.order[0]); return; } // two → one finger: keep panning with the other
@@ -306,8 +391,11 @@ export function TouchControls() {
       const wasPan = g.mode === 'pan' && g.started;
       g.mode = 'none';
       if (e.type === 'pointercancel') { endMove(); return; }
-      if (wasPan && g.vel.length >= 2 && now - g.vel[g.vel.length - 1].t < 60) {
-        const span = Math.max(16, now - g.vel[0].t);
+      // a finger that rested before lifting does not fling: ≥ 100 ms, or ≥ 1.6 move intervals on a device whose
+      // move events arrive slowly
+      const n = g.vel.length, step = n >= 2 ? (g.vel[n - 1].t - g.vel[0].t) / (n - 1) : 0;
+      if (wasPan && !useStore.getState().reducedMotion && n >= 2 && at - g.vel[n - 1].t < Math.max(100, step * 1.6)) {
+        const span = Math.max(16, at - g.vel[0].t);
         let sx = 0, sz = 0; for (const v of g.vel) { sx += v.x; sz += v.z; }
         const vx = sx / span, vz = sz / span;
         const k = ctl(); const c = cam();
@@ -316,13 +404,17 @@ export function TouchControls() {
         if (Math.hypot(vx, vz) * 1000 > dist * 0.15) { g.fling = { vx, vz, last: now }; rt.animating.add('touch'); invalidate(); }
       }
       endMove();
-      const quick = now - g.t0 < TAP_MS && g.moved < TAP_SLOP;
-      if (quick && g.maxPts === 1) onTap(g.x0, g.y0, g.target);
-      else if (quick && g.maxPts === 2 && now - g.t0 < 400 && g.twoStart) { g.lastTap = null; zoomAt(g.twoStart.cx, g.twoStart.cy, 0.5); }
+      const quick = at - g.t0 < TAP_MS && g.moved < TAP_SLOP;
+      if (quick && g.maxPts === 1) onTap(g.x0, g.y0, g.target, at);
+      else if (quick && g.maxPts === 2 && at - g.t0 < 400 && g.twoStart) { g.lastTap = null; zoomAt(g.twoStart.cx, g.twoStart.cy, 0.5); }
     };
 
     // a tap on the canvas is synthesized above: no native click (it would use the browser's own slop)
-    const onTouchEnd = (e: TouchEvent) => { if (canvasBox().contains(e.target as Node) && e.cancelable) e.preventDefault(); };
+    // ... nor on a label whose tap went to the roof under it (onTap set eatClick)
+    const onTouchEnd = (e: TouchEvent) => {
+      const eat = g.eatClick; g.eatClick = false;
+      if ((eat || canvasBox().contains(e.target as Node)) && e.cancelable) e.preventDefault();
+    };
 
     root.addEventListener('pointerdown', onDown, { capture: true });
     root.addEventListener('pointermove', onMove, { capture: true });
@@ -343,7 +435,9 @@ export function TouchControls() {
   useEffect(() => useStore.subscribe((s, p) => {
     if (!hoverSrc.touch || s.hoverId == null) return;
     const selId = s.selection.kind ? (s.selection as { id: string }).id : null;
-    if ((s.selection !== p.selection && selId !== s.hoverId) || s.focusMode !== p.focusMode || s.view !== p.view) hoverFromScene(null, { touch: true });
+    // on a phone, swiping the sheet down puts the map back without a card over it
+    const sheetDown = layoutModeOf(s) === 'phone' && sheetSnapOf(s) === 'closed' && sheetSnapOf(p) !== 'closed';
+    if ((s.selection !== p.selection && selId !== s.hoverId) || s.focusMode !== p.focusMode || s.view !== p.view || sheetDown) hoverFromScene(null, { touch: true });
   }), []);
 
   // ---- fling and zoom tween

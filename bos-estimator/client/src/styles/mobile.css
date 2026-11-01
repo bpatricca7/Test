@@ -1,0 +1,517 @@
+/* Phone and tablet layouts (mobile contract). The desktop (>= 1280) is untouched: every rule here is scoped to
+   :root[data-layout="phone"] or :root[data-layout="tablet"], which components/shell/responsive.ts keeps in sync with
+   store.layoutMode. Phone: the map full-bleed, a compact top bar, one bottom sheet re-hosting the panels, a tab bar
+   (a rail beside the map in landscape). Tablet: the desktop grid with the left panel (and below 1024 px the right
+   one) as slide-over drawers. Safe areas come from env(safe-area-inset-*) (index.html sets viewport-fit=cover).
+   The on-screen keyboard (phone) sets :root[data-kb="open"] and --kb-h (components/shell/keyboard.ts). */
+
+/* ================================================================== shared touch basics */
+/* no rubber-band / pull-to-refresh / swipe-navigation on touch layouts (desktop keeps the browser's trackpad gestures) */
+:root[data-layout="phone"],:root[data-layout="tablet"],:root[data-layout="phone"] body,:root[data-layout="tablet"] body{overscroll-behavior:none}
+:root[data-layout="phone"],:root[data-layout="tablet"]{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:root[data-layout="phone"] .stage,:root[data-layout="tablet"] .stage{touch-action:none}
+:root[data-layout="phone"] .chrome,:root[data-layout="tablet"] .chrome{touch-action:manipulation} /* no double-tap page zoom on controls */
+
+/* ================================================================== phone tokens */
+:root[data-layout="phone"]{
+  --ui-zoom:1;
+  --ctl-h:44px; --ctl-h-sm:36px; --tab-h:44px; --toolbar-h:56px; --pad:16px;
+  --fs-xs:12px; --lh-xs:16px; --fs-sm:13px; --lh-sm:18px; --fs-md:14px; --lh-md:20px;
+  --m-safe-t:env(safe-area-inset-top,0px); --m-safe-b:env(safe-area-inset-bottom,0px); --m-safe-l:env(safe-area-inset-left,0px); --m-safe-r:env(safe-area-inset-right,0px);
+  --m-top-h:48px; --m-tab-h:56px; --m-sheet-w:100%; --m-sheet-dur:calc(var(--dur-3) * 1.3);
+}
+:root[data-layout="phone"][data-orientation="landscape"]{--m-top-h:44px; --m-tab-w:64px; --m-sheet-w:min(400px,46vw)}
+
+/* ================================================================== phone frame */
+:root[data-layout="phone"] .chrome{
+  zoom:1; display:grid; transition:none;
+  grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto;
+  grid-template-areas:"head" "main" "tabs";
+}
+:root[data-layout="phone"][data-orientation="landscape"] .chrome{grid-template-columns:auto minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); grid-template-areas:"head head" "tabs main"}
+:root[data-layout="phone"] .chrome > .m-head{grid-area:head;position:relative;z-index:20;display:flex;flex-direction:column;min-width:0;pointer-events:auto}
+:root[data-layout="phone"] .chrome > .m-main{grid-area:main;position:relative;min-width:0;min-height:0;pointer-events:none}
+:root[data-layout="phone"] .chrome > .m-tabbar{grid-area:tabs;position:relative;z-index:20;pointer-events:auto}
+
+/* ---------- top bar: logo · name · (save) · hero FTE · ⋯ ---------- */
+:root[data-layout="phone"] .topbar.m-top{height:calc(var(--m-top-h) + var(--m-safe-t));padding:var(--m-safe-t) max(4px,var(--m-safe-r)) 0 max(12px,var(--m-safe-l));gap:8px;flex-shrink:0}
+:root[data-layout="phone"] .m-top .tb-logo{width:32px;height:32px;padding-top:9px;font-size:12px;border-radius:7px}
+:root[data-layout="phone"] .m-top .tb-logo::after{left:9px;right:9px;bottom:7px}
+:root[data-layout="phone"] .m-top .tb-name{flex:1 1 auto;max-width:none;min-width:0;height:44px;padding:0 6px;font-size:16px;line-height:42px}
+:root[data-layout="phone"] .m-top .tb-name-input{flex:1 1 auto;width:auto;min-width:0;max-width:none;height:44px;font-size:16px}
+:root[data-layout="phone"] .m-top .tb-hero{height:44px;padding:0 6px 0 12px;margin-left:0;flex-shrink:0}
+:root[data-layout="phone"] .m-top .tb-hero::before{top:13px}
+:root[data-layout="phone"] .m-top .tb-hero__v{font-size:21px;line-height:26px}
+:root[data-layout="phone"] .m-top .tb-hero__u{font-size:13px}
+:root[data-layout="phone"] .m-top .tb-hero__sub{display:none}
+:root[data-layout="phone"] .m-top .tb-hero__row{gap:6px}
+:root[data-layout="phone"] .m-top .delta-chip{height:22px;padding:0 6px;font-size:12px}
+:root[data-layout="phone"] .m-top__more{width:44px;height:44px;flex-shrink:0}
+:root[data-layout="phone"] .m-top__save{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:44px;min-width:28px;padding:0;border:0;background:transparent;color:var(--text-3);font:600 13px/1 var(--font-sans);flex-shrink:0}
+:root[data-layout="phone"] .m-top__save.is-failed{padding:0 8px;color:var(--bad-text);border-radius:var(--r-2);background:rgba(240,82,79,.1);box-shadow:inset 0 0 0 1px rgba(240,82,79,.4)}
+:root[data-layout="phone"][data-orientation="landscape"] .m-top .tb-hero__sub{display:block}
+:root[data-layout="phone"][data-orientation="landscape"] .m-top .tb-hero{height:44px}
+
+/* ---------- run strip: one 44 px line under the top bar ---------- */
+:root[data-layout="phone"] :is(.m-head,.m-run) .runstrip{height:44px;padding:0 max(4px,var(--m-safe-r)) 0 max(12px,var(--m-safe-l));gap:8px}
+:root[data-layout="phone"] :is(.m-head,.m-run) .runstrip .btn--sm{height:36px}
+:root[data-layout="phone"] :is(.m-head,.m-run) .runstrip .icon-btn--sm{width:44px;height:44px}
+:root[data-layout="phone"] :is(.m-head,.m-run) .runstrip .runstrip__counters{gap:10px}
+@container runstrip (max-width:479px){
+  :root[data-layout="phone"] .runstrip__step:not(.is-active){display:none}
+  :root[data-layout="phone"] .runstrip__step + .runstrip__step::before{display:none}
+  :root[data-layout="phone"] .runstrip--running .runstrip__counters{flex:1 1 auto}
+  :root[data-layout="phone"] .rs-docs,:root[data-layout="phone"] .rs-grounds{display:none}
+  :root[data-layout="phone"] .rs-log .btn__label{display:none}
+  :root[data-layout="phone"] .rs-log{width:44px;padding:0}
+}
+
+/* landscape: the run strip heads the map column (beside the sheet), so the sheet runs from the top bar down */
+:root[data-layout="phone"] .m-main > .m-run{position:absolute;top:0;left:var(--m-vp-left,0px);right:0;z-index:calc(var(--z-sheet) - 1);pointer-events:auto;
+  border-bottom:1px solid var(--border-1);transition:left var(--m-sheet-dur) var(--ease)}
+:root[data-layout="phone"] .m-main[data-sheet="drag"] > .m-run{transition:none}
+:root[data-layout="phone"] .m-main > .m-run:empty,:root[data-layout="phone"][data-kb="open"] .m-main > .m-run{display:none}
+:root[data-layout="phone"] .m-main:has(> .m-run > .runstrip) > .vp-area{top:44px}
+:root[data-layout="phone"] .m-run .runstrip{padding-left:12px} /* not at the screen's edge: no left safe area */
+
+/* ---------- the map's free rect: from the top bar to the sheet (capped at its half snap) ---------- */
+:root[data-layout="phone"] .m-main > .vp-area{position:absolute;top:0;right:0;left:var(--m-vp-left,0px);bottom:var(--m-cover,0px);
+  transition:bottom var(--m-sheet-dur) var(--ease),left var(--m-sheet-dur) var(--ease)}
+:root[data-layout="phone"] .m-main[data-sheet="drag"] > .vp-area{transition:none}
+:root[data-layout="phone"][data-orientation="landscape"] .m-main > .vp-area{right:var(--m-safe-r)}
+
+/* ---------- bottom sheet ---------- */
+.m-sheet{position:absolute;left:0;right:0;bottom:0;z-index:var(--z-sheet);display:flex;flex-direction:column;height:var(--m-sheet-h,0px);min-height:0;
+  background:var(--surface-1);border-radius:14px 14px 0 0;overflow:hidden;pointer-events:auto;
+  box-shadow:0 0 0 1px var(--hair-2),0 -20px 44px -16px rgba(0,0,0,.85),inset 0 1px 0 var(--edge-hi);
+  transition:height var(--m-sheet-dur) var(--ease),visibility 0s linear 0s}
+.m-sheet[data-snap="closed"]{visibility:hidden;box-shadow:none;transition:height var(--m-sheet-dur) var(--ease),visibility 0s linear var(--m-sheet-dur),box-shadow 0s linear var(--m-sheet-dur)}
+.m-sheet.is-dragging{transition:none}
+:root[data-layout="phone"][data-orientation="landscape"] .m-sheet{right:auto;width:var(--m-sheet-w);border-radius:0 14px 0 0;border-right:1px solid var(--border-2)}
+.m-sheet__head{position:relative;display:flex;align-items:center;flex-shrink:0;height:48px;padding-right:max(0px,var(--m-safe-r));border-bottom:1px solid var(--border-1);
+  background:linear-gradient(180deg,#1e1e1e,var(--surface-1));touch-action:none;user-select:none;-webkit-user-select:none}
+.m-sheet__head::after{content:"";position:absolute;left:16px;top:0;width:24px;height:1px;background:var(--accent);box-shadow:var(--tick-glow);pointer-events:none}
+.m-sheet__handle{flex:1;min-width:0;align-self:stretch;display:flex;align-items:center;padding:8px 8px 0 16px;border:0;background:transparent;color:var(--text-hi);text-align:left;cursor:grab;touch-action:none}
+.m-sheet.is-dragging .m-sheet__handle{cursor:grabbing}
+.m-sheet__handle:focus-visible{outline-offset:-3px;border-radius:12px 0 0 0}
+.m-sheet__grab{position:absolute;left:50%;top:7px;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:#555555;transition:background-color var(--dur-1)}
+.m-sheet.is-dragging .m-sheet__grab{background:#8a8a8a}
+/* hover styles only where there is hover: a tapped control keeps no sticky hover look on a touch screen */
+@media (hover:hover){.m-sheet__handle:hover .m-sheet__grab{background:#8a8a8a}.m-sheet__x:hover{color:var(--text-hi)}.m-tab:hover{color:var(--text-1)}.rs-more-pop__btn:hover{background:rgba(255,255,255,.05)}}
+.m-sheet__title{display:flex;align-items:baseline;gap:10px;min-width:0;overflow:hidden;white-space:nowrap;font:600 16px/22px var(--font-sans);letter-spacing:var(--track-snug)}
+.m-sheet__sub{min-width:0;overflow:hidden;text-overflow:ellipsis;font:400 13px/18px var(--font-sans);color:var(--text-3)}
+.m-sheet__x{display:grid;place-items:center;width:48px;height:48px;margin-right:2px;padding-top:6px;border:0;background:transparent;color:var(--text-2);flex-shrink:0;cursor:pointer}
+.m-sheet__x:focus-visible{outline-offset:-6px;border-radius:var(--r-3)}
+.m-sheet__body{flex:1;min-height:0;display:flex;flex-direction:column}
+.m-sheet__panel{flex:1;min-height:0;display:flex;flex-direction:column;min-width:0}
+.m-sheet__panel > .insp,.m-sheet__panel > .inv,.m-sheet__panel > .est,.m-sheet__panel > .docs,.m-sheet__panel > .bottom-panel{flex:1;min-height:0}
+.m-sheet__panel > .est,.m-sheet__panel > .docs{padding-bottom:calc(24px + var(--m-safe-b))}
+.m-sheet .insp__head{touch-action:none;gap:4px}
+:root[data-layout="phone"] .m-sheet .insp__no .input{height:44px;font-size:16px}
+:root[data-layout="phone"] .insp__sec-head{height:44px;margin-top:2px}
+:root[data-layout="phone"] .insp__row3 .btn,:root[data-layout="phone"] .insp__row3 .icon-btn{height:44px;min-width:44px}
+:root[data-layout="phone"] .docs__drop--compact .btn{height:44px}
+:root[data-layout="phone"] .docs__note-why{min-height:44px;padding:0 8px}
+:root[data-layout="phone"] .docs__note-x{width:44px;height:44px}
+:root[data-layout="phone"] .docs__award button{min-height:44px}
+:root[data-layout="phone"] .docs__pending button{width:44px;height:44px;margin:-6px -8px -6px 0}
+:root[data-layout="phone"] .docs__pending li{min-height:44px}
+:root[data-layout="phone"] .docs__skipped{min-height:36px}
+:root[data-layout="phone"] .docs__pop-foot .btn{height:44px;min-width:64px}
+:root[data-layout="phone"] .docs__types span,:root[data-layout="tablet"] .docs__types span{font-size:12px}
+/* files picked: Analyze (and the sample) stay in reach at the foot of the Documents sheet */
+:root[data-layout="phone"] .m-sheet .docs__cta.is-ready{position:sticky;bottom:calc(-24px - var(--m-safe-b));z-index:3;margin:0 calc(-1 * var(--pad));
+  padding:10px var(--pad) calc(10px + 24px + var(--m-safe-b));background:var(--surface-1);box-shadow:0 -1px 0 var(--border-1),0 -14px 24px -14px rgba(0,0,0,.9)}
+:root[data-layout="phone"] .insp__sec-toggle{height:44px;font-size:15px}
+:root[data-layout="phone"] .input--sm,:root[data-layout="phone"] .select--sm{height:44px;font-size:16px}
+:root[data-layout="phone"] .inv__th-part{min-width:44px}
+/* estimate sliders: room for a 6-digit value at 16 px, a 44 px lock */
+:root[data-layout="phone"] .est__slider{grid-template-columns:minmax(0,1.1fr) minmax(48px,1fr) 86px 44px;min-height:44px}
+:root[data-layout="phone"] .est__slider .num .input{font-size:16px;padding:0 6px}
+:root[data-layout="phone"] .est__slider .num.has-suffix .input{padding-right:22px}
+:root[data-layout="phone"] .est__slider input[type=range]{height:44px}
+:root[data-layout="phone"] .m-sheet .insp__name h2{font-size:18px;line-height:23px}
+:root[data-layout="phone"] .m-sheet .insp__swatch{margin-top:16px}
+/* the review queue lives in the sheet head (visible at every snap); the sheet's × clears the selection */
+.m-sheet__nav{display:flex;align-items:center;flex-shrink:0;padding-top:6px}
+.m-sheet__nav .insp__nav{margin-left:0}
+.m-sheet__nav .insp__nav-pos{display:inline-block;height:44px;font-size:13px;line-height:44px;color:var(--text-1)}
+:root[data-layout="phone"] .m-sheet .insp__name{position:relative}
+:root[data-layout="phone"] .m-sheet .insp__name::after{content:"";position:absolute;left:0;right:0;top:50%;height:max(100%,44px);transform:translateY(-50%)}
+:root[data-layout="phone"] .docs__analyze .kbd{display:none}
+:root[data-layout="phone"] .m-sheet .insp__row3 .insp__nav,:root[data-layout="phone"] .m-sheet .insp__clear{display:none}
+.m-sheet .insp__head input{touch-action:auto}
+.m-sheet .insp__body{padding-bottom:calc(32px + var(--m-safe-b))}
+/* Verify + "verify and next" (touch): one split control */
+.insp__vsplit{display:inline-flex;align-items:stretch;flex-shrink:0}
+.insp__vsplit > .btn{border-top-right-radius:0;border-bottom-right-radius:0}
+.insp__vsplit > .insp__vnext{height:auto;min-height:var(--ctl-h-sm);border-radius:0 var(--r-2) var(--r-2) 0;color:var(--text-1);background:#222222;box-shadow:inset 0 0 0 1px var(--border-ctl,#3a3a3a);margin-left:-1px}
+.insp__vsplit > .insp__vnext.is-primary{color:var(--accent);background:var(--accent-tonal);box-shadow:inset 0 0 0 1px var(--accent-line)}
+.insp__vsplit > .insp__vnext:focus-visible{outline-offset:-2px}
+@container insp (max-width:389px){.insp__vsplit ~ .insp__flag .btn__label{display:none}.insp__vsplit ~ .insp__flag{min-width:44px;padding:0;justify-content:center}}
+/* the dense-panel tonal primary (desktop .panel-right) */
+.m-sheet .btn--primary:not(:hover):not(:focus-visible){background:var(--accent-tonal);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-line)}
+
+/* ---------- project metrics (moved out of the top bar): a strip above the list, a grid atop the estimate ---------- */
+.m-metrics{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--border-2);border-radius:var(--r-3);overflow:hidden;box-shadow:0 0 0 1px var(--border-2)}
+.m-metric{display:flex;flex-direction:column-reverse;justify-content:flex-end;gap:1px;min-width:0;padding:8px 10px;background:var(--surface-2)}
+.m-metric dt{font:400 12px/16px var(--font-sans);color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-metric dd{margin:0;font:600 17px/22px var(--font-sans);letter-spacing:-0.02em;color:var(--text-1);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-metric:first-child dd{color:var(--text-hi)}
+.m-metrics:not(.m-metrics--strip) .m-metric:last-child:nth-child(3n+2){grid-column:span 2}
+.m-metrics:not(.m-metrics--strip) .m-metric:last-child:nth-child(3n+1){grid-column:span 3}
+.m-metrics--grid{margin:14px 0 2px}
+.m-sheet__lead{flex-shrink:0;border-bottom:1px solid var(--border-1);background:var(--frame);touch-action:pan-x}
+.m-metrics--strip{display:flex;gap:0;background:transparent;border-radius:0;box-shadow:none;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+  mask-image:linear-gradient(90deg,#000 calc(100% - 20px),transparent);-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 20px),transparent)}
+.m-metrics--strip::-webkit-scrollbar{display:none}
+.m-metrics--strip .m-metric{flex-direction:row-reverse;align-items:baseline;justify-content:flex-start;gap:6px;flex-shrink:0;height:44px;padding:13px 14px 0;background:transparent;box-shadow:inset -1px 0 0 var(--border-1)}
+.m-metrics--strip .m-metric:last-child{box-shadow:none;padding-right:24px}
+.m-metrics--strip .m-metric dd{font-size:15px;line-height:18px}
+
+/* ---------- tab bar (bottom) / tab rail (landscape) ---------- */
+.m-tabbar{display:flex;background:var(--frame);border-top:1px solid var(--border-1);padding:0 var(--m-safe-r) var(--m-safe-b) var(--m-safe-l)}
+.m-tabbar__list{display:flex;flex:1;min-width:0;height:var(--m-tab-h)}
+.m-tab{position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px 0 2px;border:0;background:transparent;
+  color:var(--text-3);font:500 12px/14px var(--font-sans);letter-spacing:0;cursor:pointer;transition:color var(--dur-1)}
+.m-tab.is-on{color:var(--text-hi);font-weight:600}
+.m-tab.is-on::before{content:"";position:absolute;top:-1px;left:calc(50% - 14px);width:28px;height:2px;border-radius:0 0 2px 2px;background:var(--accent);box-shadow:var(--tick-glow)}
+.m-tab:focus-visible{outline-offset:-4px;border-radius:var(--r-3)}
+.m-tab__icon{position:relative;display:grid;place-items:center;width:30px;height:26px}
+.m-tab__label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m-tab__badge{position:absolute;top:-3px;left:18px;min-width:20px;height:18px;padding:0 5px;border-radius:var(--r-pill);background:var(--warn);color:#140d00;
+  font:600 12px/18px var(--font-sans);font-variant-numeric:tabular-nums;text-align:center;box-shadow:0 0 0 2px var(--frame)}
+.m-tab__dot{top:0;right:0}
+:root[data-layout="phone"][data-orientation="landscape"] .m-tabbar{flex-direction:column;border-top:0;border-right:1px solid var(--border-1);padding:0 0 var(--m-safe-b) var(--m-safe-l)}
+:root[data-layout="phone"][data-orientation="landscape"] .m-tabbar__list{flex-direction:column;width:var(--m-tab-w);height:auto;flex:1;justify-content:flex-start}
+:root[data-layout="phone"][data-orientation="landscape"] .m-tab{flex:1 1 0;max-height:64px;min-height:48px}
+:root[data-layout="phone"][data-orientation="landscape"] .m-tab.is-on::before{top:calc(50% - 14px);left:0;width:2px;height:28px;border-radius:0 2px 2px 0}
+
+/* ---------- crew clock strip (map tab) ---------- */
+.m-mini{position:absolute;left:max(8px,var(--m-safe-l));right:max(8px,var(--m-safe-r));bottom:4px;z-index:calc(var(--z-sheet) - 1);display:flex;align-items:center;gap:6px;height:52px;padding:0 4px 0 12px;
+  border-radius:var(--r-4);background:var(--overlay-bg);box-shadow:var(--sh-overlay);pointer-events:auto}
+.m-mini::before{content:"";position:absolute;left:12px;top:0;width:18px;height:1px;background:var(--accent);box-shadow:var(--tick-glow);opacity:.9;pointer-events:none}
+.m-mini__time{display:flex;flex-direction:column;justify-content:center;flex-shrink:0;min-width:46px;line-height:1}
+.m-mini__time b{font:600 17px/20px var(--font-sans);letter-spacing:-0.03em;color:var(--text-hi);font-variant-numeric:tabular-nums}
+.m-mini__time span{font:400 12px/14px var(--font-sans);color:var(--text-3)}
+.m-mini__play{width:44px;height:44px;flex-shrink:0;border-radius:var(--r-3)}
+.m-mini__play[aria-label^="Pause"]{color:var(--accent);border-color:var(--accent-line);background:var(--accent-soft)}
+.m-mini__crews{display:flex;align-items:center;gap:6px;flex:1;min-width:0;height:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x;
+  mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent);-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent)}
+.m-mini__crews::-webkit-scrollbar{display:none}
+:root[data-layout="phone"][data-orientation="landscape"] .m-mini{bottom:calc(4px + var(--m-safe-b))}
+.m-mini__crews .chip{height:40px;padding:0 10px;flex-shrink:0;border-radius:var(--r-2)}
+.m-mini__crews .chip__count{font:600 12px/1 var(--font-sans);font-variant-numeric:tabular-nums}
+.m-mini__name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.m-mini__crews .chip__label{display:contents}
+.m-mini__expand{width:44px;height:44px;flex-shrink:0}
+.m-mini__expand .icon-btn__badge{top:1px;right:0;font-size:12px;box-shadow:0 0 0 2px #171717}
+
+/* ---------- toasts: above whatever covers the bottom (the sheet, the crew strip, the tab bar) ---------- */
+.m-toasts{position:absolute;left:max(8px,var(--m-safe-l));right:max(8px,var(--m-safe-r));bottom:var(--m-toast-b,8px);z-index:var(--z-toast);display:flex;justify-content:center;pointer-events:none;
+  transition:bottom var(--m-sheet-dur) var(--ease)}
+.m-main[data-sheet="drag"] > .m-toasts{transition:none}
+.m-toasts .toasts{position:static;transform:none;width:100%;max-width:520px;align-items:stretch}
+.m-toasts .toast{max-width:none;min-height:48px;font-size:14px;line-height:20px}
+.m-toasts .toast__x{width:44px;height:44px}
+.m-toasts .toast__action{min-height:44px;padding:0 12px}
+
+/* ---------- viewport overlays on a phone ---------- */
+:root[data-layout="phone"] .vo-mapbtns{position:absolute;top:10px;right:10px;z-index:var(--z-vp-overlay);display:flex;flex-direction:column;border-radius:var(--r-4);background:var(--overlay-bg);box-shadow:var(--sh-overlay);overflow:hidden;pointer-events:auto}
+:root[data-layout="phone"] .vo-mapbtns .icon-btn{width:44px;height:44px;border-radius:0}
+:root[data-layout="phone"] .vo-mapbtns .icon-btn + .icon-btn{box-shadow:inset 0 1px 0 var(--border-2)}
+:root[data-layout="phone"] .vo-mapbtns .icon-btn.is-on{box-shadow:inset 0 0 0 1px var(--accent-line)}
+:root[data-layout="phone"] .vo-toolbar{top:10px;height:44px;padding:0 4px}
+:root[data-layout="phone"] .vo-toolbar--left{left:10px;max-width:calc(100% - 76px)}
+:root[data-layout="phone"] .vo-toolbar .seg--sm{height:36px}
+:root[data-layout="phone"] .vo-toolbar .seg__opt{padding:0 10px;font-size:13px}
+:root[data-layout="phone"] .vo-toolbar .btn--sm{height:36px}
+:root[data-layout="phone"] .vo-sel{display:none}
+:root[data-layout="phone"] .vo-crumbs__here{max-width:96px}
+:root[data-layout="phone"] .vo-crumbs__here .nm{display:none}
+:root[data-layout="phone"] .vo-center{top:64px}
+:root[data-layout="phone"] .vo-chip{height:40px;font-size:13px}
+:root[data-layout="phone"] .vo-chip button{height:36px;font-size:13px}
+/* the legend lives behind the Layers map button on a phone (same popover); the chip would cost a row of map */
+:root[data-layout="phone"] .vo-legend{display:none}
+:root[data-layout="phone"] .vo-hint-row{left:10px;right:64px;bottom:10px} /* clear of the map buttons column */
+:root[data-layout="phone"][data-orientation="landscape"] .vo-hint-row{bottom:calc(10px + var(--m-safe-b))}
+:root[data-layout="phone"] .vo-hint{font-size:12px;line-height:16px;padding:2px 2px 2px 12px}
+:root[data-layout="phone"] .vo-hint button{width:44px;height:44px}
+:root[data-layout="phone"] .vo-hint.is-raised{transform:none}
+:root[data-layout="phone"] .vo-legend-pop{width:auto}
+/* empty state: the card fills the free rect's width; no drop zone on touch, big buttons */
+:root[data-layout="phone"] .vo-empty{width:calc(100% - 24px);max-height:calc(100% - 20px);padding:22px 18px 16px;border-radius:var(--r-4)}
+:root[data-layout="phone"] .vo-empty__title{font-size:21px;line-height:27px}
+:root[data-layout="phone"] .vo-empty__body{font-size:14px;line-height:20px;margin-bottom:12px}
+:root[data-layout="phone"] .vo-empty__actions{flex-direction:column;align-items:stretch;margin-top:14px}
+:root[data-layout="phone"] .vo-empty__actions .btn{height:48px;font-size:15px}
+:root[data-layout="phone"] .vo-empty__files li{height:44px;font-size:14px}
+:root[data-layout="phone"] .vo-empty__files li button{width:44px;height:44px}
+:root[data-layout="phone"] .vo-empty__reader{font-size:13px;line-height:20px}
+:root[data-layout="phone"] .vo-empty__reader button{min-height:44px;min-width:44px;padding:0 4px}
+.vo-empty__drop.is-touch:not(.has-files){min-height:0;padding:10px 12px;border-style:solid;border-color:var(--border-1);background:rgba(0,0,0,.12)}
+
+/* ---------- inventory list (rows are 52 px on phones, see InventoryList) ---------- */
+:root[data-layout="phone"] .inv{grid-template-rows:56px 44px minmax(0,1fr);transition:grid-template-rows var(--dur-2) var(--ease)}
+/* phones: no column header (the rows show SF and FTE; sorting is in the toolbar's sort menu) and no review footer (its
+   numbers are in the sheet's head): the rows get the room */
+:root[data-layout="phone"] .inv__head,:root[data-layout="phone"] .inv__foot{display:none}
+:root[data-layout="phone"] .inv__listwrap{grid-template-rows:minmax(0,1fr)!important}
+/* collapsing header: the metric strip and the filter chips slide away while the list scrolls down (Phone.tsx ListPanel) */
+:root[data-layout="phone"] .m-sheet__panel--list{overflow:hidden}
+:root[data-layout="phone"] .m-sheet__panel--list .m-sheet__lead{max-height:60px;overflow:hidden;transition:max-height var(--dur-2) var(--ease),border-color var(--dur-2)}
+:root[data-layout="phone"] .m-sheet__panel--list.is-collapsed .m-sheet__lead{max-height:0;border-bottom-color:transparent}
+:root[data-layout="phone"] .m-sheet__panel--list.is-collapsed .inv{grid-template-rows:56px 0px minmax(0,1fr)}
+:root[data-layout="phone"] .inv__chips{overflow:hidden}
+:root[data-layout="phone"] .inv__toolbar{gap:4px;padding:0 4px 0 12px}
+:root[data-layout="phone"] .inv__toolbar .qsearch{height:46px}
+:root[data-layout="phone"] .inv__head .inv__th{min-width:44px}
+:root[data-layout="phone"] .inv__chips{padding:0 16px 0 12px;touch-action:pan-x}
+:root[data-layout="phone"] .inv__chips .chip{height:34px;padding:0 10px;font-size:13px}
+:root[data-layout="phone"] .inv__th-part{justify-content:center}
+:root[data-layout="phone"] .inv__head{padding:0 12px 0 15px;font-size:12px}
+:root[data-layout="phone"] .inv-row{padding:0 12px 0 15px}
+:root[data-layout="phone"] .inv-row__title{font-size:15px;line-height:20px}
+:root[data-layout="phone"] .inv-row__sub,:root[data-layout="phone"] .inv-row__conf{font-size:12px;line-height:16px}
+:root[data-layout="phone"] .inv-row__metrics{font-size:13px;line-height:18px}
+:root[data-layout="phone"] .inv-sec{font-size:13px}
+:root[data-layout="phone"] .inv__foot{font-size:12px;padding:0 16px calc(var(--m-safe-b) * 0) 16px}
+:root[data-layout="phone"] .inv-status{font-size:12px}
+:root[data-layout="phone"] .inv-newpill{height:36px;font-size:13px}
+/* landscape: the sheet is short, so the list keeps its rows: the metric strip (also in Estimate) gives way; the list
+   ends clear of the home indicator */
+:root[data-layout="phone"][data-orientation="landscape"] .m-sheet__panel--list .m-sheet__lead{display:none}
+:root[data-layout="phone"][data-orientation="landscape"] .inv{grid-template-rows:52px 44px minmax(0,1fr)}
+:root[data-layout="phone"][data-orientation="landscape"] .m-sheet__panel--list.is-collapsed .inv{grid-template-rows:52px 0px minmax(0,1fr)}
+:root[data-layout="phone"][data-orientation="landscape"] .m-sheet__body{padding-bottom:var(--m-safe-b)} /* nothing to tap in the home indicator's swipe zone */
+:root[data-layout="phone"][data-orientation="landscape"] .m-sheet__panel > .est,:root[data-layout="phone"][data-orientation="landscape"] .m-sheet__panel > .docs{padding-bottom:24px}
+:root[data-layout="phone"][data-orientation="landscape"] .m-sheet .insp__body{padding-bottom:32px}
+
+/* ---------- primitives, phone sized ---------- */
+:root[data-layout="phone"] .input,:root[data-layout="phone"] .select,:root[data-layout="phone"] .qsearch__input,:root[data-layout="phone"] textarea{font-size:16px} /* < 16 px zooms iOS on focus */
+:root[data-layout="phone"] .numfield,:root[data-layout="phone"] .factors__ovr .input{font-size:16px}
+:root[data-layout="phone"] .tabs{height:48px}
+:root[data-layout="phone"] .tabs__tab{padding:0 14px;font-size:15px}
+:root[data-layout="phone"] .kbd{font-size:12px;height:20px}
+:root[data-layout="phone"] .btn .kbd,:root[data-layout="phone"] .ui-menu__item .kbd{display:none} /* no keyboard on a phone */
+:root[data-layout="phone"] .rail__badge,:root[data-layout="phone"] .icon-btn__badge{font-size:12px;height:18px;line-height:18px;min-width:18px}
+:root[data-layout="phone"] .checkbox{min-height:44px;font-size:14px}
+:root[data-layout="phone"] .checkbox input{width:20px;height:20px}
+:root[data-layout="phone"] .toggle{min-height:44px}
+:root[data-layout="phone"] .seg__opt{min-width:44px}
+:root[data-layout="phone"] .link-btn{padding:6px 0}
+/* hit areas: compact controls keep their look and get a 44 × 44 touch box. Every one of them is at least 44 px wide
+   itself, so the box grows only vertically and a neighbour in the same row never takes a tap that lands on a
+   control's own face. */
+:root[data-layout="phone"] .btn--sm,:root[data-layout="phone"] .chip--btn,:root[data-layout="phone"] .chip__main,:root[data-layout="phone"] .seg__opt,:root[data-layout="phone"] .inv__th,:root[data-layout="phone"] .inv__th-part,
+:root[data-layout="phone"] .rs-more--btn,:root[data-layout="phone"] .rs-seg__btn,:root[data-layout="phone"] .docs__skipped,:root[data-layout="phone"] .link-btn,:root[data-layout="phone"] .chip__x{position:relative}
+:root[data-layout="phone"] .btn--sm::after,:root[data-layout="phone"] .chip--btn::after,:root[data-layout="phone"] .chip__main::after,:root[data-layout="phone"] .seg__opt::after,:root[data-layout="phone"] .inv__th::after,:root[data-layout="phone"] .inv__th-part::after,
+:root[data-layout="phone"] .rs-more--btn::after,:root[data-layout="phone"] .rs-seg__btn::after,:root[data-layout="phone"] .docs__skipped::after,:root[data-layout="phone"] .link-btn::after,:root[data-layout="phone"] .chip__x::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
+:root[data-layout="phone"] .btn--sm,:root[data-layout="phone"] .chip--btn,:root[data-layout="phone"] .chip__main,:root[data-layout="phone"] .seg__opt,:root[data-layout="phone"] .rs-more--btn,:root[data-layout="phone"] .rs-seg__btn{min-width:44px}
+:root[data-layout="phone"] .icon-btn--sm,:root[data-layout="phone"] .icon-btn{width:44px;height:44px}
+/* small controls a little taller: chips and segments 36 px (their 44 px box above), the run strip's "+N" a real button */
+:root[data-layout="phone"] .chip--btn,:root[data-layout="phone"] .chip__main{min-height:36px}
+:root[data-layout="phone"] .seg--sm{height:40px}
+:root[data-layout="phone"] .m-seg .seg{height:44px}
+:root[data-layout="phone"] .rs-more--btn{height:32px;padding:0 10px;font-size:13px;line-height:32px;cursor:pointer}
+.rs-more--btn{border:0;font-family:var(--font-sans)}
+.rs-more-pop{padding:6px;min-width:220px;max-width:min(360px,calc(100vw - 16px))}
+.rs-more-pop__list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rs-more-pop__list li{display:flex;align-items:center;min-height:44px;padding:0 10px;font-size:14px;line-height:20px;color:var(--text-1);border-radius:var(--r-2)}
+.rs-more-pop__list li.is-warn{color:var(--warn-text)}
+.rs-more-pop__btn{flex:1;min-height:44px;margin:0 -10px;padding:0 10px;border:0;border-radius:var(--r-2);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+
+
+/* ---------- popovers and menus: a card anchored to the bottom of the screen ---------- */
+:root[data-layout="phone"] .ui-pop{left:max(8px,var(--m-safe-l))!important;right:max(8px,var(--m-safe-r));top:auto!important;bottom:calc(8px + var(--m-safe-b))!important;
+  width:auto;min-width:0!important;max-width:none;max-height:min(80vh,calc(100vh - 72px - var(--m-safe-t)));border-radius:var(--r-4);
+  box-shadow:0 0 0 1px var(--hair-2),0 -24px 60px -12px rgba(0,0,0,.9),0 0 0 100vmax rgba(6,6,6,.5);overscroll-behavior:contain}
+.m-seg{padding:2px 0 6px}
+.m-seg .seg{height:40px}
+.m-seg .seg__opt{flex:1;padding:0 4px;font-size:13px;min-width:0}
+:root[data-layout="phone"][data-orientation="landscape"] .ui-pop{left:auto!important;right:max(8px,var(--m-safe-r));width:min(420px,calc(100vw - 16px))}
+:root[data-layout="phone"] .ui-menu{padding:6px}
+:root[data-layout="phone"] .ui-menu__item{min-height:48px;padding:0 10px;font-size:15px}
+:root[data-layout="phone"] .ui-menu__icon{width:20px}
+:root[data-layout="phone"] .ui-menu__hint{font-size:12px}
+:root[data-layout="phone"] .ui-menu__header{padding:12px 10px 4px;font-size:12px}
+:root[data-layout="phone"] .ui-menu__custom{padding:6px 10px}
+:root[data-layout="phone"] .ui-tooltip{max-width:min(320px,calc(100vw - 16px));font-size:13px}
+.m-more__status{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 8px;padding:6px 0 8px;font-size:14px;line-height:20px;color:var(--text-1);border-bottom:1px solid var(--border-2);margin-bottom:2px}
+.m-more__status .tb-ai__dot.is-warn{background:var(--warn);box-shadow:0 0 0 2px rgba(245,165,36,.16),0 0 8px rgba(245,165,36,.5)}
+.m-more__save{grid-column:2;font-size:13px;color:var(--text-3)}
+.m-more__save.is-failed{color:var(--bad-text)}
+
+/* ---------- dialogs: full-screen sheets; confirms rise from the bottom ---------- */
+:root[data-layout="phone"] .ui-scrim{place-items:stretch;padding:0}
+:root[data-layout="phone"] .ui-dialog{width:100%!important;height:100%!important;max-width:none;max-height:none;border-radius:0}
+:root[data-layout="phone"] .ui-dialog__head{flex-wrap:wrap;min-height:calc(56px + var(--m-safe-t));padding:calc(6px + var(--m-safe-t)) max(4px,var(--m-safe-r)) 6px max(16px,var(--m-safe-l));gap:8px}
+:root[data-layout="phone"] .ui-dialog__head::before{left:max(16px,var(--m-safe-l));top:var(--m-safe-t)}
+:root[data-layout="phone"] .ui-dialog__title{font-size:17px;line-height:24px}
+:root[data-layout="phone"] .ui-dialog__close{width:44px;height:44px}
+:root[data-layout="phone"] .ui-dialog__body{padding:16px max(16px,var(--m-safe-r)) calc(16px + var(--m-safe-b)) max(16px,var(--m-safe-l));overscroll-behavior:contain}
+:root[data-layout="phone"] .ui-dialog__foot{padding:10px max(16px,var(--m-safe-r)) calc(10px + var(--m-safe-b)) max(16px,var(--m-safe-l))}
+:root[data-layout="phone"] .ui-dialog__foot .btn{height:48px;flex:1 1 40%}
+:root[data-layout="phone"] .ui-confirm{align-self:end;height:auto!important;max-height:calc(100% - 24px - var(--m-safe-t))!important;border-radius:14px 14px 0 0;animation:m-rise var(--m-sheet-dur) var(--ease)}
+:root[data-layout="phone"] .ui-confirm .ui-dialog__head{min-height:56px;padding-top:6px}
+:root[data-layout="phone"] .ui-confirm .ui-dialog__head::before{top:0}
+:root[data-layout="phone"] .ui-confirm .ui-confirm__body,:root[data-layout="phone"] .confirm-body{font-size:15px;line-height:22px}
+@keyframes m-rise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+:root[data-layout="phone"][data-orientation="landscape"] .ui-confirm{width:min(600px,100%)!important;justify-self:center}
+:root[data-reduced-motion="true"] .ui-confirm{animation:none}
+:root[data-layout="phone"] .shortcuts{grid-template-columns:minmax(0,1fr)}
+:root[data-layout="phone"] .shortcuts .row{min-height:32px;font-size:14px}
+
+/* Factors: the table becomes one card per task (name, then unit · frequency · default · override · hours · share) */
+:root[data-layout="phone"] .factors__search{order:3;width:100%;height:44px;flex-basis:100%;margin:0 4px 4px 0}
+/* < 16 px zooms iOS Safari on focus */
+:root[data-layout="phone"] .factors__search input,:root[data-layout="tablet"] .factors__search input{font-size:16px}
+:root[data-layout="phone"] .factors__main{padding:0 max(16px,var(--m-safe-r)) calc(24px + var(--m-safe-b)) max(16px,var(--m-safe-l))}
+:root[data-layout="phone"] .factors__bar{flex-wrap:wrap;height:auto;min-height:52px;padding:6px 0;gap:4px 12px}
+:root[data-layout="phone"] .factors__table,:root[data-layout="phone"] .factors__table tbody{display:block;width:100%}
+:root[data-layout="phone"] .factors__table thead,:root[data-layout="phone"] .factors__table colgroup{display:none}
+:root[data-layout="phone"] .factors__table tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:10px 0;border-bottom:1px solid var(--rule)}
+:root[data-layout="phone"] .factors__table td{display:block;padding:0;border:0;font-size:13px}
+:root[data-layout="phone"] .factors__table td.factors__task{flex:1 0 100%}
+:root[data-layout="phone"] .factors__task .nm{font-size:15px;line-height:20px}
+:root[data-layout="phone"] .factors__task .basis{white-space:normal}
+:root[data-layout="phone"] .factors__table td:nth-child(4)::before{content:"Default ";color:var(--text-3);font-family:var(--font-sans)}
+:root[data-layout="phone"] .factors__table td:nth-child(6)::before{content:"Hrs ";color:var(--text-3);font-family:var(--font-sans)}
+:root[data-layout="phone"] .factors__table td:nth-child(5){order:9;flex:0 0 120px;margin-left:auto}
+:root[data-layout="phone"] .factors__table td:nth-child(8){order:10}
+:root[data-layout="phone"] .factors__ovr{width:120px}
+:root[data-layout="phone"] .factors__pct{min-width:60px;padding-bottom:6px!important}
+:root[data-layout="phone"] .factors__table tr.factors__crewhead{display:block;padding:0;border:0}
+:root[data-layout="phone"] .factors__crewhead th{display:block}
+:root[data-layout="phone"] .factors__table tr.is-overridden td:first-child{box-shadow:none;padding-left:0}
+:root[data-layout="phone"] .factors__table tr.is-overridden{box-shadow:inset 3px 0 0 var(--edit);padding-left:10px;background:rgba(165,150,255,.06)}
+:root[data-layout="phone"] .factors__table tr.is-overridden td{background:transparent}
+:root[data-layout="phone"] .factors__paste{width:auto}
+
+/* ---------- crews sheet (the dock's Crews | Log) ---------- */
+.m-sheet .bottom-panel--sheet{height:auto;border-top:0;background:var(--surface-1)}
+.m-sheet .bottom-panel--sheet .bp__head{height:48px}
+.m-sheet .bottom-panel--sheet .bp__crews{flex-direction:column;overflow:auto;padding:10px 12px calc(16px + var(--m-safe-b));overscroll-behavior:contain}
+.m-sheet .bottom-panel--sheet .bp__clock{width:auto;padding:8px 12px}
+.m-sheet .bottom-panel--sheet .bp__clock-row{gap:10px}
+.m-sheet .bottom-panel--sheet .bp__scrub{height:44px}
+.m-sheet .bottom-panel--sheet .bp__speed{width:110px}
+.m-sheet .bottom-panel--sheet .bp__play{width:44px;height:44px}
+.m-sheet .bottom-panel--sheet .bp__cards-wrap{flex:none}
+.m-sheet .bottom-panel--sheet .bp__cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;overflow:visible;mask-image:none!important;-webkit-mask-image:none!important}
+.m-sheet .bottom-panel--sheet .bp__card{min-width:0;max-width:none;min-height:64px}
+.m-sheet .bottom-panel--sheet .bp__pg,.m-sheet .bottom-panel--sheet .bp__cards-wrap::before,.m-sheet .bottom-panel--sheet .bp__cards-wrap::after{display:none}
+.m-sheet .bottom-panel--sheet .bp__card{display:flex;flex-direction:column}
+.m-sheet .bottom-panel--sheet .bp__card.is-off .bp__card-main,.m-sheet .bottom-panel--sheet .bp__card.is-on.is-off .bp__card-main{padding-bottom:4px}
+.m-sheet .bottom-panel--sheet .bp__jump{position:static;align-self:flex-start;min-height:44px;margin:0 8px 8px 48px;padding:0 10px;border-radius:var(--r-2);background:#222222;box-shadow:inset 0 0 0 1px var(--hair)}
+.m-sheet .bottom-panel--sheet .bp__card-x{width:32px;height:32px}
+.m-sheet .bottom-panel--sheet .bp__log-list{font-size:12.5px;line-height:18px;padding-bottom:calc(12px + var(--m-safe-b))}
+.m-sheet .bottom-panel--sheet .bp__log-bar{padding:6px 12px;gap:6px;touch-action:pan-x}
+.m-sheet .bottom-panel--sheet .bp__log-bar .chip{height:34px;padding:0 10px}
+
+/* ================================================================== tablet (768–1279): slide-over drawers */
+/* The left panel (and below 1024 px the right one) leaves the grid and slides in over the edge of the map from the
+   rail, with a shadow; the centre column (run strip, map, dock) moves aside in step, so nothing the drawer covers is
+   lost and the map's free rect (the insets) follows the drawer frame by frame. Drawers start closed on a tablet. */
+:root[data-layout="tablet"]{--right-w:320px;--fs-xs:12px;--lh-xs:16px}
+:root[data-layout="tablet"] .rail__badge,:root[data-layout="tablet"] .icon-btn__badge{font-size:12px}
+:root[data-layout="tablet"] .kbd{font-size:12px}
+:root[data-layout="tablet"] .bp__speed,:root[data-layout="tablet"] .bp__clock .bp__speed,:root[data-layout="tablet"] .bp__mini .bp__speed{width:108px}
+:root[data-layout="tablet"] .chrome{--left-w-live:0px;grid-template-columns:var(--rail-w) 0px minmax(0,1fr) var(--right-w-live)}
+:root[data-layout="tablet"] .chrome > .rail{position:relative;z-index:31}
+:root[data-layout="tablet"] .chrome > .topbar{position:relative;z-index:32}
+:root[data-layout="tablet"] .chrome > .panel-left{grid-area:auto;position:absolute;top:var(--top-h);bottom:0;left:var(--rail-w);width:var(--left-w);z-index:var(--z-drawer);
+  border-right:1px solid var(--border-2);box-shadow:24px 0 48px -24px rgba(0,0,0,.9);
+  transition:transform var(--dur-3) var(--ease),visibility 0s linear 0s}
+:root[data-layout="tablet"] .chrome[data-left="closed"] > .panel-left{transform:translateX(calc(-100% - 1px));visibility:hidden;box-shadow:none;
+  transition:transform var(--dur-3) var(--ease),visibility 0s linear var(--dur-3)}
+:root[data-layout="tablet"] .chrome > .center{transition:margin var(--dur-3) var(--ease)}
+:root[data-layout="tablet"] .chrome[data-left="open"] > .center{margin-left:var(--left-w)}
+.panel__close{display:none!important}
+:root[data-layout="tablet"] .panel__close{display:inline-grid!important}
+@media (max-width:1023.98px){
+  :root[data-layout="tablet"] .chrome{grid-template-columns:var(--rail-w) 0px minmax(0,1fr) 0px}
+  :root[data-layout="tablet"] .chrome > .panel-right{grid-area:auto;position:absolute;top:var(--top-h);bottom:0;right:0;width:var(--right-w);z-index:var(--z-drawer);
+    border-left:1px solid var(--border-2);box-shadow:-24px 0 48px -24px rgba(0,0,0,.9);transition:transform var(--dur-3) var(--ease),visibility 0s linear 0s}
+  :root[data-layout="tablet"] .chrome[data-right="closed"] > .panel-right{transform:translateX(calc(100% + 1px));visibility:hidden;box-shadow:none;
+    transition:transform var(--dur-3) var(--ease),visibility 0s linear var(--dur-3)}
+  :root[data-layout="tablet"] .chrome[data-right="open"] > .center{margin-right:var(--right-w)}
+}
+/* tablet top bar: the view switch is icon-only below 1280 already; the save word gives way first */
+:root[data-layout="tablet"] .tb-left{gap:8px}
+:root[data-layout="tablet"] .tb-name{max-width:180px}
+@media (max-width:1023.98px){:root[data-layout="tablet"] .tb-save:not(.tb-save--failed){display:none}:root[data-layout="tablet"] .tb-metrics{gap:16px}}
+/* tablets are touch screens: 44 px rail buttons, 16 px inputs (no focus zoom), roomier menus, hit areas */
+@media (pointer:coarse){
+  :root[data-layout="tablet"]{--rail-w:52px}
+  :root[data-layout="tablet"] .rail__btn{width:44px;height:44px}
+  :root[data-layout="tablet"] .input,:root[data-layout="tablet"] .select,:root[data-layout="tablet"] .qsearch__input,:root[data-layout="tablet"] textarea{font-size:16px}
+  :root[data-layout="tablet"] .ui-menu__item{min-height:44px}
+  :root[data-layout="tablet"] .vo-empty__actions .btn{height:44px;padding:0 16px}
+  /* every small control is at least 44 px wide and gets a 44 × 44 touch box (it only grows vertically past the
+     control's own width, so a neighbour never takes a tap on a control's face) */
+  :root[data-layout="tablet"] .btn--sm,:root[data-layout="tablet"] .btn,:root[data-layout="tablet"] .icon-btn,:root[data-layout="tablet"] .chip--btn,:root[data-layout="tablet"] .chip__main,:root[data-layout="tablet"] .seg__opt,
+  :root[data-layout="tablet"] .tb-more,:root[data-layout="tablet"] .tb-ai,:root[data-layout="tablet"] .rs-more--btn,:root[data-layout="tablet"] .tabs__tab,:root[data-layout="tablet"] .inv__th,:root[data-layout="tablet"] .inv__th-part{position:relative;min-width:44px}
+  :root[data-layout="tablet"] .vo-hint button{position:relative}
+  :root[data-layout="tablet"] .btn--sm::after,:root[data-layout="tablet"] .btn::after,:root[data-layout="tablet"] .icon-btn::after,:root[data-layout="tablet"] .chip--btn::after,:root[data-layout="tablet"] .chip__main::after,:root[data-layout="tablet"] .seg__opt::after,
+  :root[data-layout="tablet"] .tb-more::after,:root[data-layout="tablet"] .tb-ai::after,:root[data-layout="tablet"] .rs-more--btn::after,:root[data-layout="tablet"] .vo-legend::after,
+  :root[data-layout="tablet"] .edge-handle::after,:root[data-layout="tablet"] .vo-hint button::after,:root[data-layout="tablet"] .tabs__tab::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
+  :root[data-layout="tablet"] .icon-btn{width:44px;height:40px}
+  :root[data-layout="tablet"] .icon-btn--sm{width:44px;height:36px}
+  :root[data-layout="tablet"] .tb-ai{height:32px;justify-content:center}
+  :root[data-layout="tablet"] .tb-more{height:32px}
+  :root[data-layout="tablet"] .chrome > .topbar .btn--ghost.btn--collapse{min-width:44px;height:40px}
+  :root[data-layout="tablet"] .docs__pending button{width:44px;height:40px}
+  :root[data-layout="tablet"] .rs-more--btn{height:28px;line-height:28px;cursor:pointer}
+  /* rows that hold controls are 44 px (panel and dock tabs, the run strip), the inventory's toolbar 48, its chips
+     row 44 with 32 px chips and its column header 36 */
+  :root[data-layout="tablet"]{--tab-h:44px;--runstrip-h:44px;--toolbar-h:48px}
+  :root[data-layout="tablet"] .inv{grid-template-rows:var(--toolbar-h) 44px minmax(0,1fr) var(--foot-h)}
+  :root[data-layout="tablet"] .inv__chips .chip{min-height:32px}
+  :root[data-layout="tablet"] .vo-hint button{width:32px;height:32px}
+  :root[data-layout="tablet"]{--dock-h:122px;--dock-h-collapsed:46px}
+  :root[data-layout="tablet"] .bp__head{height:45px}
+  :root[data-layout="tablet"] .bp__mini{align-self:stretch}
+  :root[data-layout="tablet"] .bp__head .icon-btn--sm{height:40px}
+  :root[data-layout="tablet"] .bp__head .select--sm{height:40px}
+  :root[data-layout="tablet"] .bp__mini .chip{min-height:30px}
+  :root[data-layout="tablet"] .chrome > .topbar .tb-name{height:44px}
+  :root[data-layout="tablet"] .vo-legend{height:44px}
+  :root[data-layout="tablet"] .qsearch{height:44px}
+  :root[data-layout="tablet"] .inv__listwrap{grid-template-rows:44px minmax(0,1fr)}
+  :root[data-layout="tablet"] .inv__th-part{align-self:stretch}
+  /* touch-sized map buttons need room: in a narrow map the legend and table buttons (also the legend chip and the
+     top bar's Map | Table switch) step out of the right toolbar so the two toolbars never overlap */
+  @container vp (max-width:639px){
+    :root[data-layout="tablet"] .vo-toolbar--right [aria-label="Legend"],:root[data-layout="tablet"] .vo-toolbar--right [aria-label="Inventory table"]{display:none}
+    :root[data-layout="tablet"] .vo-toolbar--left{max-width:calc(100% - 262px)}
+  }
+}
+/* tablets: 12 px is the smallest text (table heads, the source check mark) */
+:root[data-layout="tablet"] .tv-th__label{font-size:12px}
+:root[data-layout="tablet"] .tv-src b{font-size:12px}
+/* tablets launched from the home screen (black-translucent status bar): the top bar starts below the status bar, the
+   rail, dock and drawers end above the home indicator; --top-h grows with it so the insets (and drawers) follow */
+:root[data-layout="tablet"]{--top-h:calc(48px + env(safe-area-inset-top,0px))}
+:root[data-layout="tablet"] .chrome > .topbar{padding-top:env(safe-area-inset-top,0px);padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+:root[data-layout="tablet"] .chrome > .rail{padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));padding-left:env(safe-area-inset-left,0px)}
+:root[data-layout="tablet"] .bottom-panel{padding-bottom:env(safe-area-inset-bottom,0px);height:calc(var(--dock-h) + env(safe-area-inset-bottom,0px))}
+:root[data-layout="tablet"] .bottom-panel.is-collapsed{height:calc(var(--dock-h-collapsed) + env(safe-area-inset-bottom,0px))}
+:root[data-layout="tablet"] .bottom-panel.is-log{height:calc(min(240px,40vh) + env(safe-area-inset-bottom,0px))}
+:root[data-layout="tablet"] .chrome > .panel-left .panel__body,:root[data-layout="tablet"] .chrome > .panel-right .panel__body{padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* ================================================================== phone: on-screen keyboard (shell/keyboard.ts) */
+/* While a field is edited the chrome steps aside: no tab bar, run strip or crew strip; the open sheet fills the map
+   column down to the keyboard (--kb-h: what the keyboard covers of the layout viewport, 0 when it shortens the
+   window); the Inspector header keeps only its first row; the toasts sit above the keyboard. */
+:root[data-layout="phone"][data-kb="open"] :is(.m-head,.m-run) .runstrip,
+:root[data-layout="phone"][data-kb="open"] .chrome > .m-tabbar,
+:root[data-layout="phone"][data-kb="open"] .m-mini{display:none}
+:root[data-layout="phone"][data-kb="open"] .m-sheet:not([data-snap="closed"]){top:0;bottom:var(--kb-h,0px);height:auto;transition:none;border-radius:0}
+:root[data-layout="phone"][data-kb="open"] .m-sheet .insp__row2,:root[data-layout="phone"][data-kb="open"] .m-sheet .insp__row3{display:none}
+:root[data-layout="phone"][data-kb="open"] .m-sheet .insp__body,:root[data-layout="phone"][data-kb="open"] .m-sheet__panel > .est,
+:root[data-layout="phone"][data-kb="open"] .m-sheet__panel > .docs{padding-bottom:24px}
+:root[data-layout="phone"][data-kb="open"] .m-sheet__panel--list .m-sheet__lead{max-height:0;border-bottom-color:transparent}
+:root[data-layout="phone"][data-kb="open"] .m-toasts{bottom:calc(var(--kb-h,0px) + 8px)}
+:root[data-layout="phone"][data-kb="open"] .ui-dialog__body,:root[data-layout="phone"][data-kb="open"] .factors__main{padding-bottom:calc(16px + var(--kb-h,0px))}

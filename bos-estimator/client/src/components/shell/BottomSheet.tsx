@@ -1,6 +1,6 @@
 // Phone bottom sheet (mobile contract): one sheet re-hosts the side panels' tabs (List, Inspector, Estimate,
-// Documents) and the crews dock. Snap points peek ≈ 25 %, half ≈ 55 %, full ≈ 92 % of the viewport (portrait), and
-// 45 / 72 / 100 % of the map column beside the tab rail (landscape). Drag the head (or the content's own header,
+// Documents) and the crews dock. Snap points peek ≈ 25 % (at least 216 px), half ≈ 55 %, full ≈ 92 % of the viewport
+// (portrait), and 58 / 80 / 100 % of the map column beside the tab rail (landscape). Drag the head (or the content's own header,
 // the drag zones below) with pointer events; release snaps with velocity (a fling goes one snap further). The handle
 // is a button: Enter / Space cycles peek → half → full, ↑ / ↓ step, and the sheet is a labelled region.
 // Heights are px on the sheet (`--m-sheet-h` on .m-main); during a drag the shell writes them every move, so the map
@@ -17,15 +17,19 @@ const SNAP_WORD: Record<SheetSnap, string> = { closed: 'closed', peek: 'peeking'
 
 export const heightOf = (z: SheetSizes, snap: SheetSnap) => (snap === 'closed' ? 0 : z[snap]);
 
-/** Snap heights from the map column (.m-main) and the window. */
-export function useSheetSizes(mainRef: RefObject<HTMLElement | null>, landscape: boolean): SheetSizes {
+/** Snap heights from the map column (.m-main) and the window. `peekMin` is the measured height the peek snap must
+ * hold (the sheet head plus the Inspector's header with its review actions); it is capped below the half snap. */
+export function useSheetSizes(mainRef: RefObject<HTMLElement | null>, landscape: boolean, peekMin = 0): SheetSizes {
   const read = useCallback((): SheetSizes => {
     const H = window.innerHeight;
     const M = Math.max(120, mainRef.current?.clientHeight ?? H - 104);
-    if (landscape) return { peek: Math.round(M * 0.45), half: Math.round(M * 0.72), full: M, main: M, landscape };
+    // landscape: the sheet is a column beside the map, so even its lowest snap is a useful height
+    if (landscape) return { peek: Math.round(M * 0.58), half: Math.round(M * 0.8), full: M, main: M, landscape };
     const full = Math.round(Math.min(H * 0.92, M - 8));
-    return { peek: Math.round(Math.min(H * 0.25, full)), half: Math.round(Math.min(H * 0.55, full)), full, main: M, landscape };
-  }, [mainRef, landscape]);
+    const half = Math.round(Math.min(Math.max(H * 0.55, 300), full));
+    // peek ≈ 25 %, but never shorter than a building summary (head + the Inspector's header with its actions)
+    return { peek: Math.round(Math.min(Math.max(H * 0.25, 216, peekMin), half - 40, full)), half, full, main: M, landscape };
+  }, [mainRef, landscape, peekMin]);
   const [z, setZ] = useState<SheetSizes>(() => (typeof window === 'undefined' ? { peek: 200, half: 440, full: 740, main: 748, landscape } : read()));
   useLayoutEffect(() => {
     const upd = () => setZ((p) => { const n = read(); return n.peek === p.peek && n.half === p.half && n.full === p.full && n.main === p.main && n.landscape === p.landscape ? p : n; });
@@ -72,10 +76,13 @@ export interface BottomSheetProps {
   className?: string;
   /** extra controls in the head (right side, before ×) */
   headEnd?: ReactNode;
+  /** the × button (default: close the sheet) and its label */
+  onClose?: () => void;
+  closeLabel?: string;
   id?: string;
 }
 
-export function BottomSheet({ snap, sizes, onSnap, title, label, onDrag, children, className, headEnd, id }: BottomSheetProps) {
+export function BottomSheet({ snap, sizes, onSnap, title, label, onDrag, children, className, headEnd, onClose, closeLabel, id }: BottomSheetProps) {
   const ref = useRef<HTMLElement>(null);
   const drag = useRef<{ id: number; y0: number; h0: number; active: boolean; samples: { t: number; y: number }[] } | null>(null);
   const suppressClick = useRef(false);
@@ -111,7 +118,10 @@ export function BottomSheet({ snap, sizes, onSnap, title, label, onDrag, childre
     if (!d.active) return;
     suppressClick.current = true;
     setTimeout(() => { suppressClick.current = false; }, 0);
-    const h = ref.current?.getBoundingClientRect().height ?? d.h0;
+    // where the finger let go (moves can be coalesced on a busy frame, so not the last height drawn)
+    if (!cancelled) d.samples.push({ t: e.timeStamp, y: e.clientY });
+    const h = cancelled ? ref.current?.getBoundingClientRect().height ?? d.h0 : Math.max(0, Math.min(sizes.full, d.h0 - (e.clientY - d.y0)));
+    while (d.samples.length > 2 && e.timeStamp - d.samples[0].t > 90) d.samples.shift();
     const a = d.samples[0], b = d.samples[d.samples.length - 1];
     const v = !cancelled && b.t > a.t ? (b.y - a.y) / (b.t - a.t) : 0;
     const next = snapFor(sizes, h, v, snap);
@@ -148,6 +158,8 @@ export function BottomSheet({ snap, sizes, onSnap, title, label, onDrag, childre
   return (
     <section ref={ref} id={id} className={cx('m-sheet', className, dragging && 'is-dragging')} data-snap={snap} role="region" aria-label={label}
       inert={!open} aria-hidden={!open || undefined}
+      // the sheet clips (overflow hidden) but a focused field can still scroll it, hiding its head: undo that
+      onScroll={(e) => { const el = e.currentTarget; if (el.scrollTop || el.scrollLeft) { el.scrollTop = 0; el.scrollLeft = 0; } }}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={(e) => end(e, false)} onPointerCancel={(e) => end(e, true)}>
       <div className="m-sheet__head">
         <button type="button" className="m-sheet__handle" onClick={cycle} onKeyDown={onHandleKey}
@@ -156,7 +168,7 @@ export function BottomSheet({ snap, sizes, onSnap, title, label, onDrag, childre
           <span className="m-sheet__title">{title}</span>
         </button>
         {headEnd}
-        <button type="button" className="m-sheet__x" aria-label={`Close ${label}`} onClick={() => onSnap('closed')}><X size={18} aria-hidden /></button>
+        <button type="button" className="m-sheet__x" aria-label={closeLabel ?? `Close ${label}`} onClick={() => (onClose ? onClose() : onSnap('closed'))}><X size={18} aria-hidden /></button>
       </div>
       <div className="m-sheet__body">{children}</div>
     </section>

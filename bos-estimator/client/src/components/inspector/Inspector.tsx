@@ -2,7 +2,7 @@
 // Sections have collapsible 32 px heads whose state persists in bos.ui.v1 (store.uiSections). Every editable field
 // commits on Enter / Tab / blur (NumField / TextField / Select), never per keystroke.
 import { memo, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Crosshair, Flag, LogIn, Plus, TriangleAlert, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsRight, CircleAlert, CircleCheck, Crosshair, Flag, LogIn, Plus, TriangleAlert, X } from 'lucide-react';
 import { useStore } from '../../store';
 import { useDerived, useTopDownLive } from '../../derived';
 import { CATEGORY_DEFAULTS, crewMeta } from '@shared/factors';
@@ -12,9 +12,9 @@ import { n0, n1, n2, signedPct } from '../../fmt';
 import { CONF_COLOR, CONF_GLYPH, CREW_ORDER, confBand, crewColor, categoryColor, deltaTone } from '../lib/theme';
 import { ISSUE_INFO, sourceCheck, sourceContext, type IssueCode } from '../lib/review';
 import { cx } from '../lib/cx';
-import { Button, Chip, Field, Fields, IconButton, NumField, Select, TextField, Tooltip } from '../ui';
+import { Button, Chip, Field, Fields, IconButton, NumField, Select, TextField, Tooltip, clickWord } from '../ui';
 import { CrewBars, Excerpt, FloorMixBar, Section, Workload, useFactorUsage } from './parts';
-import { nextNeeds, startReview, useReviewPosition } from '../inventory/reviewLoop';
+import { nextNeeds, startReview, useReviewPosition, verifyAndAdvance } from '../inventory/reviewLoop';
 import '../../styles/inspector.css';
 
 const BAND_WORD = { hi: 'high', mid: 'medium', lo: 'low' } as const;
@@ -32,8 +32,9 @@ export const Inspector = memo(function Inspector() {
 });
 
 // ------------------------------------------------------------------ shared header pieces
-/** "‹ K · 7 / 32 · J ›": the inventory's review loop (same order and wrap-around as the J / K keys). */
-function QueueNav({ id }: { id: string }) {
+/** "‹ K · 7 / 32 · J ›": the inventory's review loop (same order and wrap-around as the J / K keys). Phones show it in
+ * the sheet's head instead (always visible, even at the peek height). */
+export function QueueNav({ id }: { id: string }) {
   const pos = useReviewPosition();
   const total = pos.total;
   const only = total === 1 && pos.index === 1;
@@ -48,16 +49,30 @@ function QueueNav({ id }: { id: string }) {
   );
 }
 
+const coarsePointer = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch { return false; } };
+
 function ReviewButtons({ id }: { id: string }) {
   const status = useStore((s) => s.project?.review?.[id]?.status);
   const setReview = useStore((s) => s.setReview);
+  // touch screens have no V key: a second half of the Verify button verifies and moves on (V's behaviour)
+  const touch = useStore((s) => s.layoutMode === 'phone' || (s.layoutMode === 'tablet' && coarsePointer()));
   const verified = status === 'verified', flagged = status === 'flagged';
+  const verify = (
+    <Button size="sm" variant={verified ? 'secondary' : 'primary'} icon={CircleCheck} kbd="v" className={cx('insp__verify', verified && 'is-verified')} pressed={verified}
+      tooltip={verified ? `Verified · ${clickWord()} to clear the mark` : 'Mark as checked against the source (V)'} onClick={() => setReview([id], verified ? null : 'verified')}>{verified ? 'Verified' : 'Verify'}</Button>
+  );
   return (
     <>
-      <Button size="sm" variant={verified ? 'secondary' : 'primary'} icon={CircleCheck} kbd="v" className={cx('insp__verify', verified && 'is-verified')} pressed={verified}
-        tooltip={verified ? 'Verified · click to clear the mark' : 'Mark as checked against the source (V)'} onClick={() => setReview([id], verified ? null : 'verified')}>{verified ? 'Verified' : 'Verify'}</Button>
+      {touch ? (
+        <span className="insp__vsplit" role="group" aria-label="Verify">
+          {verify}
+          <IconButton size="sm" variant="ghost" icon={ChevronsRight} className={cx('insp__vnext', !verified && 'is-primary')} tooltip={false}
+            label={verified ? 'Next row that needs review' : 'Verify and go to the next row that needs review'}
+            onClick={() => { if (verified) nextNeeds(1); else verifyAndAdvance(); }} />
+        </span>
+      ) : verify}
       <Button size="sm" variant="secondary" icon={Flag} kbd="x" className={cx('insp__flag', flagged && 'is-flagged')} pressed={flagged}
-        tooltip={flagged ? 'Flagged · click to clear' : 'Flag for follow-up (X)'} onClick={() => setReview([id], flagged ? null : 'flagged')}>Flag</Button>
+        tooltip={flagged ? `Flagged · ${clickWord()} to clear` : 'Flag for follow-up (X)'} onClick={() => setReview([id], flagged ? null : 'flagged')}>Flag</Button>
     </>
   );
 }
@@ -92,7 +107,7 @@ function EditableName({ value, onCommit, label }: { value: string; onCommit: (v:
     );
   }
   return (
-    <Tooltip content={`${value} · click to rename`} placement="bottom-start">
+    <Tooltip content={`${value} · ${clickWord()} to rename`} placement="bottom-start">
       <button ref={btn} type="button" className="insp__name" onClick={() => setEditing(true)}><h2>{value}</h2></button>
     </Tooltip>
   );
@@ -134,7 +149,7 @@ function FacilityInspector({ f }: { f: Facility }) {
             <TextField size="sm" value={f.buildingNumber ?? ''} placeholder="#" aria-label="Building number" title={f.buildingNumber} onCommit={(v) => update(f.id, { buildingNumber: v.trim() || undefined })} />
           </span>
           <EditableName value={f.name} label="Facility name" onCommit={(v) => update(f.id, { name: v })} />
-          <IconButton icon={X} size="sm" label="Clear selection" tooltip="Clear selection (Esc)" onClick={() => s().select({ kind: null })} />
+          <IconButton icon={X} size="sm" className="insp__clear" label="Clear selection" tooltip="Clear selection (Esc)" onClick={() => s().select({ kind: null })} />
         </div>
         <div className="insp__row2">
           <span className="insp__facts">{catLabel}{f.campus ? ` · ${f.campus}` : ''} · {f.floors} fl</span>
@@ -339,7 +354,7 @@ function GroundsInspector({ g }: { g: GroundsArea }) {
         <div className="insp__row1">
           <span className="insp__swatch" aria-hidden style={{ background: 'var(--ok)' }} />
           <EditableName value={g.name} label="Grounds area name" onCommit={(v) => update(g.id, { name: v })} />
-          <IconButton icon={X} size="sm" label="Clear selection" tooltip="Clear selection (Esc)" onClick={() => s().select({ kind: null })} />
+          <IconButton icon={X} size="sm" className="insp__clear" label="Clear selection" tooltip="Clear selection (Esc)" onClick={() => s().select({ kind: null })} />
         </div>
         <div className="insp__row2">
           <span className="insp__facts">{kind?.label ?? g.kind}{g.documentLabel ? ` · ${g.documentLabel}` : ''}{g.campus ? ` · ${g.campus}` : ''}{parent ? ` · at ${parent.buildingNumber ?? parent.name}` : ''}</span>

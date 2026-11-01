@@ -3,6 +3,7 @@
 
 import { useEffect, useLayoutEffect, type RefObject } from 'react';
 import { useStore, type UiZoom } from '../../store';
+import { KB_EVENT, keyboardOpen } from './keyboard';
 
 export interface Insets { top: number; right: number; bottom: number; left: number }
 export interface InsetsEvent extends Insets { animating: boolean }
@@ -49,19 +50,14 @@ export function useInsetsWriter(vpRef: RefObject<HTMLElement | null>, chromeRef:
     let settle: ReturnType<typeof setTimeout> | null = null;
 
     const measure = (): Insets => {
-      const r = el.getBoundingClientRect(); // already includes CSS zoom and running track transitions
-      let left = r.left, right = window.innerWidth - r.right;
-      // tablet slide-over drawers lie over the free rect without resizing it: the free rect is what they leave
-      // uncovered (their rect follows the slide transform, so a closed drawer covers nothing)
-      chromeRef.current?.querySelectorAll<HTMLElement>('[data-inset-cover]').forEach((d) => {
-        const c = d.getBoundingClientRect();
-        if (c.width < 1 || c.bottom <= r.top || c.top >= r.bottom) return;
-        if (d.dataset.insetCover === 'left') left = Math.max(left, Math.min(r.right, c.right));
-        else right = Math.max(right, Math.min(window.innerWidth - r.left, window.innerWidth - c.left));
-      });
-      return { top: Math.round(r.top), left: Math.round(left), right: Math.round(right), bottom: Math.round(window.innerHeight - r.bottom) };
+      // already includes CSS zoom, running track transitions and the tablet drawers' margin slide
+      const r = el.getBoundingClientRect();
+      return { top: Math.round(r.top), left: Math.round(r.left), right: Math.round(window.innerWidth - r.right), bottom: Math.round(window.innerHeight - r.bottom) };
     };
     const publish = (animating: boolean) => {
+      // phone: while the on-screen keyboard is open the map is hidden behind the sheet (or the window is shortened
+      // for a moment); the camera keeps its framing and the rect is published again once the keyboard closes
+      if (keyboardOpen()) return;
       const i = measure();
       const changed = i.top !== last.top || i.right !== last.right || i.bottom !== last.bottom || i.left !== last.left;
       if (changed) {
@@ -78,7 +74,8 @@ export function useInsetsWriter(vpRef: RefObject<HTMLElement | null>, chromeRef:
     };
     const enforceMinimum = () => {
       const mode = useStore.getState().layoutMode;
-      // phones size the map around the sheet; tablet drawers are slid over the map by the user, never auto-closed
+      // phones size the map around the sheet; tablet drawers are opened and closed by the user (one at a time
+      // below 1024 px, see useTabletDrawers), never auto-closed for room
       if (mode === 'phone') return;
       const r = el.getBoundingClientRect();
       const z = parseFloat(getComputedStyle(root).getPropertyValue('--ui-zoom')) || 1;
@@ -96,30 +93,22 @@ export function useInsetsWriter(vpRef: RefObject<HTMLElement | null>, chromeRef:
       settle = setTimeout(() => { settle = null; publish(false); enforceMinimum(); }, 150);
     };
 
-    // a slide-over drawer moves by transform, which resizes nothing: follow it frame by frame while it slides
-    let raf = 0, sliding = 0;
-    const mover = (e: Event) => e.target instanceof Element && e.target.matches('[data-inset-cover]') && /transform|translate/.test((e as TransitionEvent).propertyName);
-    const loop = () => { onChange(); raf = sliding > 0 ? requestAnimationFrame(loop) : 0; };
-    const onRun = (e: Event) => { onChange(); if (mover(e)) { sliding++; if (!raf) raf = requestAnimationFrame(loop); } };
-    const onEnd = (e: Event) => { if (mover(e)) sliding = Math.max(0, sliding - 1); onChange(); };
-
     publish(false);
     enforceMinimum();
     const ro = new ResizeObserver(onChange);
     ro.observe(el);
     window.addEventListener('resize', onChange);
+    window.addEventListener(KB_EVENT, onChange);
     const chrome = chromeRef.current;
-    chrome?.addEventListener('transitionrun', onRun);
-    chrome?.addEventListener('transitionend', onEnd);
-    chrome?.addEventListener('transitioncancel', onEnd);
+    chrome?.addEventListener('transitionrun', onChange);
+    chrome?.addEventListener('transitionend', onChange);
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', onChange);
-      chrome?.removeEventListener('transitionrun', onRun);
-      chrome?.removeEventListener('transitionend', onEnd);
-      chrome?.removeEventListener('transitioncancel', onEnd);
+      window.removeEventListener(KB_EVENT, onChange);
+      chrome?.removeEventListener('transitionrun', onChange);
+      chrome?.removeEventListener('transitionend', onChange);
       if (settle) clearTimeout(settle);
-      if (raf) cancelAnimationFrame(raf);
     };
   }, [vpRef, chromeRef, mode]);
 }
@@ -142,4 +131,24 @@ export function usePanelAutoRules() {
     if (s.layoutMode === 'phone') return;
     if (selKind && !s.rightOpen && !s.rightUserCollapsed) s.setRightOpen(true);
   }, [selKind]);
+}
+
+/**
+ * Tablet below 1024 px: the left and right panels are slide-over drawers and only one is open at a time. Opening one
+ * closes the other (the right panel without marking it user-collapsed, so the next selection opens it again).
+ */
+export function useTabletDrawers() {
+  useEffect(() => {
+    const narrow = () => useStore.getState().layoutMode === 'tablet' && window.innerWidth < 1024;
+    const off = useStore.subscribe((s, prev) => {
+      if (!narrow()) return;
+      if (s.leftOpen && !prev.leftOpen && s.rightOpen) s.setRightOpen(false);
+      else if (s.rightOpen && !prev.rightOpen && s.leftOpen) s.setLeftOpen(false);
+      // arriving here with both open (a rotation to portrait, a desktop window narrowed): the drawer gives way
+      else if (s.leftOpen && s.rightOpen && s.layoutMode !== prev.layoutMode) s.setLeftOpen(false);
+    });
+    const onResize = () => { const s = useStore.getState(); if (narrow() && s.leftOpen && s.rightOpen) s.setLeftOpen(false); };
+    window.addEventListener('resize', onResize);
+    return () => { off(); window.removeEventListener('resize', onResize); };
+  }, []);
 }

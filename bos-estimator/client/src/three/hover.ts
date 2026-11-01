@@ -20,7 +20,13 @@ export function hoverFromScene(id: string | null, opts?: { touch?: boolean }) {
  * What a synthesized tap click landed on. TouchControls sets `active` around the click it dispatches; the
  * scene's click handlers report the first (nearest) thing they handle.
  */
-export const tapCtx = { active: false, hit: null as null | { kind: 'facility' | 'grounds' | 'agent' | 'ground'; id?: string } };
+export const tapCtx = {
+  active: false, hit: null as null | { kind: 'facility' | 'grounds' | 'agent' | 'ground'; id?: string },
+  /** crew pick radius (px) for this tap: a fingertip's slack only when the tap is not on a building or pad */
+  agentPx: null as number | null,
+  /** performance.now() when TouchControls resolved a tap on a label to something else (the label's click is void) */
+  labelTapAt: -Infinity,
+};
 export function noteTap(kind: 'facility' | 'grounds' | 'agent' | 'ground', id?: string) {
   if (tapCtx.active && !tapCtx.hit) tapCtx.hit = { kind, id };
 }
