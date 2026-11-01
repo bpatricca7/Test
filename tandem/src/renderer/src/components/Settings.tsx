@@ -1,9 +1,85 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
+import type { RemoteInfo } from '@shared/types'
 import type { PolicyMode } from '@shared/types'
 import { POLICY_LABEL } from '@shared/types'
-import { BadgeCheck, KeyRound } from 'lucide-react'
+import { BadgeCheck, KeyRound, RefreshCw, Smartphone } from 'lucide-react'
 import { useStore } from '../store'
 import { Switch } from './ui'
+
+function RemoteCard(): React.JSX.Element {
+  const settings = useStore((s) => s.settings)
+  const update = useStore((s) => s.updateSettings)
+  const [info, setInfo] = useState<RemoteInfo>()
+  const [qr, setQr] = useState<string>()
+  const refresh = async (): Promise<void> => {
+    const i = await window.tandem.remoteInfo()
+    setInfo(i)
+    if (i.urls[0]) setQr(await QRCode.toDataURL(i.urls[0], { margin: 1, width: 220, color: { dark: '#eef0f5', light: '#00000000' } }))
+    else setQr(undefined)
+  }
+  useEffect(() => {
+    void refresh()
+    const t = setInterval(() => void refresh(), 4000)
+    return () => clearInterval(t)
+  }, [settings?.remoteEnabled, settings?.remoteToken])
+  if (!settings) return <></>
+  return (
+    <div className="card" data-testid="remote-card">
+      <h3>
+        <Smartphone size={14} style={{ verticalAlign: -2, marginRight: 6 }} />
+        Phone remote
+      </h3>
+      <div className="sub">Watch sessions, answer approvals, send briefs and see your screen from your phone. Tandem serves the page itself; nothing leaves your network.</div>
+      <div className="toggle-row">
+        <div>
+          <div className="t">Allow control from my phone</div>
+          <div className="d">Starts a local server on port {info?.port ?? settings.remotePort ?? 47831}. Anyone with the QR code can drive your agents, so treat it like a password.</div>
+        </div>
+        <Switch on={Boolean(settings.remoteEnabled)} onChange={(v) => void update({ remoteEnabled: v })} />
+      </div>
+      <div className="toggle-row">
+        <div>
+          <div className="t">Share my Mac screen</div>
+          <div className="d">Live view on the Screen tab. macOS asks for Screen Recording permission the first time.</div>
+        </div>
+        <Switch on={Boolean(settings.remoteShareScreen)} onChange={(v) => void update({ remoteShareScreen: v })} disabled={!settings.remoteEnabled} />
+      </div>
+      {settings.remoteEnabled && info && (
+        <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start', marginTop: 14, flexWrap: 'wrap' }}>
+          <div style={{ width: 220, height: 220, borderRadius: 14, background: 'var(--bg-1)', border: '1px solid var(--line)', display: 'grid', placeItems: 'center' }}>
+            {qr ? <img src={qr} alt="Pair QR" width={200} height={200} /> : <span style={{ color: 'var(--text-3)', fontSize: 12, padding: 16, textAlign: 'center' }}>No network address found. Join Wi-Fi or Tailscale.</span>}
+          </div>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <div className="sub" style={{ marginBottom: 6 }}>
+              {info.running ? 'Scan with your phone’s camera. Same Wi-Fi, or any VPN that reaches this Mac (Tailscale works well).' : info.error ? `Not running: ${info.error}` : 'Starting…'}
+            </div>
+            {info.urls.map((u) => (
+              <div key={u} className="mono" style={{ fontSize: 11.5, color: 'var(--text-2)', userSelect: 'text', wordBreak: 'break-all', marginBottom: 4 }}>
+                {u.replace(/\?t=.*$/, '')} <span style={{ color: 'var(--text-4)' }}>+ token</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button type="button" className="btn xs" onClick={() => void navigator.clipboard.writeText(info.urls[0] ?? '')} disabled={!info.urls[0]}>
+                Copy link
+              </button>
+              <button
+                type="button"
+                className="btn xs"
+                onClick={async () => {
+                  setInfo(await window.tandem.remoteRotateToken())
+                }}
+                title="Invalidates every paired phone"
+              >
+                <RefreshCw size={12} /> New code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function SettingsView(): React.JSX.Element {
   const settings = useStore((s) => s.settings)
@@ -63,6 +139,8 @@ export function SettingsView(): React.JSX.Element {
             )}
             {msg && <div className="sub" style={{ marginTop: 8 }}>{msg}</div>}
           </div>
+
+          <RemoteCard />
 
           <div className="card">
             <h3>Defaults</h3>

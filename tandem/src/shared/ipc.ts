@@ -14,7 +14,8 @@ import type {
   TimelineEvent,
   TimelineItem,
   Capabilities,
-  BrowserState
+  BrowserState,
+  RemoteInfo
 } from './types'
 
 export const IPC = {
@@ -58,6 +59,9 @@ export const IPC = {
   browserForward: 'browser:forward',
   browserReload: 'browser:reload',
   browserState: 'browser:state',
+  // phone remote
+  remoteInfo: 'remote:info',
+  remoteRotate: 'remote:rotate',
   // settings / license
   settingsGet: 'settings:get',
   settingsSet: 'settings:set',
@@ -108,6 +112,9 @@ export interface TandemApi {
   browserForward(): Promise<BrowserState>
   browserReload(): Promise<BrowserState>
   browserState(): Promise<BrowserState>
+
+  remoteInfo(): Promise<RemoteInfo>
+  remoteRotateToken(): Promise<RemoteInfo>
 
   settingsGet(): Promise<Settings>
   settingsSet(patch: Partial<Settings>): Promise<Settings>

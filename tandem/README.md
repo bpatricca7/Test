@@ -28,6 +28,9 @@ Tandem is a one-time purchase that makes them work as a team.
 Plus:
 
 - **In-app browser.** A real Chromium pane docked inside Tandem that either agent can navigate, snapshot, click, type in and screenshot, while you watch (and can take over with the mouse). Logins persist in Tandem's own browser profile.
+- **Phone remote.** Tandem serves a small web app from the Mac. Scan the QR code in Settings and
+  your phone gets the session list, live timelines, approval cards with Allow / Always / Deny, a
+  composer, and a live view of the Mac screen or the Tandem browser.
 - **Side-by-side mode.** Send the same prompt to both agents and compare them in split view.
 - **Hand-off.** One click sends the task, the original request, and the last update to the other agent in a fresh session in the same folder.
 - **Embedded terminal.** Open the raw `claude` or `codex` TUI in a tab when you want the native experience (and for Claude computer use, which the CLI only offers interactively).
@@ -113,6 +116,23 @@ reload stay usable by you. Toggle it per session with the **Tandem browser** chi
   use it. That needs Node/npx on the Mac and opens its own Chrome window. It is a bridge, not
   OpenAI's native integration.
 
+### The phone remote
+
+`src/main/services/remote.ts` runs a plain Node HTTP server on all interfaces (default port 47831)
+when **Settings → Phone remote** is on. It serves the PWA built from `src/remote/` and a JSON API
+(`/api/state`, `/api/sessions/:id/items`, `/api/sessions/:id/send|interrupt|policy`,
+`/api/approve`, `/api/sessions`, `/api/screen.jpg`, `/api/browser.png`) plus `/api/events`, a
+Server-Sent Events stream of the same timeline events the desktop UI gets. Every request needs the
+pairing token: the QR code carries it as `?t=`, the first visit moves it into an HttpOnly cookie,
+and the Mac compares it in constant time. "New code" in Settings rotates it and drops every paired
+phone. Screen frames come from Electron's `desktopCapturer` (macOS asks for Screen Recording the
+first time) and are only served when "Share my Mac screen" is on.
+
+Reach: the phone needs a route to the Mac. Same Wi-Fi works out of the box; for anywhere else,
+put both devices on Tailscale (or any VPN) and scan the same QR code. There is no relay server,
+by design: nothing about your sessions leaves machines you control. Add the page to your home
+screen for a full-screen app; approvals vibrate and ping while the page is open.
+
 ## Development
 
 ```bash
@@ -133,6 +153,7 @@ terminal falls back to a plain pipe.
 ```bash
 npm run build
 node e2e/screenshot.mjs --demo     # launches the built app via Playwright and writes e2e/shots/*.png
+node e2e/live-remote.mjs           # boots the app with the remote on and drives it from a phone-sized browser
 ```
 
 ## Building the Mac app

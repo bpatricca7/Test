@@ -285,6 +285,11 @@ export interface Settings {
   trialStartedAt?: number
   licenseKey?: string
   recentFolders: string[]
+  /** Phone remote */
+  remoteEnabled?: boolean
+  remotePort?: number
+  remoteToken?: string
+  remoteShareScreen?: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -293,6 +298,17 @@ export const DEFAULT_SETTINGS: Settings = {
   showReasoning: true,
   soundOnApproval: true,
   recentFolders: []
+}
+
+export interface RemoteInfo {
+  enabled: boolean
+  running: boolean
+  port: number
+  token: string
+  /** Reachable URLs on this machine's networks, token included. */
+  urls: string[]
+  shareScreen: boolean
+  error?: string
 }
 
 export interface AppInfo {

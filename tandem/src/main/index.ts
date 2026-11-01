@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from 'electron'
+import { app, BrowserWindow, desktopCapturer, dialog, ipcMain, nativeTheme, shell } from 'electron'
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { IPC } from '@shared/ipc'
@@ -12,6 +12,8 @@ import { SessionStore } from './services/store'
 import { TerminalManager } from './services/terminal'
 import { InAppBrowser } from './services/inAppBrowser'
 import { BrowserMcpServer } from './services/browserMcp'
+import { lanAddresses, newRemoteToken, RemoteServer } from './services/remote'
+import type { RemoteInfo } from '@shared/types'
 import { claudePermissionMode } from '@shared/policy'
 import { setClaudeComputerUseEnabled } from './agents/claude/ClaudeSession'
 
@@ -32,7 +34,9 @@ let accounts: Record<AgentKind, AccountState> = {
 
 function emit(ev: TimelineEvent): void {
   if (win && !win.isDestroyed()) win.webContents.send(IPC.event, ev)
+  remote?.broadcast(ev)
 }
+let remote: RemoteServer | undefined
 
 function claudeBinary(): string | undefined {
   return findClaudeBinary(settings.get().claudeBinary)
@@ -91,6 +95,72 @@ const sessions = new SessionManager({
   defaultEffort: (agent) => (agent === 'codex' ? settings.get().codexEffort : undefined),
   browserMcp: () => (browserMcp.port ? browserMcp.endpoint : undefined)
 })
+
+const REMOTE_DEFAULT_PORT = 47831
+function remoteToken(): string {
+  let t = settings.get().remoteToken
+  if (!t) {
+    t = newRemoteToken()
+    settings.set({ remoteToken: t })
+  }
+  return t
+}
+async function captureScreen(): Promise<Buffer | undefined> {
+  if (!settings.get().remoteShareScreen) return undefined
+  try {
+    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1440, height: 900 } })
+    const src = sources[0]
+    if (!src || src.thumbnail.isEmpty()) return undefined
+    return src.thumbnail.toJPEG(62)
+  } catch {
+    return undefined
+  }
+}
+function getRemote(): RemoteServer {
+  if (!remote) {
+    remote = new RemoteServer({
+      token: remoteToken,
+      settings: () => settings.get(),
+      accounts: () => accounts,
+      sessions,
+      models: async (agent) => {
+        if (agent === 'codex') {
+          const server = getCodexServer()
+          return server ? listCodexModels(server) : []
+        }
+        if (!claudeProbe.value) await refreshAccounts(true)
+        return claudeProbe.value?.models ?? []
+      },
+      screen: captureScreen,
+      browser: async () => {
+        if (!browser?.isOpen) return undefined
+        const shot = await browser.screenshot()
+        return Buffer.from(shot.base64, 'base64')
+      },
+      appDir: join(__dirname, '../remote'),
+      version: app.getVersion()
+    })
+  }
+  return remote
+}
+async function syncRemote(): Promise<void> {
+  const st = settings.get()
+  const r = getRemote()
+  if (st.remoteEnabled && !r.running) {
+    try {
+      await r.start(st.remotePort ?? REMOTE_DEFAULT_PORT)
+    } catch (e) {
+      emit({ type: 'toast', level: 'error', text: `Phone remote could not start: ${(e as Error).message}` })
+    }
+  } else if (!st.remoteEnabled && r.running) await r.stop()
+}
+function remoteInfo(): RemoteInfo {
+  const st = settings.get()
+  const r = getRemote()
+  const token = remoteToken()
+  const port = r.running ? r.port : (st.remotePort ?? REMOTE_DEFAULT_PORT)
+  return { enabled: Boolean(st.remoteEnabled), running: r.running, port, token, urls: lanAddresses().map((ip) => `http://${ip}:${port}/?t=${token}`), shareScreen: Boolean(st.remoteShareScreen), error: r.lastError }
+}
 
 let refreshing: Promise<Record<AgentKind, AccountState>> | undefined
 async function refreshAccounts(deep: boolean): Promise<Record<AgentKind, AccountState>> {
@@ -265,11 +335,23 @@ function registerIpc(): void {
   ipcMain.handle(IPC.browserReload, () => ensureBrowser().reload())
   ipcMain.handle(IPC.browserState, () => (browser ? browser.state() : { open: false, url: '', title: '', loading: false, canGoBack: false, canGoForward: false }))
 
+  ipcMain.handle(IPC.remoteInfo, () => remoteInfo())
+  ipcMain.handle(IPC.remoteRotate, async () => {
+    settings.set({ remoteToken: newRemoteToken() })
+    const r = getRemote()
+    if (r.running) {
+      await r.stop()
+      await syncRemote()
+    }
+    return remoteInfo()
+  })
+
   ipcMain.handle(IPC.settingsGet, () => settings.get())
   ipcMain.handle(IPC.settingsSet, (_e, patch: Partial<Settings>) => {
     const next = settings.set(patch)
     if (patch.theme) nativeTheme.themeSource = patch.theme
     if (patch.claudeBinary !== undefined || patch.codexBinary !== undefined) void refreshAccounts(true)
+    if (patch.remoteEnabled !== undefined || patch.remotePort !== undefined) void syncRemote()
     return next
   })
   ipcMain.handle(IPC.licenseGet, () => evaluateLicense(settings.get()))
@@ -293,6 +375,7 @@ void app.whenReady().then(async () => {
   registerIpc()
   createWindow()
   void refreshAccounts(true)
+  void syncRemote()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
@@ -313,6 +396,7 @@ app.on('before-quit', (e) => {
       await sessions.shutdown()
       await codexServer?.stop()
       await browserMcp.stop()
+      await remote?.stop()
     } finally {
       app.exit(0)
     }
