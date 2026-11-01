@@ -14,6 +14,25 @@ export type Selection = { kind: 'facility'; id: string } | { kind: 'grounds'; id
 
 // ---------------- UI contract shared with the 3D scene (see the UI spec §2.4) ----------------
 export type CenterView = 'map' | 'table';
+/**
+ * Responsive layout mode (mobile contract). The SHELL keeps it in sync from matchMedia (client/src/components/shell/
+ * responsive.ts); the scene reads it and never writes it. phone: width < 768, or a short landscape window
+ * (height < 540 and width < 1280); tablet: 768–1279; desktop: >= 1280 (unchanged).
+ */
+export type LayoutMode = 'desktop' | 'tablet' | 'phone';
+/** Phone bottom sheet snap points: peek ≈ 25 %, half ≈ 55 %, full ≈ 92 % of the viewport height. */
+export type SheetSnap = 'closed' | 'peek' | 'half' | 'full';
+/** Phone tab bar: which surface the sheet shows ('map' = no sheet content, the map alone). */
+export type SheetTab = 'map' | 'list' | 'inspector' | 'estimate' | 'documents';
+export interface SheetState { snap: SheetSnap; tab: string }
+export const PHONE_QUERY = '(max-width: 767.98px), (max-height: 539.98px) and (max-width: 1279.98px)';
+export const TABLET_QUERY = '(max-width: 1279.98px)';
+/** Layout mode for a window size (the same thresholds as PHONE_QUERY / TABLET_QUERY). */
+export function layoutModeFor(width: number, height: number): LayoutMode {
+  if (width < 768 || (height < 540 && width < 1280)) return 'phone';
+  if (width < 1280) return 'tablet';
+  return 'desktop';
+}
 export type ColorBy = 'category' | 'confidence' | 'review' | 'fte';
 export type LabelMode = 'auto' | 'numbers' | 'off';
 export type Lighting = 'review' | 'live';
@@ -150,6 +169,11 @@ interface State {
   filterIds: ReadonlySet<string> | null;
   camCmd: CamCmd;
   layoutEpoch: number;
+  // --- layout contract (SHELL writes, scene reads) ---
+  /** responsive layout; the scene reads it and never writes it */
+  layoutMode: LayoutMode;
+  /** phone bottom sheet: snap point and the tab-bar tab it shows */
+  sheet: SheetState;
   // --- SHELL-only ---
   leftOpen: boolean;
   leftTab: LeftTab;
@@ -245,6 +269,12 @@ interface State {
   /** status null (or 'unreviewed') clears the mark; one store write and one save for any number of ids */
   setReview(ids: string[], status: ReviewStatus | null, note?: string): void;
   restorePrevious(): Promise<void>;
+  // --- layout contract actions (SHELL only) ---
+  setLayoutMode(m: LayoutMode): void;
+  /** merge into the sheet state (snap and / or tab) */
+  setSheet(patch: Partial<SheetState>): void;
+  setSheetSnap(snap: SheetSnap): void;
+  setSheetTab(tab: string): void;
   // --- SHELL-only actions ---
   setLeftOpen(v: boolean): void;
   setLeftTab(t: LeftTab): void;
@@ -410,6 +440,8 @@ export const useStore = create<State>((set, get) => {
     filterIds: null,
     camCmd: { kind: 'fit-site', seq: 0 },
     layoutEpoch: 0,
+    layoutMode: layoutModeFor(typeof window === 'undefined' ? 1440 : window.innerWidth, innerH()),
+    sheet: { snap: 'closed', tab: 'map' },
     leftOpen: true,
     leftTab: 'documents',
     leftBeforeTable: null,
@@ -965,6 +997,12 @@ export const useStore = create<State>((set, get) => {
       const s = get().sim; if (!s.playing) return;
       set({ sim: { ...s, time: (s.time + (dt * s.speed) / 60) % 24 } });
     },
+
+    // ------------------------------------------------------------------ layout contract
+    setLayoutMode(m) { if (get().layoutMode !== m) set({ layoutMode: m }); },
+    setSheet(patch) { set((s) => ({ sheet: { ...s.sheet, ...patch } })); },
+    setSheetSnap(snap) { set((s) => (s.sheet.snap === snap ? {} : { sheet: { ...s.sheet, snap } })); },
+    setSheetTab(tab) { set((s) => (s.sheet.tab === tab ? {} : { sheet: { ...s.sheet, tab } })); },
 
     // ------------------------------------------------------------------ SHELL-only UI
     setLeftOpen(v) { set({ leftOpen: v }); },
