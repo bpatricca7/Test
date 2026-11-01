@@ -118,6 +118,9 @@ reload stay usable by you. Toggle it per session with the **Tandem browser** chi
 
 ### The phone remote
 
+Try the phone UI anywhere with simulated agents: `npm run build:phone-demo` writes a self-contained
+`out/phone-demo.html` (the backend in `src/remote/mock.ts` stands in for the Mac).
+
 Quickest way to try it on a Mac: `npm install && npm run phone`. That builds Tandem, launches it
 with the remote switched on, and prints a QR code in the terminal. Scan it with your phone camera
 on the same Wi-Fi.

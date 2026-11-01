@@ -23,7 +23,8 @@
     "rebuild": "electron-builder install-app-deps",
     "build:remote": "vite build --config vite.remote.config.ts",
     "e2e:remote": "node e2e/live-remote.mjs",
-    "phone": "npm run build && TANDEM_REMOTE=1 electron-vite preview"
+    "phone": "npm run build && TANDEM_REMOTE=1 electron-vite preview",
+    "build:phone-demo": "vite build --config vite.remote.config.ts --mode demo && node scripts/build-phone-demo.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",

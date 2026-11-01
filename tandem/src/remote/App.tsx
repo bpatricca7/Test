@@ -3,7 +3,9 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { AgentKind, ApprovalItem, PolicyMode, SessionMeta, TimelineEvent, TimelineItem, ToolItem } from '@shared/types'
 import { POLICY_LABEL } from '@shared/types'
-import { api, type RemoteState } from './api'
+import { api, DEMO } from '@backend'
+import type { RemoteState } from './types'
+import iconUrl from '../renderer/public/icon.png'
 
 type Tab = 'sessions' | 'chat' | 'screen'
 
@@ -152,10 +154,15 @@ export function App(): React.JSX.Element {
   return (
     <div className="app">
       <div className="top">
-        <img src="icon.png" alt="" />
+        <img src={iconUrl} alt="" />
         <h1>{tab === 'chat' && active ? active.title : tab === 'screen' ? 'Screen' : 'Tandem'}</h1>
         <span className={`pip ${connected ? 'ok' : 'bad'}`} title={connected ? 'Connected to your Mac' : 'Reconnecting…'} />
       </div>
+      {DEMO && (
+        <div className="demo-banner">
+          <b>Demo</b> · simulated Mac and agents. Approve, deny, stop and send briefs to see how it feels. The real thing runs from Tandem on your Mac.
+        </div>
+      )}
       <div className="scroll">
         {tab === 'sessions' && <Sessions state={state} sessions={sessions} onOpen={(id) => void open(id)} onNew={() => setSheet(true)} />}
         {tab === 'chat' && (active ? <Chat pair={pair} items={items} toast={toast} /> : <div className="empty">Pick a session first.</div>)}
@@ -482,16 +489,14 @@ function Screen({ shareScreen }: { shareScreen: boolean }): React.JSX.Element {
         return
       }
       try {
-        const r = await fetch(`./api/${src === 'screen' ? 'screen.jpg' : 'browser.png'}?ts=${Date.now()}`)
-        if (!r.ok) {
-          const j = (await r.json()) as { error?: string }
-          setErr(j.error ?? `${r.status}`)
+        const f = await api.frame(src)
+        if (!f.url) {
+          setErr(f.error ?? 'No image')
           setUrl(undefined)
         } else {
-          const blob = await r.blob()
           setUrl((old) => {
-            if (old) URL.revokeObjectURL(old)
-            return URL.createObjectURL(blob)
+            if (old?.startsWith('blob:')) URL.revokeObjectURL(old)
+            return f.url
           })
           setErr(undefined)
         }

@@ -24,6 +24,9 @@
       ],
       "@/*": [
         "src/renderer/src/*"
+      ],
+      "@backend": [
+        "src/remote/live.ts"
       ]
     }
   },
