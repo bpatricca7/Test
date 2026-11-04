@@ -1,0 +1,1043 @@
+<title>Instagram Reach Study</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: a lab-report reading column (~68ch) beside a sticky contents rail; charts span the full column. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #12161d;
+  --ink-2: #4a5261;
+  --muted: #778091;
+  --rule: #dde1e7;
+  --accent: #0c6b5d;
+  --accent-wash: #e2f1ed;
+  --ev-ig-bg: #e5eefb; --ev-ig-fg: #1b4e8e;
+  --ev-data-bg: #fbefd9; --ev-data-fg: #774700;
+  --ev-model-bg: #ece9fb; --ev-model-fg: #47379c;
+  --ev-stats-bg: #dff1ec; --ev-stats-fg: #0b5a4d;
+  --good: #0a7a0a; --bad: #b8322f;
+  /* chart tokens (validated reference palette, slots 1-3) */
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --grid: #e1e0d9; --axis: #c3c2b7; --tick: #77756f; --zone: rgba(42,120,214,0.10);
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1116; --surface: #161a21; --ink: #eceff3; --ink-2: #b6bdc9; --muted: #8b93a1; --rule: #283039;
+    --accent: #5ccab6; --accent-wash: #12302a;
+    --ev-ig-bg: #15253b; --ev-ig-fg: #9fc4f4; --ev-data-bg: #32260f; --ev-data-fg: #f0c674;
+    --ev-model-bg: #231e3b; --ev-model-fg: #bcb1f5; --ev-stats-bg: #12302a; --ev-stats-fg: #82d9c5;
+    --good: #2fbf4a; --bad: #f07a76;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    --grid: #2c2f33; --axis: #3d4046; --tick: #949aa3; --zone: rgba(57,135,229,0.16);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1116; --surface: #161a21; --ink: #eceff3; --ink-2: #b6bdc9; --muted: #8b93a1; --rule: #283039;
+  --accent: #5ccab6; --accent-wash: #12302a;
+  --ev-ig-bg: #15253b; --ev-ig-fg: #9fc4f4; --ev-data-bg: #32260f; --ev-data-fg: #f0c674;
+  --ev-model-bg: #231e3b; --ev-model-fg: #bcb1f5; --ev-stats-bg: #12302a; --ev-stats-fg: #82d9c5;
+  --good: #2fbf4a; --bad: #f07a76;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+  --grid: #2c2f33; --axis: #3d4046; --tick: #949aa3; --zone: rgba(57,135,229,0.16);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.62; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+.wrap {
+  max-width: 1160px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 96px;
+  display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 56px;
+}
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 28px); align-self: start; font-size: 14px; }
+.toc p { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.toc a { color: var(--ink-2); text-decoration: none; }
+.toc a:hover { color: var(--accent); }
+main { min-width: 0; max-width: 780px; }
+
+header.hero { padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 8px; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; letter-spacing: -0.015em; }
+h1 { font-size: clamp(34px, 5.4vw, 54px); line-height: 1.04; font-weight: 700; margin: 0 0 18px; }
+h2 { font-size: clamp(26px, 3.4vw, 32px); line-height: 1.15; font-weight: 700; margin: 0 0 12px; }
+h3 { font-size: 19px; line-height: 1.3; font-weight: 700; margin: 30px 0 8px; }
+p, li { max-width: 68ch; }
+.lede { font-size: 18.5px; color: var(--ink-2); margin: 0 0 22px; }
+section { padding-top: 52px; scroll-margin-top: 20px; }
+section > p:first-of-type { margin-top: 0; }
+.small { font-size: 14px; color: var(--ink-2); }
+.mono { font-family: var(--f-mono); font-size: 0.92em; }
+strong { font-weight: 600; }
+
+.keynums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 26px 0 22px; }
+.keynum { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 16px 14px; min-width: 0; }
+.keynum b { display: block; font-family: var(--f-display); font-size: 34px; line-height: 1.05; font-weight: 700; margin-bottom: 6px; }
+.keynum span { font-size: 14px; color: var(--ink-2); display: block; }
+.keynum .ev { display: inline-block; margin-top: 10px; }
+
+.ev { display: inline-block; font-family: var(--f-mono); font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; white-space: nowrap; vertical-align: 2px; }
+.ev-ig { background: var(--ev-ig-bg); color: var(--ev-ig-fg); }
+.ev-data { background: var(--ev-data-bg); color: var(--ev-data-fg); }
+.ev-model { background: var(--ev-model-bg); color: var(--ev-model-fg); }
+.ev-stats { background: var(--ev-stats-bg); color: var(--ev-stats-fg); }
+.evkey { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--ink-2); }
+.evkey div { display: flex; gap: 8px; align-items: baseline; }
+
+ol.findings { counter-reset: f; list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 0; }
+ol.findings > li { counter-increment: f; display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 4px 12px; padding: 16px 0; border-top: 1px solid var(--rule); max-width: none; }
+ol.findings > li::before { content: counter(f); font-family: var(--f-mono); font-size: 14px; color: var(--muted); padding-top: 2px; }
+ol.findings h4 { font-family: var(--f-body); font-size: 16.5px; font-weight: 600; margin: 0 0 4px; line-height: 1.4; }
+ol.findings p { margin: 0; color: var(--ink-2); font-size: 15px; }
+ol.findings .ev { margin-left: 6px; }
+
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 18px 18px 14px; margin: 22px 0; min-width: 0; }
+.panel h4 { font-family: var(--f-body); font-weight: 600; font-size: 15.5px; margin: 0 0 2px; }
+.panel .sub { font-size: 13.5px; color: var(--ink-2); margin: 0 0 10px; }
+.chart { width: 100%; min-width: 0; position: relative; }
+.chart svg { display: block; overflow: visible; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); margin: 2px 0 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
+.legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.duo > div { min-width: 0; }
+.source { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+
+svg text { font-family: var(--f-body); }
+.grid { stroke: var(--grid); stroke-width: 1; }
+.axis { stroke: var(--axis); stroke-width: 1; }
+.tick { fill: var(--tick); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.axlabel { fill: var(--tick); font-size: 11.5px; }
+.vlabel { fill: var(--ink-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+.catlabel { fill: var(--ink); font-size: 12.5px; }
+.ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.ln.base { stroke: var(--muted); }
+.c1 { stroke: var(--s1); } .f1 { fill: var(--s1); }
+.c2 { stroke: var(--s2); } .f2 { fill: var(--s2); }
+.c3 { stroke: var(--s3); } .f3 { fill: var(--s3); }
+.fm { fill: var(--muted); }
+.dot { stroke: var(--surface); stroke-width: 2; }
+.cross { stroke: var(--axis); stroke-width: 1; }
+.zone { fill: var(--zone); }
+.refl { stroke: var(--muted); stroke-width: 1; }
+.hit { fill: transparent; cursor: crosshair; }
+
+.tip { position: fixed; z-index: 50; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; font-size: 13px; line-height: 1.45; box-shadow: 0 6px 24px rgba(0,0,0,.14); max-width: 280px; }
+.tip b { font-weight: 600; }
+.tip .row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.tip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+
+details.data { margin-top: 10px; font-size: 13.5px; }
+details.data summary { cursor: pointer; color: var(--ink-2); }
+.tablewrap { overflow-x: auto; margin: 10px 0 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; color: var(--ink-2); font-size: 13px; }
+td.n, th.n { text-align: right; }
+tbody tr:last-child td { border-bottom: 0; }
+
+.funnel { display: grid; gap: 6px; margin: 8px 0 4px; }
+.wave { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: 10px; }
+.wave .lab { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.wave .track { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.wave .bar { height: 22px; border-radius: 0 4px 4px 0; background: var(--s1); flex: none; }
+.wave .wv { font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gate { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; font-size: 13px; color: var(--ink-2); }
+.gate span:last-child { border-left: 2px solid var(--rule); padding: 2px 0 2px 10px; }
+
+.callout { border-left: 3px solid var(--accent); background: var(--accent-wash); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 20px 0; }
+.callout p { margin: 0; }
+
+/* simulator */
+.sim { display: grid; grid-template-columns: minmax(0, 290px) minmax(0, 1fr); gap: 22px; }
+.controls { display: grid; gap: 14px; align-content: start; }
+.ctl label { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; font-weight: 500; }
+.ctl output { font-family: var(--f-mono); font-size: 13px; color: var(--accent); }
+.ctl input[type=range] { width: 100%; accent-color: var(--accent); margin: 6px 0 0; }
+.ctl select { width: 100%; margin-top: 6px; font: inherit; font-size: 14px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
+.ctl .hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.tile { border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+.tile .k { font-size: 12.5px; color: var(--ink-2); line-height: 1.35; }
+.tile .v { font-family: var(--f-display); font-weight: 700; font-size: 25px; line-height: 1.15; margin-top: 4px; }
+.tile .d { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.d.up { color: var(--good); } .d.down { color: var(--bad); } .d.flat { color: var(--muted); }
+button.reset { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); cursor: pointer; justify-self: start; }
+button.reset:hover { border-color: var(--accent); }
+
+.plan { display: grid; gap: 0; margin: 14px 0; }
+.plan > div { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-top: 1px solid var(--rule); }
+.plan b.wk { font-family: var(--f-mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+.plan p { margin: 0; }
+.plan h4 { margin: 0 0 4px; font-family: var(--f-body); font-weight: 600; font-size: 15.5px; }
+
+pre.code { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-family: var(--f-mono); font-size: 13px; line-height: 1.55; }
+ol.sources { font-size: 14px; padding-left: 22px; }
+ol.sources li { margin: 4px 0; max-width: none; overflow-wrap: anywhere; }
+footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); }
+
+@media (max-width: 980px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; padding-block: 28px 72px; }
+  .toc { position: static; margin: 0 0 22px; padding: 0 0 14px; border-bottom: 1px solid var(--rule); }
+  .toc ol { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; }
+}
+@media (max-width: 760px) {
+  .sim { grid-template-columns: minmax(0, 1fr); }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .keynums { grid-template-columns: minmax(0, 1fr); }
+  .duo { grid-template-columns: minmax(0, 1fr); }
+  .plan > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .wave { grid-template-columns: 60px minmax(0, 1fr); }
+  .gate { grid-template-columns: 60px minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <p>Contents</p>
+  <ol>
+    <li><a href="#findings">Key findings</a></li>
+    <li><a href="#how">How Instagram decides</a></li>
+    <li><a href="#data">What the datasets show</a></li>
+    <li><a href="#model">The reach model</a></li>
+    <li><a href="#simulator">Simulator</a></li>
+    <li><a href="#watch">Watch-time math</a></li>
+    <li><a href="#testing">Testing that works</a></li>
+    <li><a href="#playbook">The playbook</a></li>
+    <li><a href="#your-data">Run it on your account</a></li>
+    <li><a href="#methods">Methods and limits</a></li>
+    <li><a href="#sources">Sources</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="hero">
+  <p class="eyebrow">Statistical study · November 2026</p>
+  <h1>Instagram reach is a threshold game. Small gains in watch time and sends compound into large gains in views.</h1>
+  <p class="lede">This study combines what Instagram has said about its ranking systems, benchmark studies covering more than 100 million posts, and a simulation of how test-then-expand distribution turns viewer behaviour into views. It ends with a prioritized playbook, a 30-day plan, and a script you can run on your own data.</p>
+  <div class="keynums">
+    <div class="keynum"><b>60–65%</b><span>of Reel viewers swipe away in the first 3 seconds (skip rate, 9.8M Reels, H1 2026).</span><span class="ev ev-data">Dataset</span></div>
+    <div class="keynum"><b>3.8×</b><span>typical views per post from a 25% improvement in watch time, sends and likes together.</span><span class="ev ev-model">Model</span></div>
+    <div class="keynum"><b>77%</b><span>of a creator's views come from their top 10% of posts. Judge by the median, never one post.</span><span class="ev ev-model">Model</span></div>
+  </div>
+  <div class="evkey" aria-label="Evidence labels">
+    <div><span class="ev ev-ig">Instagram</span> Stated by Instagram, Meta or Adam Mosseri</div>
+    <div><span class="ev ev-data">Dataset</span> Large third-party study</div>
+    <div><span class="ev ev-model">Model</span> This study's simulation</div>
+    <div><span class="ev ev-stats">Math</span> Statistics that hold regardless</div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<section id="findings">
+  <h2>Key findings, ranked by expected impact</h2>
+  <p>Ranked by how much each lever is likely to move views for a typical creator, using the evidence in the sections below.</p>
+  <ol class="findings">
+    <li><div><h4>The first three seconds decide most of a Reel's fate.<span class="ev ev-data">Dataset</span><span class="ev ev-model">Model</span></h4>
+      <p>Socialinsider measured skip rates of 60.5–65.5% across 9.8M Reels. Watch time is one of Instagram's top three signals. In the model, raising watch time 10% raises typical views 27%.</p></div></li>
+    <li><div><h4>Make things people send to a specific friend.<span class="ev ev-ig">Instagram</span></h4>
+      <p>Mosseri names watch time, likes and sends as the top three signals. Sends per reach matter more for reaching people who don't follow you; likes matter more with followers. Discovery runs on sends.</p></div></li>
+    <li><div><h4>Reach responds faster than quality improves.<span class="ev ev-model">Model</span></h4>
+      <p>Each wave of distribution is a pass/fail test, so improvements multiply. A 25% gain across the three signals gives 3.8× typical views and 4.6× the chance of a 100k-view post. Across 13 alternative model settings it ranges from 2.9× to 7.3×.</p></div></li>
+    <li><div><h4>Originality is a hard gate, not a bonus.<span class="ev ev-ig">Instagram</span></h4>
+      <p>Accounts that repost others' content 10+ times in 30 days lose recommendations. Since April 30, 2026 this covers photos and carousels, not only Reels. Other apps' watermarks and low-resolution video reduce discoverability.</p></div></li>
+    <li><div><h4>Use Reels to reach new people and carousels to deepen engagement.<span class="ev ev-data">Dataset</span></h4>
+      <p>Reels reach 1.3–1.4× as many people as carousels and 2.3–3.1× as many as single images. Carousels lead engagement per person reached (6.9% vs 3.3%) and earn about 9× the saves of images.</p></div></li>
+    <li><div><h4>Post more often, but only as often as quality holds.<span class="ev ev-data">Dataset</span><span class="ev ev-model">Model</span></h4>
+      <p>Across 2.1M posts, 3–5 posts a week gave about 12% more reach per post than 1–2, and roughly double the follower growth. In the model, if quality slips 4% for each extra weekly post past three, the best rate is 3–4 a week.</p></div></li>
+    <li><div><h4>Keep your first audience matched to your content.<span class="ev ev-model">Model</span><span class="ev ev-ig">Instagram</span></h4>
+      <p>A post is first scored on a small group, so a mismatched one sinks it early. In the model, a 50%-matched first wave cuts typical views by 86%. Bought followers, engagement pods and abrupt niche pivots all create that mismatch. Trial Reels let you test a new direction on non-followers instead.</p></div></li>
+    <li><div><h4>Small accounts are not locked out.<span class="ev ev-ig">Instagram</span><span class="ev ev-data">Dataset</span></h4>
+      <p>Instagram tests public posts from small creators on people who don't follow them. Accounts with 1–5K followers reach 6.65% of their follower count per post, against 3.5% for 100K–1M accounts.</p></div></li>
+    <li><div><h4>Hashtags are not a reach lever. Keywords are.<span class="ev ev-ig">Instagram</span><span class="ev ev-data">Dataset</span></h4>
+      <p>Posts have been capped at 5 hashtags since December 2025. In Metricool's 24.4M-post study, posts with hashtags got 31.7% fewer views (a correlation, not proof of cause). Put searchable words in the caption and the on-screen text instead.</p></div></li>
+    <li><div><h4>Timing is a weak lever.<span class="ev ev-data">Dataset</span></h4>
+      <p>Large studies disagree on the best hour (Buffer: Thursday 9am; Later: 5am; Metricool: 8pm), and Metricool calls the differences between days minimal. Post when your followers are active, then stop worrying about it.</p></div></li>
+    <li><div><h4>Most creator "tests" cannot detect anything.<span class="ev ev-stats">Math</span></h4>
+      <p>Views vary so much from post to post that detecting a real 50% improvement takes about 140–380 posts per version when you compare different videos. Testing two hooks on the same video cuts that by 2–4×.</p></div></li>
+    <li><div><h4>Judge by the median, not the average or your best post.<span class="ev ev-model">Model</span><span class="ev ev-stats">Math</span></h4>
+      <p>The mean is about 9× the median and the top tenth of posts deliver 77% of views, so one outlier swamps the average. 65% of Reel views arrive within 3 days, so wait that long before judging a post.</p></div></li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section id="how">
+  <h2>How Instagram decides who sees a post</h2>
+  <p>There isn't one Instagram algorithm. Feed, Stories, Explore, Reels and Search each run their own ranking system with their own signals, and posts from accounts you follow are ranked separately from recommendations <span class="ev ev-ig">Instagram</span>. Each system predicts how likely you are to take certain actions on a post, such as watching it, watching to the end, liking it, sending it to a friend, or commenting. It then combines those predictions into a score.</p>
+  <p>Distribution happens in steps. A post is shown to a small group first: some followers, and for public accounts, people who don't follow you. If it does well against competing content, it moves to a bigger audience, and the cycle repeats <span class="ev ev-ig">Instagram</span>. Trial Reels make this explicit by showing a Reel to non-followers first, then giving you its metrics after about 24 hours.</p>
+
+  <div class="panel" aria-label="Diagram of test-then-expand distribution">
+    <h4>Test, then expand</h4>
+    <p class="sub">Audience sizes shown are the model's illustrative values for a 5,000-follower account. Instagram does not publish real ones.</p>
+    <div class="funnel" id="funnel"></div>
+  </div>
+
+  <h3>The three signals Instagram names</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Signal</th><th>What Instagram has said</th><th>Where it matters most</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Watch time</strong></td><td>One of the "top three signals." Instagram predicts whether you'll watch, and whether you'll watch to the end.</td><td>Reels, every audience</td></tr>
+      <tr><td><strong>Sends per reach</strong></td><td>"Send rates matter more for those who don't follow you." Since 2024, Mosseri has called it one of the most important metrics to track.</td><td>Non-followers: discovery</td></tr>
+      <tr><td><strong>Likes per reach</strong></td><td>"Like rates matter more for your followers."</td><td>Followers: connected reach</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small">Meta's Transparency Center "system cards" list other predictions too, such as using a Reel's audio, swiping through a carousel, commenting and following. Meta says it withholds signals that could be gamed, and that the signals change often.</p>
+
+  <p>Viewers now steer this too. Since December 2025, "Your Algorithm" lets people add and remove topics, first on Reels and later on Explore and Feed. A post that is clearly about a recognizable topic is easier to route to people who chose that topic, which is another reason to keep a consistent niche.</p>
+
+  <h3>The gates: content that won't be recommended at all</h3>
+  <p>Ranking only happens if a post is eligible. Instagram's Recommendations Guidelines hold recommended content to a higher bar than its Community Guidelines. Ineligible content still reaches followers but is never shown to non-followers, and if an account is ineligible, none of its posts are recommended <span class="ev ev-ig">Instagram</span>.</p>
+  <ul>
+    <li><strong>Unoriginal content.</strong> Accounts that post others' content 10+ times in 30 days without materially changing it are removed from recommendations. Since April 30, 2026 this applies to photos and carousels as well as Reels. Adding a border, watermark, speed change, new caption or credit does not make content original. An account becomes eligible again once most of its recent posts are original.</li>
+    <li><strong>Visible quality issues.</strong> Reels that are blurry or low-resolution, carry another app's watermark, or are mostly text are less discoverable. Your own logo is fine.</li>
+    <li><strong>Undisclosed AI personas.</strong> Since August 31, 2026, accounts built around an AI-generated person that don't use the "AI-generated profile" label get limited recommendations. Using AI to edit photos or captions doesn't require the label.</li>
+    <li><strong>Check Account Status</strong> (Settings → Account Status). It shows whether your content can be recommended, and lets you remove or appeal posts that broke the guidelines.</li>
+  </ul>
+
+  <h3>Myths Instagram has addressed directly</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Claim</th><th>What Instagram said</th></tr></thead>
+    <tbody>
+      <tr><td>A "link in bio" call-to-action hurts reach</td><td>False: it "will not affect your reach one way or the other" (Mosseri, July 2025).</td></tr>
+      <tr><td>Resharing your post to Stories boosts it</td><td>False. Such "hack-type tactics sometimes work, usually don't, and when we find them, we usually shut them down" (April 2026).</td></tr>
+      <tr><td>Posting many Stories a day lowers reach</td><td>Not anymore. It was a bug, now fixed.</td></tr>
+      <tr><td>Hashtags drive reach</td><td>Instagram recommends a few targeted hashtags to categorize posts and has capped them at 5. They help with classification, not reach.</td></tr>
+      <tr><td>"Shadowbanning"</td><td>Instagram denies shadowbanning but confirms that recommendations can be limited. Account Status shows when that applies.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="data">
+  <h2>What the large datasets show</h2>
+  <p>These figures come from studies by Buffer, Metricool, Socialinsider and others, published between 2024 and 2026, covering more than 100 million Instagram posts. They are observational: they show what goes with more reach, not what causes it. They also measure engagement differently, so compare numbers within a study, not across studies.</p>
+
+  <h3>Format: Reels for reach, carousels for depth</h3>
+  <div class="panel">
+    <h4>Reach per post compared with single images</h4>
+    <p class="sub">Single image = 1.0. Higher means more accounts reached per post.</p>
+    <div class="legend" id="lg-format"></div>
+    <div class="chart" id="ch-format"></div>
+    <p class="source">Buffer: 4M+ posts, Jan 2022 – Oct 2024 (Reels 1.36× carousels, 2.25× images). Metricool: 24.4M posts, Jan–Feb 2026 (Reels +29% vs carousels, +212% vs images).</p>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Engagement measure</th><th class="n">Reels</th><th class="n">Carousels</th><th class="n">Images</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td>Engagement per person reached (median)</td><td class="n">3.3%</td><td class="n"><strong>6.9%</strong></td><td class="n">4.4%</td><td>Buffer 2026, 45M+ posts</td></tr>
+      <tr><td>Engagement per follower (mean, full year 2025)</td><td class="n">0.52%</td><td class="n"><strong>0.55%</strong></td><td class="n">0.37%</td><td>Socialinsider, 67.5M posts</td></tr>
+      <tr><td>Saves compared with images</td><td class="n">n/a</td><td class="n"><strong>≈9×</strong></td><td class="n">1×</td><td>Metricool 2026, 24.4M posts</td></tr>
+    </tbody>
+  </table></div>
+  <p>Reels find new people and carousels hold the people who already found you. Metricool also reports that carousels can be shown again to people who scrolled past them the first time, which makes them a good format for saves and slower reading. Two vendor datasets, smaller and less independent, found carousels of 10 or more slides do better than short ones.</p>
+
+  <h3>Posting frequency: more posts, more reach per post</h3>
+  <div class="panel">
+    <div class="duo">
+      <div><h4>Follower growth per week</h4><p class="sub">Median weekly growth rate, by posts per week</p><div class="chart" id="ch-freq-growth"></div></div>
+      <div><h4>Reach per post, compared with 1–2 posts a week</h4><p class="sub">Change in reach per post</p><div class="chart" id="ch-freq-reach"></div></div>
+    </div>
+    <p class="source">Buffer, 2.1M posts from 102K accounts (2025). Fixed-effects model comparing each account with itself. Buffer notes this is not proof of cause.</p>
+  </div>
+  <p>Buffer's design compares each account with itself in weeks when it posted more versus fewer times. That removes the obvious confound that bigger, better-resourced accounts post more. The result is diminishing but positive returns, plus a "no-post penalty": weeks with no posts grew less than the account's usual rate. Metricool found the best rate depends on account size: small accounts did best at 7–14 posts a week, and accounts over 100K followers got more interactions per post when they posted less often.</p>
+
+  <h3>Length and the hook</h3>
+  <div class="panel">
+    <h4>Reels reach rate by length</h4>
+    <p class="sub">Accounts reached as a share of followers, by Reel length</p>
+    <div class="chart" id="ch-length"></div>
+    <p class="source">Socialinsider, 9.77M organic Reels, Jan–Jun 2026.</p>
+  </div>
+  <p>The same dataset measures skip rate, the share of viewers who scroll away within 3 seconds. It was 65.5% for accounts with 1–5K followers and 60.5% for accounts with 100K–1M. Metricool puts average Reel watch time at about 8.5 seconds, even though Reels can run to 3 minutes since January 2025. So most of the watch-time signal is decided before a viewer could know whether the video is any good. The hook is the product. <a href="#watch">The watch-time section</a> shows why the best length depends on your own retention.</p>
+
+  <h3>Account size: smaller accounts get more per follower</h3>
+  <div class="panel">
+    <h4>Engagement rate per follower, by account size</h4>
+    <div class="legend" id="lg-tier"></div>
+    <div class="chart" id="ch-tier"></div>
+    <p class="source">Socialinsider 2026, brand accounts. Engagement divided by followers (mean). Reach rate shows the same pattern: 6.65% for 1–5K accounts vs 3.5% for 100K–1M.</p>
+  </div>
+  <p>This fits Instagram's statement that small creators' public posts get tested on non-followers. It also fits the model: test audiences are partly a fixed non-follower batch, so a small account's first wave is large relative to its follower count.</p>
+
+  <h3>Hashtags and timing</h3>
+  <p><strong>Hashtags.</strong> Metricool found that posts with at least one hashtag got 31.7% fewer views and 33.9% fewer interactions than average. That is a correlation, and accounts that lean on hashtags may differ in other ways. Still, no large dataset supports hashtags as a reach strategy. Instagram now indexes captions for keyword search and caps posts at 5 hashtags.</p>
+  <p><strong>Timing.</strong> Buffer (9.6M posts) found the best slots were Thursday 9am, Wednesday 12pm and Wednesday 6pm. Later (6M+ posts) found 5am. Metricool found 6–9pm, peaking at 8pm. When studies this large disagree, the true effect is probably small and specific to each audience. Use your own Insights to see when your followers are online.</p>
+
+  <h3>The bar is rising</h3>
+  <p>Organic reach is falling across the platform. Socialinsider's Instagram reach rate fell 14% year over year to August 2026. Metricool's 40M-post study reported Reels reach down 35% year over year. Buffer's median engagement per person reached fell from about 7.3% in 2024 to 5.4% in 2025. More content is competing for the same attention, so the score needed to pass each wave keeps rising. That makes the convex, threshold dynamics in the next section more important, not less.</p>
+
+  <div class="callout"><p><strong>Reading these numbers.</strong> Socialinsider and Rival IQ divide engagement by followers (about 0.3–0.6%); Buffer divides by reach (about 3–7%). Socialinsider reports means, which viral outliers inflate; Buffer and Emplifi report medians. All samples are the vendors' own customers, mostly brands. Instagram redefined "views" in 2025, so figures from before and after don't compare cleanly.</p></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="model">
+  <h2>The reach model: why small gains compound</h2>
+  <p>The statements and datasets show what matters, but not how much. To answer that, this study simulates test-then-expand distribution. Each simulated post goes to a first wave of viewers. The system measures the wave's watch time, sends and likes against competing content, weighting them in Mosseri's stated order. A post that clears the bar moves to a wave 3.5× larger, where the bar is a little higher and the audience a little less closely matched. A post that misses is throttled and stops. Every wave has realistic sampling noise.</p>
+  <p>The structure follows Instagram's statements. The constants (wave sizes, weights, the bar) are assumptions, because Instagram doesn't publish them. So every result below is stated relative to a baseline creator, and was re-checked under five different signal weightings and eight sets of platform constants. Only conclusions that hold across all thirteen are reported as findings. The baseline creator has 5,000 followers, a median of 1,200 views per post, and a 1.6% chance of any one post passing 100k views.</p>
+
+  <div class="panel">
+    <h4>Views respond much faster than quality improves</h4>
+    <p class="sub">All three signals scaled together, from 60% to 180% of the baseline creator's level</p>
+    <div class="duo">
+      <div><h4 class="small" style="font-weight:600;margin:0">Typical views per post (log scale)</h4><div class="chart" id="ch-resp-geo"></div></div>
+      <div><h4 class="small" style="font-weight:600;margin:0">Chance a post passes 100k views</h4><div class="chart" id="ch-resp-p"></div></div>
+    </div>
+    <p class="source">Model, 30,000 simulated posts per point. "Typical" means the geometric mean, a better center than the average for skewed data.</p>
+  </div>
+
+  <p>The curve bends upward because each wave is a pass/fail test, and passing one opens a bigger, harder one. A post that is 10% better clears more waves, and every extra wave multiplies its audience 3.5×. The same logic works in reverse: a 20% drop in quality cuts typical views by about two-thirds.</p>
+
+  <h3>One signal at a time</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Improve this, keeping the rest equal</th><th class="n">+10%</th><th class="n">+25%</th><th class="n">+50%</th></tr></thead>
+    <tbody>
+      <tr><td>Watch time (average share watched)</td><td class="n">1.27×</td><td class="n">1.82×</td><td class="n">3.29×</td></tr>
+      <tr><td>Sends per reach</td><td class="n">1.21×</td><td class="n">1.62×</td><td class="n">2.62×</td></tr>
+      <tr><td>Likes per reach</td><td class="n">1.11×</td><td class="n">1.30×</td><td class="n">1.70×</td></tr>
+      <tr><td><strong>All three together</strong></td><td class="n"><strong>1.71×</strong></td><td class="n"><strong>3.80×</strong></td><td class="n"><strong>12.6×</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p class="small">Change in typical views per post. The ranking of the single levers follows the assumed weights, so treat it as an illustration of Mosseri's stated order, not an independent measurement. What doesn't depend on the weights is that improving all three together multiplies views well beyond the sum of the parts: 3.7–3.8× for +25% under every weighting tested.</p>
+
+  <h3>Robustness: does the conclusion survive different assumptions?</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Model variant</th><th class="n">Typical views at +25% quality</th><th class="n">Chance of 100k post at +25%</th><th class="n">Top 10% share of views</th></tr></thead>
+    <tbody id="tb-robust"></tbody>
+  </table></div>
+  <p class="small">The size of the effect varies, but the direction and the convexity hold in every variant. The 25% improvement always multiplies outcomes by more than 2.5×, never just 1.25×.</p>
+
+  <h3>The heavy tail</h3>
+  <div class="panel">
+    <h4>How views are distributed across one creator's posts</h4>
+    <p class="sub">Baseline creator, 5,000 followers. Share of posts in each view range.</p>
+    <div class="chart" id="ch-hist"></div>
+    <p class="source">Model. Median 1,202 · mean 10,400 · top 10% of posts = 77% of views · 1.6% of posts pass 100k.</p>
+  </div>
+  <p>Two practical consequences follow. Track the median, because one breakout post makes the average useless. And volume matters, because every post is another chance at the tail.</p>
+
+  <h3>Your first audience is the first gate</h3>
+  <div class="panel">
+    <h4>Typical views vs how well the first wave matches the content</h4>
+    <p class="sub">100% = the first viewers are as interested as the people the content was made for</p>
+    <div class="chart" id="ch-align"></div>
+    <p class="source">Model. Only wave 0 is affected; later waves are matched by the recommender.</p>
+  </div>
+  <p>This is the mechanism behind several "don'ts." Bought followers, follow-for-follow, engagement pods and sudden niche changes all put people who don't care about the content into the first wave. Those viewers don't watch, send or like, so the post fails the first test before the recommender can find its real audience. A 50%-matched first wave cuts typical views from 1,324 to 186 (−86%) and the chance of a 10k post from 15% to 3.6%.</p>
+
+  <h3>Volume vs quality</h3>
+  <div class="panel">
+    <h4>Chance of at least one 100k-view post in 30 days</h4>
+    <div class="legend" id="lg-vol"></div>
+    <div class="chart" id="ch-vol"></div>
+    <p class="source">Model. Baseline creator. The second line assumes every weekly post beyond three lowers all three signals by 4%.</p>
+  </div>
+  <p>If quality holds, posting more is close to free upside, and Buffer's within-account data suggests it often does hold. Because reach is convex in quality, though, a modest drop in quality cancels the volume gain quickly. Post as often as you can without the work getting worse, and use Trial Reels for extra experiments so they don't crowd your followers' feeds.</p>
+
+  <h3>The measurement trap in your Insights</h3>
+  <p>Insights reports rates per account reached, measured on whoever actually saw the post. Posts that travel far are measured on colder audiences, which pulls their rates down. In the model, the true quality of a post predicts its views with a rank correlation of 0.84, but the rates you can see in Insights correlate less:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Compared against a post's views</th><th class="n">Rank correlation in model</th></tr></thead>
+    <tbody>
+      <tr><td>True underlying quality (not visible to you)</td><td class="n">0.84</td></tr>
+      <tr><td>Sends per reach</td><td class="n">0.69</td></tr>
+      <tr><td>Average share watched</td><td class="n">0.61</td></tr>
+      <tr><td>Likes per reach</td><td class="n">0.49</td></tr>
+    </tbody>
+  </table></div>
+  <p>Don't conclude that a signal doesn't matter because its correlation in your Insights is weak. Among the rates you can see, sends per reach is the most faithful proxy for quality, which matches Instagram's advice to track it.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="simulator">
+  <h2>Simulator</h2>
+  <p>Move the sliders to see how changes in viewer behaviour move views in the model. It simulates 12,000 posts each time. Treat the outputs as directions and relative sizes, not forecasts for your account.</p>
+  <div class="panel">
+    <div class="sim">
+      <div class="controls">
+        <div class="ctl"><label for="s-followers">Followers <output id="o-followers"></output></label>
+          <select id="s-followers">
+            <option value="500">500</option><option value="1000">1,000</option><option value="2000">2,000</option>
+            <option value="5000" selected>5,000</option><option value="10000">10,000</option><option value="20000">20,000</option>
+            <option value="50000">50,000</option><option value="100000">100,000</option><option value="250000">250,000</option><option value="500000">500,000</option>
+          </select></div>
+        <div class="ctl"><label for="s-watch">Watch time vs today <output id="o-watch"></output></label><input type="range" id="s-watch" min="-30" max="60" step="5" value="0"><div class="hint">Better hook, tighter pacing</div></div>
+        <div class="ctl"><label for="s-sends">Sends per reach vs today <output id="o-sends"></output></label><input type="range" id="s-sends" min="-30" max="60" step="5" value="0"><div class="hint">More "I have to show someone this"</div></div>
+        <div class="ctl"><label for="s-likes">Likes per reach vs today <output id="o-likes"></output></label><input type="range" id="s-likes" min="-30" max="60" step="5" value="0"></div>
+        <div class="ctl"><label for="s-align">First-audience match <output id="o-align"></output></label><input type="range" id="s-align" min="50" max="110" step="5" value="100"><div class="hint">Lower with bought followers or niche pivots</div></div>
+        <div class="ctl"><label for="s-ppw">Posts per week <output id="o-ppw"></output></label><input type="range" id="s-ppw" min="1" max="14" step="1" value="3"></div>
+        <button class="reset" id="sim-reset" type="button">Reset to baseline</button>
+      </div>
+      <div style="min-width:0">
+        <div class="tiles" id="tiles"></div>
+        <div class="legend" id="lg-sim"></div>
+        <div class="chart" id="ch-sim"></div>
+        <p class="source">Baseline means today's levels at the selected follower count, a fully matched first audience, and the same posting rate.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="watch">
+  <h2>Watch-time math: hook, hold and length</h2>
+  <p>A retention curve has two parts. First comes the hook: the share of viewers who are still there after about 3 seconds, which is one minus the skip rate. After that comes a steadier decline, described by its half-life: the number of seconds it takes for half of the remaining viewers to leave. Skip rate and the retention chart are both in Reels Insights.</p>
+  <ul>
+    <li><strong>The hook multiplies everything.</strong> Going from a 62% to a 50% skip rate keeps 32% more viewers past second 3 (50% instead of 38%), and every later second of watch time grows by the same 32%. No other edit has that much leverage.</li>
+    <li><strong>The half-life sets the right length.</strong> Instagram predicts both how long people watch and whether they finish. If the score rewards both, the best length scales with your half-life. Under three plausible ways of combining them, it lands between 1 and 2.75 half-lives after the hook. A creator whose viewers drift off fast should make short Reels; one with a 40-second half-life can go long.</li>
+  </ul>
+  <div class="panel">
+    <h4>Retention calculator</h4>
+    <p class="sub">The shaded band is the length range this model recommends for the settings you choose.</p>
+    <div class="sim">
+      <div class="controls">
+        <div class="ctl"><label for="r-skip">Skip rate (first 3 s) <output id="o-skip"></output></label><input type="range" id="r-skip" min="20" max="85" step="1" value="62"></div>
+        <div class="ctl"><label for="r-half">Retention half-life after the hook <output id="o-half"></output></label><input type="range" id="r-half" min="3" max="60" step="1" value="12"></div>
+        <div class="ctl"><label for="r-len">Reel length <output id="o-len"></output></label><input type="range" id="r-len" min="5" max="180" step="1" value="30"></div>
+      </div>
+      <div style="min-width:0">
+        <div class="tiles" id="rtiles"></div>
+        <div class="chart" id="ch-ret"></div>
+      </div>
+    </div>
+    <p class="source">Model: after 3 s, retention decays exponentially. Viewers who skip are counted as watching for 1.5 s on average. The defaults (62% skip rate, 12 s half-life, 30 s Reel) give about 7 s of average watch time, close to the 8.5 s Metricool measured.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="testing">
+  <h2>Testing that actually tells you something</h2>
+  <p>On a log scale, views vary by about 1–2 units from post to post: a "normal" post can land anywhere in a 7–55× range. That noise hides real effects. The table shows how many posts each version needs before a comparison is trustworthy, with a 5% false-positive rate and 80% power <span class="ev ev-stats">Math</span>.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Real improvement in typical views</th><th class="n">Low variability<br><span class="small">sd 0.8</span></th><th class="n">sd 1.2</th><th class="n">sd 1.6</th><th class="n">High variability<br><span class="small">sd 2.0</span></th></tr></thead>
+    <tbody>
+      <tr><td>+25%</td><td class="n">202</td><td class="n">454</td><td class="n">808</td><td class="n">1,262</td></tr>
+      <tr><td>+50%</td><td class="n">62</td><td class="n">138</td><td class="n">245</td><td class="n">382</td></tr>
+      <tr><td>+100% (2×)</td><td class="n">21</td><td class="n">48</td><td class="n">84</td><td class="n">131</td></tr>
+      <tr><td>+200% (3×)</td><td class="n">9</td><td class="n">19</td><td class="n">34</td><td class="n">53</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small">Posts needed per version when the two versions are different videos. "sd" is the standard deviation of the natural log of views; the script in <a href="#your-data">the next section</a> computes yours.</p>
+  <div class="panel">
+    <h4>A better hook is easy to miss</h4>
+    <p class="sub">In the model, a hook that raises watch time 15% raises typical views 44%. This is how often a test at the 5% level detects it.</p>
+    <div class="legend" id="lg-pow"></div>
+    <div class="chart" id="ch-pow"></div>
+    <p class="source">Model, 600 simulated experiments per point. Unpaired: Mann-Whitney test. Paired: sign-flip permutation test on log differences. With 5 pairs, a two-sided test cannot reach p &lt; 0.05 at all.</p>
+  </div>
+  <h3>Rules for testing</h3>
+  <ul>
+    <li><strong>Pair your tests.</strong> Publish the same video with two different hooks or openings, for example one as a Trial Reel. Shared content removes most of the noise: in the model the two versions' log views correlate at 0.77, which cuts the posts you need by 2–4×.</li>
+    <li><strong>Test big swings.</strong> A new hook style or a new format can plausibly double views, and doubling is detectable in 20–80 posts. Tweaks like caption wording or posting time can't be measured on one account.</li>
+    <li><strong>Compare like with like.</strong> Mosseri's advice is to compare Trial Reels only with other Trial Reels, because they almost always get less reach than regular posts.</li>
+    <li><strong>Use leading indicators.</strong> Skip rate and sends per reach respond within a day and vary less than views. Use them to choose between versions, and use median views to confirm over a month.</li>
+    <li><strong>Write down the test before you run it,</strong> and decide what result would change your behaviour. Otherwise, looking at many metrics will always turn up something that seems to have worked.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="playbook">
+  <h2>The playbook</h2>
+  <p>Ordered by expected impact. Each step names the signal it moves.</p>
+  <h3>1. Win the first three seconds <span class="ev ev-data">Dataset</span></h3>
+  <ul>
+    <li>Open on the payoff, the problem, or the most surprising frame. Never on a logo, an intro or "hey guys."</li>
+    <li>Show motion in the first frame, and put the promise in on-screen text of seven words or fewer, so muted viewers get it too.</li>
+    <li>Cut the first half-second of dead air from every clip.</li>
+    <li>Track your skip rate per Reel. The datasets average 60–65%, so anything below your own median is a win worth repeating.</li>
+  </ul>
+  <h3>2. Earn sends <span class="ev ev-ig">Instagram</span></h3>
+  <ul>
+    <li>Before you publish, ask: <em>who would send this, and to whom?</em> If there's no clear answer, rework the post.</li>
+    <li>People send things that are about someone they know ("the friend who always…"), useful to keep (a checklist or how-to), surprising, or an opinion that says something about who they are.</li>
+    <li>Sends drive reach to non-followers, so they're the main lever for growth. Likes mostly reflect how your existing followers feel.</li>
+  </ul>
+  <h3>3. Hold attention, then choose the length <span class="ev ev-model">Model</span></h3>
+  <ul>
+    <li>Cut every pause. Change something on screen every 2–4 seconds. Save the payoff for late in the video, and design endings that loop back into the start.</li>
+    <li>Read your retention chart to estimate your half-life, then aim for 1–2.75 half-lives after the hook. The datasets' overall sweet spot is 30–60 seconds, but your own curve should override that.</li>
+  </ul>
+  <h3>4. Stay original and clean <span class="ev ev-ig">Instagram</span></h3>
+  <ul>
+    <li>Post your own footage, or transform other material substantially. Crediting the creator does not make a repost original.</li>
+    <li>Export without other apps' watermarks, at full resolution, with no black borders.</li>
+    <li>If an AI-generated person is the face of the account, use the AI-generated profile label.</li>
+    <li>Check Account Status monthly.</li>
+  </ul>
+  <h3>5. Use each format for its job <span class="ev ev-data">Dataset</span></h3>
+  <ul>
+    <li>Reels for discovery; carousels, ideally 8 or more slides, for saves and depth. Use single images sparingly: they trail on both reach and engagement, and Metricool measured their reach falling 22% in a year.</li>
+  </ul>
+  <h3>6. Post often, protect quality <span class="ev ev-data">Dataset</span><span class="ev ev-model">Model</span></h3>
+  <ul>
+    <li>Start at 3–5 posts a week, then add more only while your median sends per reach and skip rate hold steady.</li>
+    <li>Never skip a week entirely.</li>
+    <li>Use Trial Reels to post more experiments without crowding your followers' feeds.</li>
+  </ul>
+  <h3>7. Protect your first audience <span class="ev ev-model">Model</span></h3>
+  <ul>
+    <li>Never buy followers, likes or views, and never join pods or follow-for-follow schemes.</li>
+    <li>Keep a recognizable niche.</li>
+    <li>Test new directions as Trial Reels on non-followers before you pivot your main feed.</li>
+  </ul>
+  <h3>8. Borrow a second first audience with collabs <span class="ev ev-data">Dataset</span></h3>
+  <ul>
+    <li>Collab posts show your post to a partner's followers as well as yours. Emplifi reported that small brands' collab posts got several times the interactions of their regular posts, though brands that collaborate tend to be more active, which inflates that figure.</li>
+    <li>Choose partners whose audience matches your content, for the first-wave reasons above.</li>
+  </ul>
+  <h3>9. Write for search, not hashtags <span class="ev ev-ig">Instagram</span></h3>
+  <ul>
+    <li>Put plain, searchable phrases in the caption's first line and in the on-screen text.</li>
+    <li>Use up to 5 specific hashtags for categorization, not for reach.</li>
+    <li>Ask a real question when you want comments. Metricool found questions go with 37% more comments.</li>
+  </ul>
+
+  <h3>A 30-day plan</h3>
+  <div class="plan">
+    <div><b class="wk">Week 1</b><div><h4>Measure your baseline</h4><p>Post at your normal rate. Export Insights and run the script below. Write down your median views, skip rate, sends per reach, and your sd of log views.</p></div></div>
+    <div><b class="wk">Week 2</b><div><h4>Hook sprint</h4><p>For 4–6 videos, publish two openings of the same video, one as a Trial Reel. Compare skip rate and sends within each pair. Keep the winning hook style.</p></div></div>
+    <div><b class="wk">Week 3</b><div><h4>Send sprint</h4><p>For every post, write one line saying who sends it to whom. Kill drafts without a clear answer. Compare median sends per reach with week 1.</p></div></div>
+    <div><b class="wk">Week 4</b><div><h4>Scale what worked</h4><p>Add 1–2 posts a week using the winning patterns. Re-run the script. Keep the changes that moved the median, and drop the ones that didn't.</p></div></div>
+  </div>
+
+  <h3>Tactics that backfire</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Tactic</th><th>Why it backfires</th></tr></thead>
+    <tbody>
+      <tr><td>Buying followers, likes or views</td><td>Fills your first wave with people who won't watch or send. In the model, a poorly matched first audience costs up to 86% of typical views. It also breaks Instagram's terms.</td></tr>
+      <tr><td>Engagement pods, comment loops, follow-for-follow</td><td>Adds engagement from people who aren't interested in the content, making the first-wave mismatch worse. It's inauthentic behaviour under Instagram's rules.</td></tr>
+      <tr><td>Reposting others' viral content</td><td>Posting others' content 10+ times in 30 days removes the whole account from recommendations, and that now covers photos and carousels.</td></tr>
+      <tr><td>Uploading with another app's watermark</td><td>Instagram makes these Reels less discoverable.</td></tr>
+      <tr><td>Hashtag stuffing</td><td>Capped at 5. In large datasets, hashtag use goes with lower views.</td></tr>
+      <tr><td>Resharing to Stories for a "boost"</td><td>Mosseri says it doesn't boost reach.</td></tr>
+      <tr><td>Judging a Reel after an hour</td><td>65% of Reel views arrive within 3 days. Early numbers mostly reflect noise in who saw it first.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="your-data">
+  <h2>Run the analysis on your own account</h2>
+  <p>The repository includes <span class="mono">analyze_my_account.py</span>. Export post-level insights as CSV (Meta Business Suite → Insights → Content → Export, or the Professional Dashboard), then run:</p>
+  <pre class="code">cd instagram_algorithm_study
+pip install numpy pandas
+python3 analyze_my_account.py my_export.csv      # writes my_account_report.md
+python3 analyze_my_account.py --demo             # labelled synthetic example</pre>
+  <p>It runs on your computer and sends your data nowhere. The report gives you:</p>
+  <ul>
+    <li>Your view distribution: median with a bootstrap confidence interval, typical views, sd of log views, and the share of views from your top 10% of posts.</li>
+    <li>Median views by format and length, with confidence intervals, so you can see which differences are real.</li>
+    <li>Which of your signals (sends, saves, likes, comments, follows per reach, watch time, skip rate) track your views most closely.</li>
+    <li>A regression of log views on things you control (format, length, hashtag count, caption length, posting hour, gap since your last post, time trend), with robust standard errors.</li>
+    <li>How many posts <em>you</em> would need to detect a given improvement, based on your own variability.</li>
+  </ul>
+  <p>The other scripts reproduce every model number in this study: <span class="mono">funnel_model.py</span> (the reach model and robustness checks) and <span class="mono">experiment_design.py</span> (power analysis and the retention model).</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="methods">
+  <h2>Methods and limits</h2>
+  <ul>
+    <li><strong>No internal data.</strong> Instagram doesn't publish its ranking weights or post-level data for other accounts, and scraping is against its terms. Everything here comes from Instagram's own statements, published third-party datasets, and simulation.</li>
+    <li><strong>Verification.</strong> Instagram statements were checked against reporting that quotes Instagram or Mosseri directly. This environment's network policy blocked opening some primary pages in full, including socialinsider.io, buffer.com and transparency.meta.com. Those figures come from the publishers' pages as surfaced by search, and key ones were cross-checked against independent coverage. Re-check exact decimals before quoting them in public.</li>
+    <li><strong>Datasets are observational</strong> and drawn from each vendor's customers, mostly brands. They show associations. Buffer's frequency study is the strongest design here because it compares each account with itself.</li>
+    <li><strong>The model is a model.</strong> Its structure matches Instagram's description; its constants are assumptions tuned to give realistic view distributions. Conclusions are reported only when they hold across 13 variants: five signal weightings, and eight sets of wave sizes, audience cooling, bar steepness and test-batch size. The JavaScript simulator on this page reproduces the Python model (typical views 1,328 vs 1,324 at baseline).</li>
+    <li><strong>Things change.</strong> Instagram changes ranking often. This study reflects statements and data available on November 4, 2026.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="sources">
+  <h2>Sources</h2>
+  <h3>Instagram and Meta</h3>
+  <ol class="sources">
+    <li>Social Media Today, Instagram shares algorithm insights (Jan 2025): <a href="https://www.socialmediatoday.com/news/instagram-shares-algorithm-insights-2025/738034/">socialmediatoday.com/news/instagram-shares-algorithm-insights-2025</a></li>
+    <li>Social Media Today, like vs send rates for followers and non-followers: <a href="https://www.socialmediatoday.com/news/instagram-engagement-rates-provide-insight-into-reach/821170/">socialmediatoday.com/news/instagram-engagement-rates-provide-insight-into-reach</a></li>
+    <li>Social Media Today, Views becomes the primary metric (Aug 2024): <a href="https://www.socialmediatoday.com/news/instagram-updates-metrics-to-focus-creators-on-views/723645/">socialmediatoday.com/news/instagram-updates-metrics-to-focus-creators-on-views</a></li>
+    <li>Instagram, Instagram Ranking Explained (May 2023): <a href="https://about.instagram.com/blog/announcements/instagram-ranking-explained">about.instagram.com/blog/announcements/instagram-ranking-explained</a></li>
+    <li>Meta Transparency Center, Explaining ranking (system cards): <a href="https://transparency.meta.com/features/explaining-ranking/">transparency.meta.com/features/explaining-ranking</a> and <a href="https://transparency.meta.com/features/explaining-ranking/ig-reels-chaining/">Reels chaining card</a></li>
+    <li>Instagram Help Center, Recommendations Guidelines: <a href="https://help.instagram.com/313829416281232">help.instagram.com/313829416281232</a>; Account Status: <a href="https://help.instagram.com/539126347315373">help.instagram.com/539126347315373</a></li>
+    <li>TechCrunch, ranking update for smaller original creators (Apr 30, 2024): <a href="https://techcrunch.com/2024/04/30/instagram-is-updating-its-ranking-systems-to-surface-more-content-from-smaller-original-creators">techcrunch.com/2024/04/30/…</a></li>
+    <li>Instagram Creators, Rewarding original creators (Apr 30, 2026): <a href="https://creators.instagram.com/blog/rewarding-original-creators-on-instagram">creators.instagram.com/blog/rewarding-original-creators-on-instagram</a>; TechCrunch: <a href="https://techcrunch.com/2026/04/30/instagram-restricts-reach-of-content-aggregators-in-new-crackdown/">techcrunch.com/2026/04/30/…</a></li>
+    <li>9to5Mac, Trial Reels launch (Dec 10, 2024): <a href="https://9to5mac.com/2024/12/10/instagrams-new-trial-reels-feature-lets-creators-test-content-with-non-followers">9to5mac.com/2024/12/10/…</a>; Social Media Today, Trial Reels expansion: <a href="https://www.socialmediatoday.com/news/instagram-expands-access-trial-reels/752895/">socialmediatoday.com/news/instagram-expands-access-trial-reels</a></li>
+    <li>Business Today, hashtag cap of 5 (Dec 19, 2025): <a href="https://www.businesstoday.in/technology/news/story/no-more-hashtag-stuffing-instagram-limits-hashtag-usage-to-just-5-per-reel-and-post-507444-2025-12-19">businesstoday.in/…/instagram-limits-hashtag-usage-to-just-5</a></li>
+    <li>Tubefilter, watermarked Reels less discoverable (Feb 2021): <a href="https://tubefilter.com/2021/02/10/instagram-reels-with-tiktok-watermark-less-discoverable/">tubefilter.com/2021/02/10/…</a>; own logo is fine: <a href="https://www.socialmediatoday.com/news/instagram-clarifies-including-your-own-logo-on-a-reel-is-ok/730852">socialmediatoday.com/…/730852</a></li>
+    <li>TechCrunch, limits on undisclosed AI profiles (Aug 31, 2026): <a href="https://techcrunch.com/2026/08/31/instagram-puts-new-limits-on-undisclosed-ai-profiles/">techcrunch.com/2026/08/31/…</a></li>
+    <li>PetaPixel, link in bio doesn't affect reach (Jul 2025): <a href="https://petapixel.com/2025/07/25/link-in-bio-rumor-not-true-says-instagram-chief/">petapixel.com/2025/07/25/…</a>; Social Media Today, Stories reshare hack debunked (2026): <a href="https://www.socialmediatoday.com/news/instagram-chief-debunks-popular-engagement-hack/816781/">socialmediatoday.com/…/816781</a>; Engadget, multiple-Stories reach bug fixed: <a href="https://www.engadget.com/social-media/instagram-fixed-an-issue-that-caused-posting-multiple-stories-to-tank-your-reach-184714482.html">engadget.com/…</a></li>
+    <li>Engadget, 3-minute Reels and 3:4 grid (Jan 2025): <a href="https://www.engadget.com/social-media/instagram-swoops-in-with-3-minute-reels-and-rectangular-profile-grids-as-the-tiktok-ban-gets-real-201316339.html">engadget.com/…</a>; Social Samosa, skip rate and retention chart in Insights: <a href="https://www.socialsamosa.com/news-2/instagram-retention-chart-skip-rate-new-performance-metrics-reels-9730992">socialsamosa.com/…</a></li>
+    <li>Gizmodo, Mosseri on shadowbanning (2023): <a href="https://gizmodo.com/instagram-account-ban-shadowban-adam-mosseri-twitteri-1850495774">gizmodo.com/…</a>; Search Engine Land, Your Algorithm controls: <a href="https://searchengineland.com/instagram-your-algorithm-465987">searchengineland.com/instagram-your-algorithm-465987</a></li>
+  </ol>
+  <h3>Datasets</h3>
+  <ol class="sources">
+    <li>Buffer, Reels vs carousels reach and engagement (4M+ posts): <a href="https://buffer.com/resources/instagram-reach-engagement-analysis/">buffer.com/resources/instagram-reach-engagement-analysis</a></li>
+    <li>Buffer, How often to post on Instagram (2.1M posts, 2025): <a href="https://buffer.com/resources/how-often-to-post-on-instagram/">buffer.com/resources/how-often-to-post-on-instagram</a></li>
+    <li>Buffer, Best content format 2026: <a href="https://buffer.com/resources/data-best-content-format-social-media/">buffer.com/resources/data-best-content-format-social-media</a>; State of Social Media Engagement 2026: <a href="https://buffer.com/resources/state-of-social-media-engagement-2026/">buffer.com/resources/state-of-social-media-engagement-2026</a>; Best time to post: <a href="https://buffer.com/resources/when-is-the-best-time-to-post-on-instagram/">buffer.com/resources/when-is-the-best-time-to-post-on-instagram</a></li>
+    <li>Metricool, 2026 Instagram Study (24.4M posts): <a href="https://metricool.com/press-release-instagram-study-2026/">metricool.com/press-release-instagram-study-2026</a> and <a href="https://metricool.com/instagram-research-study/">metricool.com/instagram-research-study</a>; 2026 Social Media Study: <a href="https://metricool.com/press-release-2026-social-media-study/">metricool.com/press-release-2026-social-media-study</a></li>
+    <li>Socialinsider, Instagram benchmarks (67.5M posts): <a href="https://www.socialinsider.io/social-media-benchmarks/instagram">socialinsider.io/social-media-benchmarks/instagram</a>; Reels statistics (9.77M Reels): <a href="https://www.socialinsider.io/blog/instagram-reels-statistics/">socialinsider.io/blog/instagram-reels-statistics</a>; Reach statistics: <a href="https://www.socialinsider.io/blog/social-media-reach/">socialinsider.io/blog/social-media-reach</a>; What to post: <a href="https://www.socialinsider.io/blog/what-to-post-on-social-media/">socialinsider.io/blog/what-to-post-on-social-media</a></li>
+    <li>Later, Best time to post on Instagram (6M+ posts): <a href="https://later.com/blog/best-time-to-post-on-instagram/">later.com/blog/best-time-to-post-on-instagram</a></li>
+    <li>Emplifi, collab post analysis (520K posts, H1 2026). The figures come from search excerpts; the page itself wasn't opened.</li>
+  </ol>
+</section>
+
+<footer>Instagram Reach Study · November 4, 2026 · Model code and data in <span class="mono">instagram_algorithm_study/</span>. Not affiliated with Instagram or Meta.</footer>
+</main>
+</div>
+
+<script>
+(() => {
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const $ = (s) => document.querySelector(s);
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const compact = (v) => { const a = Math.abs(v);
+  if (a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
+  if (a >= 1e4) return Math.round(v / 1e3) + 'K';
+  if (a >= 1e3) return (v / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(Math.round(v)); };
+const full = (v) => Math.round(v).toLocaleString('en-US');
+const pct = (d = 0) => (v) => (v * 100).toFixed(d) + '%';
+const COLORS = ['var(--s1)', 'var(--s2)', 'var(--s3)'];
+
+/* ---------- tooltip ---------- */
+const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; tip.setAttribute('role', 'status'); document.body.appendChild(tip);
+function showTip(html, ev) {
+  tip.innerHTML = html; tip.hidden = false;
+  const r = tip.getBoundingClientRect(), pad = 14;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - pad;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+const hideTip = () => { tip.hidden = true; };
+const swatch = (i) => `<i style="background:${COLORS[i]}"></i>`;
+
+function legend(id, names, kind) {
+  const host = document.getElementById(id); if (!host) return;
+  host.innerHTML = names.map((n, i) => `<span><i class="${kind === 'dot' ? 'dot' : ''}" style="background:${n.color || COLORS[i]}"></i>${n.name || n}</span>`).join('');
+}
+function dataTable(host, head, rows) {
+  const d = document.createElement('details'); d.className = 'data';
+  d.innerHTML = `<summary>Show the numbers</summary><div class="tablewrap"><table><thead><tr>${head.map((h, i) => `<th class="${i ? 'n' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i ? 'n' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  host.after(d);
+}
+function niceTicks(lo, hi, n) {
+  const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
+  const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10)); return out;
+}
+function responsive(host, render) {
+  let w = 0; const go = () => { const cw = host.clientWidth; if (cw && cw !== w) { w = cw; render(cw); } };
+  go(); if ('ResizeObserver' in window) new ResizeObserver(() => requestAnimationFrame(go)).observe(host); else addEventListener('resize', go);
+  return () => { w = 0; go(); };
+}
+function barPath(x, y, w, h, r) { // rounded data-end on the right, square at baseline
+  r = Math.min(r, h / 2, w); if (w <= 0) return '';
+  return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
+}
+function colPath(x, y, w, h, r) { // rounded top, square at baseline
+  r = Math.min(r, w / 2, h); if (h <= 0) return '';
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+
+/* ---------- line chart ---------- */
+function lineChart(host, o) {
+  const H = o.height || 240;
+  return responsive(host, (W) => {
+    host.innerHTML = '';
+    const m = { l: o.ml || 48, r: 18, t: 12, b: o.xLabel ? 44 : 30 };
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': o.label || '' }, host);
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const series = typeof o.series === 'function' ? o.series() : o.series;
+    const xs = series[0].pts.map(p => p[0]);
+    const x0 = o.xMin ?? Math.min(...xs), x1 = o.xMax ?? Math.max(...xs);
+    const ys = series.flatMap(s => s.pts.map(p => p[1]));
+    const y0 = o.yMin ?? 0, y1 = o.yMax ?? Math.max(...ys) * 1.08;
+    const ty = o.yLog ? Math.log10 : (v) => v;
+    const sx = (v) => m.l + (v - x0) / (x1 - x0) * iw;
+    const sy = (v) => m.t + ih - (ty(Math.max(v, o.yLog ? y0 : -Infinity)) - ty(y0)) / (ty(y1) - ty(y0)) * ih;
+    if (o.zone) { const [a, b] = o.zone(); if (b > a) el('rect', { x: sx(Math.max(a, x0)), y: m.t, width: Math.max(0, sx(Math.min(b, x1)) - sx(Math.max(a, x0))), height: ih, class: 'zone' }, svg); }
+    for (const t of (o.yTicks || niceTicks(y0, y1, 4))) {
+      if (t < y0 || t > y1) continue; const y = sy(t);
+      el('line', { x1: m.l, x2: W - m.r, y1: y, y2: y, class: 'grid' }, svg);
+      el('text', { x: m.l - 8, y: y + 4, class: 'tick', 'text-anchor': 'end' }, svg).textContent = o.yFmt(t);
+    }
+    el('line', { x1: m.l, x2: W - m.r, y1: m.t + ih, y2: m.t + ih, class: 'axis' }, svg);
+    let xt = o.xTicks || niceTicks(x0, x1, Math.max(3, Math.min(7, Math.floor(iw / 70))));
+    if (iw < 300 && xt.length > 5) xt = xt.filter((_, i) => i % 2 === 0);
+    for (const t of xt) el('text', { x: sx(t), y: m.t + ih + 18, class: 'tick', 'text-anchor': 'middle' }, svg).textContent = o.xFmt(t);
+    if (o.xLabel) el('text', { x: m.l + iw / 2, y: H - 6, class: 'axlabel', 'text-anchor': 'middle' }, svg).textContent = o.xLabel;
+    if (o.refY != null) { const y = sy(o.refY); el('line', { x1: m.l, x2: W - m.r, y1: y, y2: y, class: 'refl' }, svg); if (o.refLabel) el('text', { x: W - m.r, y: y - 6, class: 'axlabel', 'text-anchor': 'end' }, svg).textContent = o.refLabel; }
+    if (o.markX != null) { const mx = o.markX(); el('line', { x1: sx(mx), x2: sx(mx), y1: m.t, y2: m.t + ih, class: 'refl' }, svg); }
+    series.forEach((s, i) => {
+      el('path', { d: s.pts.map((p, j) => `${j ? 'L' : 'M'}${sx(p[0]).toFixed(1)},${sy(p[1]).toFixed(1)}`).join(''), class: `ln ${s.base ? 'base' : 'c' + (s.c || i + 1)}` }, svg);
+      if (s.markAt != null) { const p = s.pts.find(q => q[0] === s.markAt); if (p) el('circle', { cx: sx(p[0]), cy: sy(p[1]), r: 4.5, class: `dot f${s.c || i + 1}` }, svg); }
+    });
+    const cross = el('line', { x1: 0, x2: 0, y1: m.t, y2: m.t + ih, class: 'cross', visibility: 'hidden' }, svg);
+    const dots = series.map((s, i) => el('circle', { r: 4.5, class: `dot ${s.base ? 'fm' : 'f' + (s.c || i + 1)}`, visibility: 'hidden' }, svg));
+    const hit = el('rect', { x: m.l, y: m.t, width: iw, height: ih, class: 'hit' }, svg);
+    const move = (ev) => {
+      const r = svg.getBoundingClientRect(); const px = (ev.clientX - r.left) * (W / r.width);
+      const xv = x0 + (px - m.l) / iw * (x1 - x0);
+      let j = 0, best = Infinity; series[0].pts.forEach((p, k) => { const d = Math.abs(p[0] - xv); if (d < best) { best = d; j = k; } });
+      const xx = sx(series[0].pts[j][0]); cross.setAttribute('x1', xx); cross.setAttribute('x2', xx); cross.setAttribute('visibility', 'visible');
+      let html = `<b>${o.tipX ? o.tipX(series[0].pts[j][0]) : o.xFmt(series[0].pts[j][0])}</b>`;
+      series.forEach((s, i) => { const p = s.pts[j]; if (!p) return; dots[i].setAttribute('cx', sx(p[0])); dots[i].setAttribute('cy', sy(p[1])); dots[i].setAttribute('visibility', 'visible');
+        html += `<div class="row"><i style="background:${s.base ? 'var(--muted)' : COLORS[(s.c || i + 1) - 1]}"></i>${series.length > 1 || s.name ? (s.name + ': ') : ''}${(o.tipY || o.yFmt)(p[1])}</div>`; });
+      showTip(html, ev);
+    };
+    const leave = () => { cross.setAttribute('visibility', 'hidden'); dots.forEach(d => d.setAttribute('visibility', 'hidden')); hideTip(); };
+    hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move); hit.addEventListener('pointerleave', leave);
+  });
+}
+
+/* ---------- horizontal grouped bar chart ---------- */
+function barChart(host, o) {
+  return responsive(host, (W) => {
+    host.innerHTML = '';
+    const ns = o.series.length, bh = o.barH || (ns > 1 ? 14 : 20), gap = 2, groupGap = 16;
+    const labW = Math.min(o.labW || 110, W * 0.36), valW = 46;
+    const groupH = ns * bh + (ns - 1) * gap;
+    const H = o.cats.length * groupH + (o.cats.length - 1) * groupGap + 8;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': o.label || '' }, host);
+    const iw = W - labW - valW - 4;
+    const max = o.max || Math.max(...o.series.flatMap(s => s.vals)) ;
+    el('line', { x1: labW, x2: labW, y1: 0, y2: H - 4, class: 'axis' }, svg);
+    o.cats.forEach((c, ci) => {
+      const gy = ci * (groupH + groupGap);
+      el('text', { x: labW - 10, y: gy + groupH / 2 + 4, class: 'catlabel', 'text-anchor': 'end' }, svg).textContent = c;
+      o.series.forEach((s, si) => {
+        const v = s.vals[ci], y = gy + si * (bh + gap), w = Math.max(0, v / max * iw);
+        const p = el('path', { d: barPath(labW, y, w, bh, 4), class: 'f' + (s.c || si + 1) }, svg);
+        el('text', { x: labW + w + 6, y: y + bh / 2 + 4, class: 'vlabel' }, svg).textContent = o.fmt(v);
+        const hitr = el('rect', { x: labW, y: y - 1, width: iw + valW, height: bh + 2, class: 'hit' }, svg);
+        const show = (ev) => showTip(`<b>${c}</b><div class="row">${swatch((s.c || si + 1) - 1)}${s.name ? s.name + ': ' : ''}${o.tipFmt ? o.tipFmt(v) : o.fmt(v)}</div>`, ev);
+        hitr.addEventListener('pointermove', show); hitr.addEventListener('pointerdown', show); hitr.addEventListener('pointerleave', hideTip);
+      });
+    });
+  });
+}
+
+/* ---------- histogram (columns + baseline step line) ---------- */
+function histChart(host, o) {
+  const H = o.height || 230;
+  return responsive(host, (W) => {
+    host.innerHTML = '';
+    const m = { l: 44, r: 12, t: 10, b: 44 };
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': o.label || '' }, host);
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const { edges, a, b } = o.data();
+    const n = a.length, lo = edges[0], hi = edges[n];
+    const ymax = Math.max(...a, ...(b || [0])) * 1.12;
+    const sx = (v) => m.l + (v - lo) / (hi - lo) * iw, sy = (v) => m.t + ih - v / ymax * ih;
+    for (const t of niceTicks(0, ymax, 4)) { const y = sy(t); el('line', { x1: m.l, x2: W - m.r, y1: y, y2: y, class: 'grid' }, svg); el('text', { x: m.l - 8, y: y + 4, class: 'tick', 'text-anchor': 'end' }, svg).textContent = pct(0)(t); }
+    for (let i = 0; i < n; i++) {
+      const x = sx(edges[i]) + 1, w = Math.max(1, sx(edges[i + 1]) - sx(edges[i]) - 2), y = sy(a[i]);
+      el('path', { d: colPath(x, y, w, m.t + ih - y, 3), class: 'f1' }, svg);
+    }
+    if (b) { let d = ''; for (let i = 0; i < n; i++) { const y = sy(b[i]); d += `${i ? 'L' : 'M'}${sx(edges[i])},${y}H${sx(edges[i + 1])}`; } el('path', { d, class: 'ln base' }, svg); }
+    el('line', { x1: m.l, x2: W - m.r, y1: m.t + ih, y2: m.t + ih, class: 'axis' }, svg);
+    for (let e = Math.ceil(lo); e <= hi; e++) el('text', { x: sx(e), y: m.t + ih + 18, class: 'tick', 'text-anchor': 'middle' }, svg).textContent = compact(Math.pow(10, e));
+    el('text', { x: m.l + iw / 2, y: H - 6, class: 'axlabel', 'text-anchor': 'middle' }, svg).textContent = 'Views per post (log scale)';
+    for (let i = 0; i < n; i++) {
+      const r = el('rect', { x: sx(edges[i]), y: m.t, width: sx(edges[i + 1]) - sx(edges[i]), height: ih, class: 'hit' }, svg);
+      const show = (ev) => showTip(`<b>${compact(Math.pow(10, edges[i]))} – ${compact(Math.pow(10, edges[i + 1]))} views</b><div class="row">${swatch(0)}${o.aName}: ${pct(1)(a[i])} of posts</div>${b ? `<div class="row"><i style="background:var(--muted)"></i>${o.bName}: ${pct(1)(b[i])}</div>` : ''}`, ev);
+      r.addEventListener('pointermove', show); r.addEventListener('pointerdown', show); r.addEventListener('pointerleave', hideTip);
+    }
+  });
+}
+
+/* ---------- funnel diagram ---------- */
+(() => {
+  const host = $('#funnel'); const n0 = 5000 * 0.06 + 250; const rows = [];
+  for (let k = 0; k < 6; k++) {
+    const n = n0 * Math.pow(3.5, k), w = 6 + (Math.log10(n) - Math.log10(n0)) / (Math.log10(n0 * Math.pow(3.5, 5)) - Math.log10(n0)) * 60;
+    rows.push(`<div class="wave"><span class="lab">Wave ${k}</span><div class="track"><div class="bar" style="width:${w.toFixed(1)}%"></div><span class="wv">~${compact(n)} people</span></div></div>`);
+    const gates = ['Some followers plus a test batch of non-followers. The system scores watch time, sends and likes against competing content. Below the bar, the post is throttled and stops.',
+      'Passed: a bigger, less closely matched audience. The bar rises a little.', 'Passed again: the bar rises again.', 'Each step multiplies the audience about 3.5×.', 'Few posts get this far. These are the breakouts.'];
+    if (k < 5) rows.push(`<div class="gate"><span></span><span>${gates[k]}</span></div>`);
+  }
+  host.innerHTML = rows.join('');
+})();
+
+/* ---------- dataset charts ---------- */
+legend('lg-format', ['Reels', 'Carousels', 'Single images']);
+barChart($('#ch-format'), { label: 'Reach per post relative to single images', cats: ['Buffer', 'Metricool'], labW: 86,
+  series: [{ name: 'Reels', vals: [2.25, 3.12] }, { name: 'Carousels', vals: [1.65, 2.42] }, { name: 'Single images', vals: [1, 1] }],
+  fmt: (v) => v.toFixed(2) + '×' });
+dataTable($('#ch-format'), ['Study', 'Reels', 'Carousels', 'Images'], [['Buffer (4M+ posts)', '2.25×', '1.65×', '1.00×'], ['Metricool (24.4M posts)', '3.12×', '2.42×', '1.00×']]);
+
+barChart($('#ch-freq-growth'), { label: 'Weekly follower growth by posting frequency', cats: ['1–2 / wk', '3–5 / wk', '6–9 / wk', '10+ / wk'], labW: 76,
+  series: [{ name: 'Weekly follower growth', vals: [0.12, 0.26, 0.44, 0.66] }], fmt: (v) => '+' + v.toFixed(2) + '%' });
+barChart($('#ch-freq-reach'), { label: 'Reach per post vs 1-2 posts a week', cats: ['1–2 / wk', '3–5 / wk', '6–9 / wk', '10+ / wk'], labW: 76, max: 30,
+  series: [{ name: 'Reach per post vs 1–2/wk', vals: [0, 12, 18, 24] }], fmt: (v) => v ? '+' + v + '%' : 'baseline' });
+dataTable($('#ch-freq-reach').closest('.duo'), ['Posts per week', 'Weekly follower growth', 'Reach per post vs 1–2/wk'], [['1–2', '+0.12%', 'baseline'], ['3–5', '+0.26%', '+12%'], ['6–9', '+0.44%', '+18%'], ['10+', '+0.66%', '+24%']]);
+
+barChart($('#ch-length'), { label: 'Reels reach rate by length', cats: ['Under 30 s', '30–60 s', 'Over 2 min'], labW: 90,
+  series: [{ name: 'Reach rate', vals: [5.2, 5.6, 3.5] }], fmt: (v) => v.toFixed(1) + '%' });
+
+legend('lg-tier', ['Reels', 'Carousels', 'Single images']);
+const tiers = ['1–5K', '5–10K', '10–50K', '50–100K', '100K+'];
+const tierData = [[0.80, 0.65, 0.55, 0.45, 0.40], [0.75, 0.70, 0.60, 0.50, 0.45], [0.45, 0.35, 0.33, 0.30, 0.30]];
+lineChart($('#ch-tier'), { label: 'Engagement per follower by account size', height: 220,
+  series: ['Reels', 'Carousels', 'Single images'].map((n, i) => ({ name: n, pts: tierData[i].map((v, j) => [j, v]) })),
+  xTicks: [0, 1, 2, 3, 4], xFmt: (v) => tiers[v] + '', tipX: (v) => tiers[v] + ' followers', yMin: 0, yMax: 0.9, yTicks: [0, 0.2, 0.4, 0.6, 0.8], yFmt: (v) => v.toFixed(1) + '%', tipY: (v) => v.toFixed(2) + '%' });
+dataTable($('#ch-tier'), ['Followers', 'Reels', 'Carousels', 'Images'], tiers.map((t, j) => [t, ...tierData.map(r => r[j].toFixed(2) + '%')]));
+
+/* ---------- model charts (from funnel_model.py results) ---------- */
+const resp = [[0.6,207.5,0.0001],[0.7,299.1,0.0005],[0.8,469.4,0.0021],[0.9,777.6,0.0070],[1.0,1329.0,0.0157],[1.1,2299.1,0.0322],[1.2,3890.3,0.0582],[1.3,6499.5,0.0926],[1.4,10653.3,0.1401],[1.5,16817.1,0.1898],[1.6,25951.2,0.2529],[1.7,38623.8,0.3116],[1.8,57127.6,0.3820]];
+const qx = (v) => Math.round(v * 100) + '%';
+lineChart($('#ch-resp-geo'), { label: 'Typical views vs quality multiplier', height: 220, ml: 44,
+  series: [{ name: '', pts: resp.map(r => [r[0], r[1]]), markAt: 1.0 }], yLog: true, yMin: 100, yMax: 100000, yTicks: [100, 1000, 10000, 100000], yFmt: compact, tipY: (v) => full(v) + ' views',
+  xTicks: [0.6, 1.0, 1.4, 1.8], xFmt: qx, tipX: (v) => 'Signals at ' + qx(v) + ' of baseline' });
+lineChart($('#ch-resp-p'), { label: 'Chance of a 100k-view post vs quality multiplier', height: 220, ml: 44,
+  series: [{ name: '', pts: resp.map(r => [r[0], r[2]]), markAt: 1.0 }], yMin: 0, yMax: 0.4, yTicks: [0, 0.1, 0.2, 0.3, 0.4], yFmt: pct(0), tipY: pct(1),
+  xTicks: [0.6, 1.0, 1.4, 1.8], xFmt: qx, tipX: (v) => 'Signals at ' + qx(v) + ' of baseline' });
+dataTable($('#ch-resp-p').closest('.duo'), ['Signals vs baseline', 'Typical views', 'Chance of 100k post'], resp.map(r => [qx(r[0]), full(r[1]), pct(2)(r[2])]));
+
+const robust = [['Default settings', 3.80, 4.6, 0.77], ['Watch-time-heavy weights', 3.83, 4.52, null], ['Equal weights', 3.81, 4.65, null], ['Sends-heavy weights', 3.68, 4.34, null], ['Likes-heavy weights', 3.80, 4.80, null],
+  ['Bigger waves (5× per step)', 5.02, 3.66, 0.89], ['Smaller waves (2.5× per step)', 2.96, 8.03, 0.62], ['Mild audience cooling', 7.27, 2.67, 0.95], ['Strong audience cooling', 2.87, 7.77, 0.60],
+  ['Flat bar (no rise per wave)', 5.38, 3.24, 0.90], ['Steep bar (+0.1 per wave)', 3.30, 5.68, 0.71], ['Bigger test batch (1,000)', 3.86, 3.74, 0.76]];
+$('#tb-robust').innerHTML = robust.map(r => `<tr><td>${r[0]}</td><td class="n">${r[1].toFixed(2)}×</td><td class="n">${r[2].toFixed(1)}×</td><td class="n">${r[3] == null ? '77%' : Math.round(r[3] * 100) + '%'}</td></tr>`).join('');
+
+const histShares = [0.1328,0.125125,0.10125,0.06325,0.12545,0.0863,0.0693,0.100725,0.03235,0.065925,0.01705,0.02145,0.007575,0.00475,0.002375,0.000625,0.000475,0.00005,0.000025,0.000025];
+const histEdges = Array.from({ length: 21 }, (_, i) => 2 + i * 0.25);
+histChart($('#ch-hist'), { label: 'Distribution of views per post, baseline creator', aName: 'Baseline creator', data: () => ({ edges: histEdges, a: histShares }) });
+
+const align = [[0.5,186],[0.6,278],[0.7,436],[0.8,676],[0.9,991],[1.0,1324],[1.1,1633]];
+lineChart($('#ch-align'), { label: 'Typical views vs first-audience match', height: 210,
+  series: [{ name: '', pts: align, markAt: 1.0 }], yMin: 0, yMax: 1800, yTicks: [0, 500, 1000, 1500], yFmt: (v) => full(v), tipY: (v) => full(v) + ' typical views',
+  xTicks: [0.5, 0.7, 0.9, 1.1], xFmt: qx, tipX: (v) => qx(v) + ' match' });
+
+legend('lg-vol', ['Quality holds as you post more', 'Quality drops 4% per extra weekly post past 3']);
+const ppw = [1, 2, 3, 4, 5, 7, 10, 14], volA = [0.0657,0.1271,0.1845,0.238,0.2881,0.3786,0.4932,0.6138], volB = [0.0657,0.1271,0.1845,0.1813,0.1478,0.1025,0.0254,0.0];
+lineChart($('#ch-vol'), { label: 'Chance of at least one 100k post in 30 days by posting rate', height: 220, xLabel: 'Posts per week',
+  series: [{ name: 'Quality holds', pts: ppw.map((x, i) => [x, volA[i]]) }, { name: 'Quality drops', pts: ppw.map((x, i) => [x, volB[i]]) }],
+  xMin: 1, xMax: 14, xTicks: [1, 3, 5, 7, 10, 14], xFmt: (v) => String(v), tipX: (v) => v + ' posts / week', yMin: 0, yMax: 0.7, yTicks: [0, 0.2, 0.4, 0.6], yFmt: pct(0), tipY: pct(1) });
+dataTable($('#ch-vol'), ['Posts / week', 'Quality holds', 'Quality drops'], ppw.map((x, i) => [x, pct(1)(volA[i]), pct(1)(volB[i])]));
+
+legend('lg-pow', ['Paired: same video, two hooks', 'Unpaired: different videos']);
+const powN = [5, 10, 20, 40, 80], powP = [0.008, 0.125, 0.192, 0.365, 0.638], powU = [0.06, 0.063, 0.097, 0.165, 0.203];
+lineChart($('#ch-pow'), { label: 'Statistical power vs posts per version', height: 220, xLabel: 'Posts (or pairs) per version',
+  series: [{ name: 'Paired', pts: powN.map((x, i) => [x, powP[i]]) }, { name: 'Unpaired', pts: powN.map((x, i) => [x, powU[i]]) }],
+  xMin: 0, xMax: 85, xTicks: [5, 20, 40, 60, 80], xFmt: String, tipX: (v) => v + ' per version', yMin: 0, yMax: 1, yTicks: [0, 0.2, 0.4, 0.6, 0.8, 1], yFmt: pct(0), tipY: pct(0), refY: 0.8, refLabel: '80% power target' });
+dataTable($('#ch-pow'), ['Posts per version', 'Paired', 'Unpaired'], powN.map((x, i) => [x, pct(0)(powP[i]), pct(0)(powU[i])]));
+
+/* ---------- simulator (JS port of funnel_model.simulate) ---------- */
+function makeRng(seed) {
+  let a = seed >>> 0;
+  const u = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  let spare = null;
+  const n = () => { if (spare !== null) { const s = spare; spare = null; return s; } let x, y, r; do { x = 2 * u() - 1; y = 2 * u() - 1; r = x * x + y * y; } while (r >= 1 || r === 0); const f = Math.sqrt(-2 * Math.log(r) / r); spare = y * f; return x * f; };
+  const binom = (N, p) => { if (p <= 0) return 0; const mu = N * p;
+    if (N < 40) { let k = 0; for (let i = 0; i < N; i++) if (u() < p) k++; return k; }
+    if (mu < 25) { const L = Math.exp(-mu); let k = 0, q = 1; do { k++; q *= u(); } while (q > L); return k - 1; }
+    return Math.max(0, Math.round(mu + Math.sqrt(mu * (1 - p)) * n())); };
+  return { n, binom };
+}
+const P = { w: [0.45, 0.35, 0.20], bench: [0.35, 0.008, 0.035], seedFrac: 0.06, nfSeed: 250, growth: 3.5, stages: 9, cooling: 0.86, theta0: 1.05, step: 0.06, watchSd: 0.30, sig: 0.15, vps: 0.7, jitter: 0.35, floor: 0.25 };
+function simulate(c, nPosts, seed) {
+  const rng = makeRng(seed), base = [c.retention, c.sendRate, c.likeRate], n0 = c.followers * P.seedFrac + P.nfSeed, out = new Float64Array(nPosts);
+  for (let i = 0; i < nPosts; i++) {
+    const qc = Math.exp(-0.045 + 0.30 * rng.n());
+    const r0 = base.map(b => b * qc * Math.exp(-P.sig * P.sig / 2 + P.sig * rng.n()));
+    let views = 0;
+    for (let k = 0; k < P.stages; k++) {
+      const nk = Math.max(1, Math.round(n0 * Math.pow(P.growth, k) * Math.exp(-P.jitter * P.jitter / 2 + P.jitter * rng.n())));
+      const dec = Math.pow(P.cooling, k) * (k === 0 ? c.align : 1);
+      const ret = Math.min(0.95, Math.max(0.01, r0[0] * dec)), sr = Math.min(0.5, r0[1] * dec), lr = Math.min(0.5, r0[2] * dec);
+      const wObs = ret + rng.n() * P.watchSd / Math.sqrt(nk), sends = rng.binom(nk, sr), likes = rng.binom(nk, lr);
+      const score = P.w[0] * wObs / P.bench[0] + P.w[1] * (sends / nk) / P.bench[1] + P.w[2] * (likes / nk) / P.bench[2];
+      const bar = P.theta0 + P.step * k, pass = score >= bar;
+      const frac = pass ? 1 : Math.min(1, Math.max(P.floor, Math.pow(score / bar, 4)));
+      views += frac * nk + P.vps * sends * frac;
+      if (!pass) break;
+    }
+    out[i] = views;
+  }
+  return out;
+}
+function stats(v, ppw) {
+  const s = Float64Array.from(v).sort(), n = s.length; let lg = 0, sum = 0, a = 0, b = 0;
+  for (const x of s) { lg += Math.log(x); sum += x; if (x > 1e4) a++; if (x > 1e5) b++; }
+  const p100 = b / n, posts = ppw * 30 / 7;
+  return { geo: Math.exp(lg / n), median: s[Math.floor(n / 2)], p10: a / n, p100, month: 1 - Math.pow(1 - p100, posts), views30: sum / n * posts };
+}
+function hist(v) { const a = new Array(20).fill(0); for (const x of v) { const i = Math.floor((Math.log10(x) - 2) / 0.25); a[Math.max(0, Math.min(19, i))]++; } return a.map(c => c / v.length); }
+
+const ids = ['followers', 'watch', 'sends', 'likes', 'align', 'ppw'];
+const inputs = Object.fromEntries(ids.map(k => [k, document.getElementById('s-' + k)]));
+const signed = (v) => (v > 0 ? '+' : '') + v + '%';
+let simState = null;
+function runSim() {
+  const f = +inputs.followers.value, w = +inputs.watch.value, s = +inputs.sends.value, l = +inputs.likes.value, al = +inputs.align.value, pp = +inputs.ppw.value;
+  $('#o-followers').textContent = f.toLocaleString('en-US'); $('#o-watch').textContent = signed(w); $('#o-sends').textContent = signed(s);
+  $('#o-likes').textContent = signed(l); $('#o-align').textContent = al + '%'; $('#o-ppw').textContent = pp;
+  const N = 12000;
+  const baseV = simulate({ followers: f, retention: 0.40, sendRate: 0.010, likeRate: 0.040, align: 1 }, N, 11);
+  const scenV = simulate({ followers: f, retention: 0.40 * (1 + w / 100), sendRate: 0.010 * (1 + s / 100), likeRate: 0.040 * (1 + l / 100), align: al / 100 }, N, 11);
+  const B = stats(baseV, pp), S = stats(scenV, pp);
+  const delta = (x, y, kind) => { const r = y / x; if (!isFinite(r) || Math.abs(r - 1) < 0.02) return '<span class="d flat">same as baseline</span>';
+    return `<span class="d ${r > 1 ? 'up' : 'down'}">${r > 1 ? '▲' : '▼'} ${r >= 1.995 ? r.toFixed(1) + '× baseline' : (r > 1 ? '+' : '') + Math.round((r - 1) * 100) + '% vs baseline'}</span>`; };
+  const tile = (k, v, d) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${d}</div>`;
+  $('#tiles').innerHTML = [
+    tile('Typical views per post', compact(S.geo), delta(B.geo, S.geo)),
+    tile('Median views per post', compact(S.median), delta(B.median, S.median)),
+    tile('Chance a post passes 10K', pct(1)(S.p10), delta(B.p10, S.p10)),
+    tile('Chance a post passes 100K', pct(1)(S.p100), delta(B.p100, S.p100)),
+    tile('At least one 100K post in 30 days', pct(0)(S.month), delta(B.month, S.month)),
+    tile('Expected views in 30 days', compact(S.views30), delta(B.views30, S.views30)),
+  ].join('');
+  simState = { a: hist(scenV), b: hist(baseV) };
+  redrawSim();
+}
+legend('lg-sim', [{ name: 'Your scenario', color: 'var(--s1)' }, { name: 'Baseline', color: 'var(--muted)' }]);
+let redrawSim = () => {};
+let simTimer = 0;
+ids.forEach(k => inputs[k].addEventListener('input', () => { clearTimeout(simTimer); simTimer = setTimeout(runSim, 30); }));
+$('#sim-reset').addEventListener('click', () => { inputs.watch.value = 0; inputs.sends.value = 0; inputs.likes.value = 0; inputs.align.value = 100; inputs.ppw.value = 3; runSim(); });
+runSim();
+redrawSim = histChart($('#ch-sim'), { label: 'Simulated distribution of views per post', aName: 'Your scenario', bName: 'Baseline', height: 220, data: () => ({ edges: histEdges, a: simState.a, b: simState.b }) });
+
+/* ---------- retention calculator ---------- */
+const rIn = { skip: $('#r-skip'), half: $('#r-half'), len: $('#r-len') };
+function retModel() {
+  const h = 1 - rIn.skip.value / 100, half = +rIn.half.value, L = +rIn.len.value, tau = half / Math.LN2;
+  const R = (t) => t <= 3 ? 1 - (1 - h) * t / 3 : h * Math.exp(-(t - 3) / tau);
+  const avg = L <= 3 ? L * (1 + h) / 2 : (1 - h) * 1.5 + h * (3 + tau * (1 - Math.exp(-(L - 3) / tau)));
+  const complete = L <= 3 ? h : h * Math.exp(-(L - 3) / tau);
+  return { h, half, L, tau, R, avg, complete, zone: [3 + half, 3 + 2.75 * half] };
+}
+let redrawRet = () => {};
+function updRet() {
+  const m = retModel();
+  $('#o-skip').textContent = rIn.skip.value + '%'; $('#o-half').textContent = m.half + ' s'; $('#o-len').textContent = m.L + ' s';
+  const [z0, z1] = m.zone;
+  const zl = `${Math.round(z0)}–${Math.round(z1)} s`;
+  const inZone = m.L >= z0 && m.L <= z1;
+  $('#rtiles').innerHTML = `<div class="tile"><div class="k">Average watch time</div><div class="v">${m.avg.toFixed(1)} s</div><span class="d flat">${Math.round(m.avg / m.L * 100)}% of the Reel</span></div>
+    <div class="tile"><div class="k">Watch to the end</div><div class="v">${(m.complete * 100).toFixed(m.complete < 0.1 ? 1 : 0)}%</div><span class="d flat">of everyone who saw it</span></div>
+    <div class="tile"><div class="k">Suggested length</div><div class="v">${zl}</div><span class="d ${inZone ? 'up' : 'flat'}">${inZone ? 'Your length is in range' : (m.L < z0 ? 'Room to go longer' : 'Consider cutting')}</span></div>`;
+  redrawRet();
+}
+Object.values(rIn).forEach(i => i.addEventListener('input', updRet));
+updRet();
+redrawRet = lineChart($('#ch-ret'), { label: 'Share of viewers still watching over time', height: 220, xLabel: 'Seconds into the Reel',
+  series: () => { const m = retModel(), T = Math.max(60, Math.ceil(m.L * 1.25 / 10) * 10, Math.ceil(m.zone[1] / 10) * 10); const pts = []; for (let t = 0; t <= T; t += T / 120) pts.push([+t.toFixed(2), m.R(t)]); return [{ name: '', pts }]; },
+  xMin: 0, yMin: 0, yMax: 1, yTicks: [0, 0.25, 0.5, 0.75, 1], yFmt: pct(0), tipY: (v) => pct(0)(v) + ' still watching', xFmt: (v) => Math.round(v) + 's', tipX: (v) => v.toFixed(1) + ' s in',
+  zone: () => retModel().zone, markX: () => retModel().L });
+})();
+</script>

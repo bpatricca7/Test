@@ -55,3 +55,7 @@ This analysis is for **informational purposes only** and should not be considere
 ## License
 
 MIT
+
+## Instagram Reach Study
+
+A separate statistical study of Instagram's ranking and how to grow reach lives in [`instagram_algorithm_study/`](instagram_algorithm_study/). It includes a simulation model, a power analysis, and a script you can run on your own Insights export. Start with [`INSTAGRAM_ALGORITHM_STUDY.md`](instagram_algorithm_study/INSTAGRAM_ALGORITHM_STUDY.md).
