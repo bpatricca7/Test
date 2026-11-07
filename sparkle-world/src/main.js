@@ -13,6 +13,8 @@ import * as player from './player/player.js';
 import * as emotes from './player/emotes.js';
 import * as entities from './things/entities.js';
 import * as furniture from './things/furniture.js';
+// wave 5: things a new world's biome asks for (docs/teams/wave5-plan.md §4)
+import * as features from './world/features.js';
 import * as prefabs from './things/prefabs.js';
 import * as pets from './things/pets.js';
 import * as garden from './things/garden.js';
@@ -21,6 +23,11 @@ import * as cooking from './things/cooking.js';
 import * as vehicles from './things/vehicles/index.js';
 // wave 4: squishy toys and mystery presents (docs/teams/wave4-integration.md)
 import * as squish from './things/squish/index.js';
+// wave 5: Cruise Ship fun, gifts, helper elves, reindeer and the sleigh (docs/teams/wave5-plan.md)
+import * as cruise from './things/cruise/index.js';
+import * as gifts from './things/gifts/index.js';
+import * as elves from './things/elves/index.js';
+import * as reindeer from './things/reindeer/index.js';
 import * as daynight from './life/daynight.js';
 import * as weather from './life/weather.js';
 import * as particles from './life/particles.js';
@@ -30,6 +37,8 @@ import * as ocean from './life/ocean/index.js';
 import * as stickers from './life/stickers.js';
 // wave 4: a mermaid tail or a sea dragon form in deep water (docs/teams/merfolk.md)
 import * as merfolk from './player/merfolk/index.js';
+// wave 5: Santa and elf looks, the Holiday Dress-Up booth (docs/teams/wave5-plan.md)
+import * as holidayLooks from './player/holiday/index.js';
 // playing with friends (docs/MULTIPLAYER.md): the facade, friends' avatars and the screens
 import * as net from './net/index.js';
 import * as hud from './ui/hud.js';
@@ -66,12 +75,17 @@ function boot() {
     emotes,
     entities,
     furniture,
+    features,      // wave 5: right after furniture (game.worldFeatures; placers register later)
     prefabs,
     pets,
     garden,
     cooking,
     vehicles,
     squish,        // wave 4: after vehicles (needs entities, furniture, cooking/shops' game.coins)
+    cruise,        // wave 5: after squish
+    gifts,         // wave 5
+    elves,         // wave 5
+    reindeer,      // wave 5: after vehicles and pets
     daynight,
     weather,
     particles,
@@ -79,6 +93,7 @@ function boot() {
     ocean,         // wave 4: after collectibles (particles exist; stickers registry used on game:ready)
     stickers,
     merfolk,       // wave 4: after stickers
+    holidayLooks,  // wave 5: after merfolk
     net,
     hud,
     inventory,

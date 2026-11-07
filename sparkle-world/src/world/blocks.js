@@ -15,6 +15,9 @@ import * as glass from './paint/glass.js';
 import * as lights from './paint/lights.js';
 import * as garden from './paint/garden.js';
 import * as fun from './paint/fun.js';
+// wave 5 (docs/teams/wave5-plan.md §5)
+import * as cruise from './paint/cruise.js';
+import * as holiday from './paint/holiday.js';
 
 // ---------- painter helpers (exported for other block modules) ----------
 
@@ -140,4 +143,6 @@ export function install(game) {
   lights.install(L);
   garden.install(L);
   fun.install(L);
+  cruise.install(L);
+  holiday.install(L);
 }

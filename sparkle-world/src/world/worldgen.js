@@ -20,6 +20,9 @@ import * as snow from './biomes/snow.js';
 import * as fairy from './biomes/fairy.js';
 import * as flat from './biomes/flat.js';
 import * as mix from './biomes/mix.js';
+// wave 5 (docs/teams/wave5-plan.md)
+import * as cruise from './biomes/cruise.js';
+import * as holiday from './biomes/holiday.js';
 
 // ---------- helpers for biome authors (kept for other modules) ----------
 
@@ -106,7 +109,7 @@ export function biomeSpawn(world) {
 
 // ---------- registry ----------
 
-const ORDER = [meadow, candy, beach, snow, fairy, flat, mix];
+const ORDER = [meadow, candy, beach, snow, fairy, flat, mix, cruise, holiday];
 
 export function install(game) {
   const biomes = game.registry.biomes;

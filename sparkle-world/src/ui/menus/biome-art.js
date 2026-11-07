@@ -111,6 +111,11 @@ export function paintBiomeArt(game, key, def = {}) {
   c.height = ART_H;
   const g = c.getContext('2d');
   g.imageSmoothingEnabled = false;
+  // wave 5 (docs/teams/wave5-plan.md §5.3): a biome may paint its own card
+  if (typeof def.paintArt === 'function') {
+    def.paintArt(g, ART_W, ART_H, { rand, reg, tileFor: (d, face) => tileFor(reg, d, face), drawSparkle, pixelCloud });
+    return c.toDataURL('image/png');
+  }
 
   // sky: blocky gradient bands (pixel-art look)
   const [top, bottom] = [sky.top && !RECIPES[key] ? sky.top : recipe.sky[0], recipe.sky[1]];

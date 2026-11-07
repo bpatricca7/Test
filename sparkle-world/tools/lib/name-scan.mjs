@@ -46,6 +46,21 @@ const EXTRA = {
   ],
   ocean: [
   ],
+  // wave 5 (docs/teams/wave5-plan.md §3): a cruise line's and a holiday toy's names, famous holiday characters
+  cruise: [
+    'cm95YWxbIC1dY2FyaWJiZWFu',
+    'Y2Fybml2YWxbIC1dY3J1aXNl',
+    'bm9yd2VnaWFuWyAtXWNydWlzZQ==',
+    'bWlja2V5',
+    'bWlubmll',
+  ],
+  holiday: [
+    'ZWxmWyAtXT9vblsgLV0/dGhlWyAtXT9zaGVsZg==',
+    'c2NvdXRbIC1dZWxm',
+    'cnVkb2xwaA==',
+    'Z3JpbmNo',
+    'cG9sYXJbIC1dZXhwcmVzcw==',
+  ],
 };
 
 const CHARACTERS = [

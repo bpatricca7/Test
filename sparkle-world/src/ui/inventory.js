@@ -21,6 +21,8 @@ const TAB_COLORS = {
   pets: '#FF8FB1', food: '#FFA85C', houses: '#9C7BFF', more: '#B9A9D9', camping: '#7FC97A', shops: '#FF8FC8',
   vehicles: '#6CC6FF',
   squish: '#FF9CCB',
+  cruise: '#4FB8FF', // wave 5
+  holiday: '#E8475F', // wave 5
 };
 // the picture on each tab: the first of these that exists, else the tab's first item
 const TAB_PICS = {
@@ -37,6 +39,8 @@ const TAB_PICS = {
   garden: ['furn:swing', 'furn:fountain'],
   fun: ['furn:trampoline', 'furn:teddy_bear', 'furn:slide'],
   vehicles: ['furn:car_bubble', 'furn:car_convertible'],
+  cruise: [], // wave 5: cruise-fun fills this line (wave5-plan.md §6.3)
+  holiday: [], // wave 5: holiday-world fills this line (wave5-plan.md §6.3)
 };
 
 const isLight = (hex) => {

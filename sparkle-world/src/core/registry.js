@@ -12,6 +12,9 @@ export const ITEM_CATEGORIES = [
   ['glass', 'Glass & Windows'], ['lights', 'Lights'], ['bedroom', 'Bedroom'], ['living', 'Living Room'],
   ['kitchen', 'Kitchen'], ['bathroom', 'Bathroom'], ['garden', 'Garden'], ['fun', 'Fun & Toys'],
   ['pets', 'Pets'], ['food', 'Food'], ['houses', 'Magic Houses'],
+  // wave 5 (docs/teams/wave5-plan.md §6.3)
+  ['cruise', 'Cruise Fun'],
+  ['holiday', 'Holiday'],
 ];
 
 function titleCase(key) {
