@@ -63,7 +63,7 @@ const SEA_OUT_FX = { count: 8, spread: 0.4 };
 const SEA_GLINT_FX = { count: 1, spread: 0.1, scale: 0.7 };
 const MOUTHS_ALWAYS = ['open', 'o', 'sleep', 'grin'];
 // Toys held up in front like the ice cream, so they show.
-const HOLD_UP = new Set(['soccer_ball', 'toy_car', 'dino_toy']);
+const HOLD_UP = new Set(['soccer_ball', 'toy_car', 'dino_toy', 'candy_cane', 'present']); // wave 5 holiday hand items
 
 const smooth = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));

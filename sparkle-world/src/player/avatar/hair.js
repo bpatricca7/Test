@@ -445,7 +445,7 @@ function backCurtain(P, C, { bottom = 0.74, wave = false }) {
   h.restore();
 }
 
-const HAT_FLAT = new Set(['cap', 'cap_back', 'bucket_hat', 'beanie']);
+const HAT_FLAT = new Set(['cap', 'cap_back', 'bucket_hat', 'beanie', 'santa_hat', 'elf_hat']); // wave 5: the holiday hats sit flat too
 
 /** Build the chosen style onto the head. */
 export function buildHair(P) {

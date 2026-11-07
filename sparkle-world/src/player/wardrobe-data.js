@@ -41,7 +41,12 @@ export const DEFAULT_LOOK = {
 // [key, name, tag]: tag 'g' = in the Girl surprise (the default), 'b' = in the Boy surprise,
 // 'gb' = both. Each list's Girl filter is exactly the list as it was before the boy items, so
 // the Girl surprise (and its seeded results) is what it always was.
-const opts = (pairs) => pairs.map(([key, name, tag = 'g']) => ({ key, name, tag }));
+// (an entry that is already an option object, like the holiday ones below, is kept as it is)
+const opts = (pairs) => pairs.map((p) => (Array.isArray(p) ? { key: p[0], name: p[1], tag: p[2] || 'g' } : p));
+// Wave 5 holiday clothes (docs/teams/holiday-looks.md): free for anyone in the Studio (their tag
+// says which of the Girl / Boy lists shows them), but `season: 'holiday'` keeps them out of
+// every "Surprise me!" (tagged() skips them), so the seeded surprises never change.
+const holiday = (pairs) => opts(pairs).map((o) => ({ ...o, season: 'holiday' }));
 
 export const HAIR_STYLES = opts([
   ['long', 'Long'], ['ponytail', 'Ponytail'], ['pigtails', 'Pigtails'], ['bun', 'Bun'],
@@ -56,35 +61,42 @@ export const TOPS = opts([
   ['blouse', 'Blouse'], ['crop', 'Crop Top'], ['jacket', 'Jacket', 'gb'], ['sparkle_top', 'Sparkle Top'],
   ['polo', 'Polo', 'b'], ['jersey', 'Jersey', 'b'], ['button_up', 'Button-Up', 'b'], ['tee_dino', 'Dino Tee', 'b'],
   ['tee_rocket', 'Rocket Tee', 'b'], ['tee_bolt', 'Lightning Tee', 'b'],
+  ...holiday([['santa_coat', 'Santa Coat', 'gb'], ['elf_tunic', 'Elf Tunic', 'gb'], ['holiday_sweater', 'Holiday Sweater', 'gb']]), // wave 5
 ]);
 export const BOTTOMS = opts([
   ['skirt', 'Skirt'], ['tutu', 'Tutu'], ['jeans', 'Jeans', 'gb'], ['leggings', 'Leggings'],
   ['shorts', 'Shorts', 'gb'], ['overalls', 'Overalls', 'gb'], ['pleated', 'Pleated Skirt'],
   ['cargo_shorts', 'Cargo Shorts', 'b'], ['joggers', 'Joggers', 'b'], ['pants', 'Pants', 'b'],
+  ...holiday([['santa_pants', 'Santa Pants', 'gb'], ['holiday_tights', 'Stripy Tights', 'gb']]), // wave 5
 ]);
 export const DRESSES = opts([
   ['sundress', 'Sundress'], ['party', 'Party Dress'], ['princess', 'Princess Dress'],
   ['ballgown', 'Ball Gown'], ['overall_dress', 'Overall Dress'], ['mermaid', 'Mermaid Dress'],
+  ...holiday([['santa_dress', 'Santa Dress', 'g'], ['elf_dress', 'Elf Dress', 'g']]), // wave 5
 ]);
 export const SHOES = opts([
   ['sneakers', 'Sneakers', 'gb'], ['boots', 'Boots', 'gb'], ['sandals', 'Sandals', 'gb'], ['sparkle', 'Sparkle Shoes'],
   ['rainboots', 'Rain Boots', 'gb'], ['ballet', 'Ballet Flats'], ['roller_skates', 'Roller Skates', 'gb'],
   ['high_tops', 'High-Tops', 'b'], ['skate_shoes', 'Skate Shoes', 'b'],
+  ...holiday([['santa_boots', 'Santa Boots', 'gb'], ['elf_shoes', 'Elf Shoes', 'gb']]), // wave 5
 ]);
 export const HEAD_ACC = opts([
   ['none', 'None', 'gb'], ['bow', 'Bow'], ['tiara', 'Tiara'], ['crown', 'Crown'], ['flower_crown', 'Flower Crown'],
   ['cat_ears', 'Cat Ears'], ['bunny_ears', 'Bunny Ears'], ['unicorn_horn', 'Unicorn Horn'], ['beanie', 'Beanie', 'gb'],
   ['sun_hat', 'Sun Hat'], ['headband', 'Headband'], ['witch_hat', 'Sparkly Hat', 'gb'], ['halo', 'Halo'],
   ['cap', 'Cap', 'b'], ['cap_back', 'Backwards Cap', 'b'], ['bucket_hat', 'Bucket Hat', 'b'], ['headphones', 'Headphones', 'b'],
+  ...holiday([['santa_hat', 'Santa Hat', 'gb'], ['elf_hat', 'Elf Hat', 'gb'], ['antlers', 'Antlers', 'gb'], ['elf_ears', 'Elf Ears', 'gb']]), // wave 5
 ]);
 export const FACE_ACC = opts([
   ['none', 'None', 'gb'], ['glasses', 'Glasses', 'gb'], ['sunglasses', 'Sunglasses', 'gb'], ['heart_glasses', 'Heart Glasses'],
   ['star_glasses', 'Star Glasses', 'gb'],
+  ...holiday([['beard', 'Santa Beard', 'gb']]), // wave 5
 ]);
 export const BACK_ACC = opts([
   ['none', 'None', 'gb'], ['fairy_wings', 'Fairy Wings'], ['butterfly_wings', 'Butterfly Wings'],
   ['angel_wings', 'Angel Wings'], ['backpack', 'Backpack', 'gb'], ['cape', 'Cape', 'gb'],
   ['star_pack', 'Star Backpack', 'b'],
+  ...holiday([['toy_sack', 'Toy Sack', 'gb']]), // wave 5
 ]);
 export const NECK_ACC = opts([
   ['none', 'None', 'gb'], ['necklace', 'Necklace'], ['pearls', 'Pearls'], ['scarf', 'Scarf', 'gb'], ['bowtie', 'Bow Tie', 'gb'],
@@ -94,11 +106,13 @@ export const HAND_ACC = opts([
   ['none', 'None', 'gb'], ['wand', 'Magic Wand', 'gb'], ['purse', 'Purse'], ['balloon', 'Balloon', 'gb'], ['teddy', 'Teddy', 'gb'],
   ['ice_cream', 'Ice Cream', 'gb'],
   ['soccer_ball', 'Soccer Ball', 'b'], ['toy_car', 'Toy Car', 'b'], ['dino_toy', 'Toy Dino', 'b'],
+  ...holiday([['candy_cane', 'Candy Cane', 'gb'], ['present', 'Present', 'gb']]), // wave 5
 ]);
 export const PATTERNS = opts([
   ['none', 'Plain', 'gb'], ['hearts', 'Hearts'], ['stars', 'Stars', 'gb'], ['stripes', 'Stripes', 'gb'], ['dots', 'Dots', 'gb'],
   ['rainbow', 'Rainbow'], ['flowers', 'Flowers'],
   ['plaid', 'Plaid', 'b'], ['checks', 'Checks', 'b'], ['bolts', 'Lightning', 'b'], ['dinos', 'Dinos', 'b'], ['rockets', 'Rockets', 'b'],
+  ...holiday([['snowflakes', 'Snowflakes', 'gb'], ['trees', 'Little Trees', 'gb'], ['candy', 'Candy Stripes', 'gb']]), // wave 5
 ]);
 export const SMILES = opts([['happy', 'Happy', 'gb'], ['grin', 'Big Smile', 'gb'], ['cat', 'Cat Smile', 'gb'], ['open', 'Excited', 'gb']]);
 /** Eyebrows: 'soft' is the original gentle arc, 'bold' a thicker, flatter brow. */
@@ -125,12 +139,28 @@ export const SEA_COLOR_NAMES = [
 export const SURPRISE_STYLES = ['girl', 'boy', 'mix'];
 
 /**
- * The options one "Surprise me!" style picks from (letter 'g' or 'b'), in list order. Falls back
- * to the whole list if a filter is ever empty, so a pick can never be undefined.
+ * The options one "Surprise me!" style picks from (letter 'g' or 'b'), in list order. Holiday
+ * clothes (`season`) are never in a surprise (so the seeded surprises stay exactly as they
+ * were). Falls back to the whole list if a filter is ever empty, so a pick can never be undefined.
  */
 export function tagged(list, letter) {
-  const out = list.filter((o) => (o.tag || 'g').includes(letter));
-  return out.length ? out : list;
+  const out = list.filter((o) => !o.season && (o.tag || 'g').includes(letter));
+  return out.length ? out : list.filter((o) => !o.season);
+}
+
+/** True for a holiday option key in one list (e.g. isHoliday(TOPS, 'santa_coat')). */
+export function isHoliday(list, key) {
+  const o = list.find((x) => x.key === key);
+  return !!(o && o.season);
+}
+
+/** True when a look wears anything from the holiday clothes (the Dress-Up booth's test). */
+export function wearsHoliday(look) {
+  const L = normalizeLook(look);
+  const worn = L.dress ? [[DRESSES, L.dress]] : [[TOPS, L.top], [BOTTOMS, L.bottom]];
+  return isHoliday(SHOES, L.shoes.type) ||
+    worn.some(([list, g]) => isHoliday(list, g.type) || isHoliday(PATTERNS, g.pattern)) ||
+    [[HEAD_ACC, 'head'], [FACE_ACC, 'face'], [BACK_ACC, 'back'], [HAND_ACC, 'hand']].some(([list, slot]) => isHoliday(list, L.acc[slot]));
 }
 
 /**
@@ -347,7 +377,7 @@ function girlLook(rand, name, base, hairStyles) {
   const accent = pick(th.accent);
   const light = pick(th.light.filter((c) => c !== main)) || '#FFFFFF';
   const pattern = () => (th.rainbow && chance(0.6) ? 'rainbow' : chance(0.5) ? 'none' : pick(['hearts', 'stars', 'stripes', 'dots', 'flowers']));
-  const dressType = chance(0.4) ? pick(DRESSES).key : null;
+  const dressType = chance(0.4) ? pick(tagged(DRESSES, 'g')).key : null; // the original six (no holiday dresses)
   const top = pick(TOPS_G).key;
   const bottom = pick(BOTTOMS_G).key;
   const natural = chance(0.72);
@@ -589,4 +619,69 @@ export function applyOutfit(look, outfit) {
     face: outfit.face ? { ...base.face, ...outfit.face } : base.face,
   };
   return normalizeLook(next);
+}
+
+// ---------- holiday looks (wave 5, docs/teams/holiday-looks.md) ----------
+
+/** Santa red and elf green: deep, warm and bright (any hex is a valid look color). */
+export const HOLIDAY_RED = '#E5383B';
+export const HOLIDAY_GREEN = '#2FA84F';
+
+/**
+ * Ready-made holiday looks: the Studio's "Holiday looks" row and the Holiday Dress-Up booth.
+ * Shaped like STARTER_OUTFITS (applyOutfit wears them) but a list of their own, so the
+ * ready-made row, its probes and the friends' Dress up bubble stay exactly as they were.
+ * None sets a hair style or the face: who you are stays (skin, hair, eyes, name, sea form).
+ * `tag` picks which of the Girl / Boy lists shows it (Mix: all). APPEND ONLY (keys are kept in
+ * profile.holidayLooks.wearing).
+ */
+export const HOLIDAY_OUTFITS = [
+  {
+    key: 'santa', name: 'Santa', tag: 'gb',
+    look: {
+      top: { type: 'santa_coat', color: HOLIDAY_RED, pattern: 'none', patternColor: '#FFFFFF' },
+      bottom: { type: 'santa_pants', color: HOLIDAY_RED, pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'santa_boots', color: '#2B2233' },
+      acc: { head: 'santa_hat', headColor: HOLIDAY_RED, face: 'beard', faceColor: null, back: 'toy_sack', backColor: '#C0392B', neck: 'none', hand: 'present', handColor: HOLIDAY_GREEN },
+    },
+  },
+  {
+    key: 'elf', name: 'Elf', tag: 'b',
+    look: {
+      top: { type: 'elf_tunic', color: HOLIDAY_GREEN, pattern: 'none', patternColor: '#FFFFFF' },
+      bottom: { type: 'holiday_tights', color: HOLIDAY_RED, pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'elf_shoes', color: HOLIDAY_RED },
+      acc: { head: 'elf_hat', headColor: HOLIDAY_GREEN, face: 'none', back: 'none', neck: 'none', hand: 'candy_cane', handColor: null },
+    },
+  },
+  {
+    key: 'elf_girl', name: 'Elf', tag: 'g',
+    look: {
+      dress: { type: 'elf_dress', color: HOLIDAY_GREEN, pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'elf_shoes', color: HOLIDAY_RED },
+      acc: { head: 'elf_hat', headColor: HOLIDAY_GREEN, face: 'none', back: 'none', neck: 'none', hand: 'candy_cane', handColor: null },
+    },
+  },
+  {
+    key: 'mrs_santa', name: 'Mrs. Santa', tag: 'g',
+    look: {
+      dress: { type: 'santa_dress', color: HOLIDAY_RED, pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'santa_boots', color: '#2B2233' },
+      acc: { head: 'santa_hat', headColor: HOLIDAY_RED, face: 'glasses', faceColor: '#FFD54A', back: 'none', neck: 'none', hand: 'present', handColor: '#FF8CC6' },
+    },
+  },
+  {
+    key: 'cozy', name: 'Cozy Holiday', tag: 'gb',
+    look: {
+      top: { type: 'holiday_sweater', color: HOLIDAY_RED, pattern: 'none', patternColor: '#FFFFFF' },
+      bottom: { type: 'jeans', color: '#4D7CFF', pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'boots', color: '#8B5E3C' },
+      acc: { head: 'antlers', headColor: '#8B5E3C', face: 'none', back: 'none', neck: 'scarf', neckColor: HOLIDAY_GREEN, hand: 'candy_cane', handColor: null },
+    },
+  },
+];
+
+/** A holiday look by key, or null. */
+export function holidayOutfit(key) {
+  return HOLIDAY_OUTFITS.find((o) => o.key === key) || null;
 }

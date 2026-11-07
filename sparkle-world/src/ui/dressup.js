@@ -53,9 +53,12 @@ const COLOR_HINTS = {
   head: {
     tiara: '#FFD54A', crown: '#FFD54A', halo: '#FFD54A', witch_hat: '#9C7BFF', beanie: '#FFFFFF', bunny_ears: '#FFFFFF', cat_ears: '#FFD1E6', flower_crown: '#FF8CC6', unicorn_horn: '#FFE58A', sun_hat: '#FF8CC6',
     cap: '#4D7CFF', cap_back: '#FF6B6B', bucket_hat: '#6BD68A', headphones: '#6CC6FF',
+    santa_hat: W.HOLIDAY_RED, elf_hat: W.HOLIDAY_GREEN, antlers: '#8B5E3C', elf_ears: '#FFD54A', // wave 5
   },
   neck: { necklace: '#FFD54A', pearls: '#FFFFFF', scarf: '#FF8CC6', bowtie: '#FF5FA2', necktie: '#4D7CFF', medal: '#FF6B6B' },
-  back: { angel_wings: '#FFD1E6', fairy_wings: '#A5F0E6', butterfly_wings: '#6CC6FF', cape: '#9C7BFF', backpack: '#FFD43B', star_pack: '#6CC6FF' },
+  back: { angel_wings: '#FFD1E6', fairy_wings: '#A5F0E6', butterfly_wings: '#6CC6FF', cape: '#9C7BFF', backpack: '#FFD43B', star_pack: '#6CC6FF',
+    toy_sack: '#C0392B' }, // wave 5
+  hand: { candy_cane: W.HOLIDAY_RED, present: '#FF5FA2' }, // wave 5
 };
 
 // Girl / Boy / Mix: each button's picture and word, the tag letter of the tiles it shows (Mix:
@@ -780,6 +783,13 @@ class Studio {
             if (!this.style()) this._setStyle(o.tag === 'b' ? 'boy' : 'girl', { reorderNow: false });
             if (o.tag === 'b') this._askName();
           },
+        }));
+        // wave 5: the holiday looks (docs/teams/holiday-looks.md); picking one never picks a style
+        add(this._grid(key, this._orderOutfits(W.HOLIDAY_OUTFITS), {
+          title: 'Holiday looks', frame: 'full', big: true, pic: 'holiday',
+          thumb: (o) => W.applyOutfit(L(), o),
+          on: (o) => sig(W.applyOutfit(L(), o)) === sig(L()),
+          pick: (o) => { this.change((d) => { Object.assign(d, W.applyOutfit(d, o)); }, { kind: 'big', emote: 'dance' }); },
         }));
         add(this._slots());
         break;

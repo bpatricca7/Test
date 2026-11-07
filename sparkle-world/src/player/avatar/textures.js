@@ -157,6 +157,42 @@ function dinoShape(g, x, y, s) {
   for (const lx of [-0.2, 0.08]) g.fillRect(x + lx * s, y + s * 0.15, s * 0.09, s * 0.16); // legs
 }
 
+/** A six-armed snowflake drawn with strokes (each arm has two little twigs). */
+function snowflake(g, x, y, r, lw) {
+  g.lineWidth = lw;
+  g.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const ex = x + Math.cos(a) * r, ey = y + Math.sin(a) * r;
+    g.moveTo(x, y);
+    g.lineTo(ex, ey);
+    const mx = x + Math.cos(a) * r * 0.55, my = y + Math.sin(a) * r * 0.55;
+    for (const t of [-0.7, 0.7]) {
+      g.moveTo(mx, my);
+      g.lineTo(mx + Math.cos(a + t) * r * 0.35, my + Math.sin(a + t) * r * 0.35);
+    }
+  }
+  g.stroke();
+}
+
+/** A tiny pine: three stacked triangles on a trunk, with a star on top. */
+function pine(g, x, y, s, color) {
+  g.fillStyle = color;
+  for (let k = 0; k < 3; k++) {
+    const w = s * (0.18 + k * 0.07), top = y - s * 0.42 + k * s * 0.22;
+    g.beginPath();
+    g.moveTo(x, top);
+    g.lineTo(x + w, top + s * 0.3);
+    g.lineTo(x - w, top + s * 0.3);
+    g.closePath();
+    g.fill();
+  }
+  g.fillRect(x - s * 0.05, y + s * 0.3, s * 0.1, s * 0.12);
+  g.fillStyle = '#FFD43B';
+  starPath(g, x, y - s * 0.44, s * 0.09);
+  g.fill();
+}
+
 /** A small rocket pointing up, with a sparkle puff below (no flames). */
 function rocketShape(g, x, y, s) {
   g.beginPath(); // body with a pointed nose
@@ -179,7 +215,8 @@ function rocketShape(g, x, y, s) {
 // ---------- cloth ----------
 
 /**
- * Fabric tile (repeats seamlessly). fabric: cotton | denim | knit | sparkle | satin | tulle.
+ * Fabric tile (repeats seamlessly). fabric: cotton | denim | knit | sparkle | satin | tulle |
+ * velvet (wave 5: a soft plush with a gentle sheen, for the holiday coats).
  * Patterns are drawn in patternColor; 'rainbow' paints soft rainbow bands.
  */
 export function paintCloth(g, W, H, { color, pattern = 'none', patternColor = '#FFFFFF', fabric = 'cotton' }) {
@@ -233,6 +270,19 @@ export function paintCloth(g, W, H, { color, pattern = 'none', patternColor = '#
         g.fillStyle = rgba(shade(color, 0.35), 0.55);
         g.fillRect(x, y, 2, 2);
       }
+    }
+  } else if (fabric === 'velvet') {
+    // a deep, soft nap: darker toward the edges of the tile, a sheen band, fine fuzz
+    const grd = g.createLinearGradient(0, 0, 0, H);
+    grd.addColorStop(0, rgba(shade(color, -0.12), 0.35));
+    grd.addColorStop(0.45, rgba(shade(color, 0.16), 0.3));
+    grd.addColorStop(0.55, rgba(shade(color, 0.16), 0.3));
+    grd.addColorStop(1, rgba(shade(color, -0.12), 0.35));
+    g.fillStyle = grd;
+    g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 520; i++) {
+      g.fillStyle = rgba(rand() < 0.5 ? shade(color, 0.2) : shade(color, -0.15), 0.25);
+      g.fillRect(Math.floor(rand() * W), Math.floor(rand() * H), 1, 2);
     }
   } else {
     for (let i = 0; i < 380; i++) {
@@ -332,6 +382,44 @@ export function paintCloth(g, W, H, { color, pattern = 'none', patternColor = '#
     }
     g.fillStyle = rgba(pc, 0.7);
     for (const [x, y] of [[3 * q, q], [q, 3 * q]]) sparkle4(g, x, y, W * 0.06);
+  } else if (pattern === 'snowflakes') { // wave 5
+    g.strokeStyle = pc;
+    g.lineCap = 'round';
+    snowflake(g, q, q, W * 0.15, 2.4);
+    snowflake(g, 3 * q, 3 * q, W * 0.15, 2.4);
+    g.fillStyle = rgba(pc, 0.6);
+    for (const [x, y] of [[3 * q, q], [q, 3 * q]]) {
+      g.beginPath();
+      g.arc(x, y, W * 0.03, 0, Math.PI * 2);
+      g.fill();
+    }
+  } else if (pattern === 'trees') { // wave 5
+    for (const [x, y] of [[q, q], [3 * q, 3 * q]]) pine(g, x, y, W * 0.3, pc);
+    g.fillStyle = rgba(pc, 0.6);
+    for (const [x, y] of [[3 * q, q], [q, 3 * q]]) sparkle4(g, x, y, W * 0.05);
+  } else if (pattern === 'candy') { // wave 5: diagonal candy stripes that meet across the tile edges
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, W, H);
+    g.clip();
+    const step = W / 4;
+    g.lineWidth = step * 0.42;
+    g.strokeStyle = pc;
+    for (let k = -4; k <= 4; k++) {
+      g.beginPath();
+      g.moveTo(k * step - W * 0.1, H + W * 0.1);
+      g.lineTo(k * step + W * 1.1, -W * 0.1);
+      g.stroke();
+    }
+    g.lineWidth = step * 0.08;
+    g.strokeStyle = rgba(pc, 0.5);
+    for (let k = -4; k <= 4; k++) {
+      g.beginPath();
+      g.moveTo(k * step + step / 2 - W * 0.1, H + W * 0.1);
+      g.lineTo(k * step + step / 2 + W * 1.1, -W * 0.1);
+      g.stroke();
+    }
+    g.restore();
   }
   if (fabric === 'sparkle') {
     for (let i = 0; i < 150; i++) {

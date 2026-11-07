@@ -8,20 +8,29 @@ const WHITE = '#FFFFFF';
 const GOLD = '#FFD54A';
 
 const FABRIC = {
-  top: { sweater: 'knit', sparkle_top: 'sparkle' },
-  bottom: { jeans: 'denim', overalls: 'denim', tutu: 'tulle', joggers: 'knit' },
-  dress: { princess: 'satin', ballgown: 'satin', party: 'satin', mermaid: 'sparkle', overall_dress: 'denim' },
+  top: { sweater: 'knit', sparkle_top: 'sparkle', santa_coat: 'velvet', holiday_sweater: 'knit' },
+  bottom: { jeans: 'denim', overalls: 'denim', tutu: 'tulle', joggers: 'knit', santa_pants: 'velvet' },
+  dress: { princess: 'satin', ballgown: 'satin', party: 'satin', mermaid: 'sparkle', overall_dress: 'denim', santa_dress: 'velvet' },
 };
+// wave 5 holiday clothes (docs/teams/holiday-looks.md): soft white fur trim, a black belt with a
+// gold buckle, jingle bells
+const FUR = '#FFFDF7';
+const FUR_SHADE = '#F1ECE6';
+const BELT = '#2B2233';
+const STOCKING = '#E5383B';
 
 const SLEEVES = {
   tshirt: 'short', tank: 'none', hoodie: 'long', sweater: 'long', blouse: 'puffy', crop: 'short', jacket: 'long',
   sparkle_top: 'cap', sundress: 'none', party: 'puffy', princess: 'puffy', ballgown: 'offpuff',
   overall_dress: 'tee', mermaid: 'none',
   polo: 'short', jersey: 'short', button_up: 'long', tee_dino: 'short', tee_rocket: 'short', tee_bolt: 'short',
+  santa_coat: 'long', elf_tunic: 'long', holiday_sweater: 'long', santa_dress: 'long', elf_dress: 'puffy', // wave 5
 };
 
-const PANTS = new Set(['jeans', 'leggings', 'overalls', 'joggers', 'pants']);
-const LONG_TOPS = new Set(['hoodie', 'sweater', 'jacket', 'button_up']);
+const PANTS = new Set(['jeans', 'leggings', 'overalls', 'joggers', 'pants', 'santa_pants', 'holiday_tights']);
+const LONG_TOPS = new Set(['hoodie', 'sweater', 'jacket', 'button_up', 'holiday_sweater']);
+// tops and dresses with white fur cuffs at the wrists, and the ones with a holiday belt
+const FUR_CUFFS = new Set(['santa_coat', 'santa_dress']);
 const BUTTONED = new Set(['jeans', 'shorts', 'overalls', 'cargo_shorts', 'pants']);
 
 // Pixel pictures on a shirt front: one string per row (top first), one character per pixel,
@@ -77,6 +86,37 @@ const DECALS = {
       'O......',
     ],
     palette: { Y: '#FFD43B', O: '#FFA94D' },
+  },
+  // wave 5: the holiday sweater's knitted tree (front) and snowflake (back)
+  holiday_tree: {
+    rows: [
+      '....S....',
+      '...SSS...',
+      '....T....',
+      '...TTT...',
+      '..TPTTT..',
+      '...TTT...',
+      '..TTTBT..',
+      '.TTTTTTT.',
+      '..TBTTT..',
+      '.TTTTTPT.',
+      'TTPTTTTTT',
+      '....K....',
+      '....K....',
+    ],
+    palette: { S: '#FFD43B', T: '#2FA84F', P: '#FF5FA2', B: '#6CC6FF', K: '#8B5E3C' },
+  },
+  holiday_flake: {
+    rows: [
+      '...W...',
+      '.W.W.W.',
+      '..WWW..',
+      'WWWWWWW',
+      '..WWW..',
+      '.W.W.W.',
+      '...W...',
+    ],
+    palette: { W: '#FFFFFF' },
   },
 };
 
@@ -254,6 +294,32 @@ export function buildOutfit(P) {
       pixelDecal(TP, d.rows, 0, topType === 'tee_rocket' ? 0.915 : 0.925, 0.121, 0.016, d.palette);
       break;
     }
+    // wave 5 holiday clothes
+    case 'santa_coat':
+    case 'santa_dress':
+      furCollar(TP);
+      // fur down the front of the coat; three fluffy buttons on the dress
+      if (topType === 'santa_coat') TP.cbox(-0.04, 0.745, 0.115, 0.04, 1.06, 0.142, 0.012, FUR);
+      else for (const y of [1.0, 0.92, 0.84]) TP.ccube(0, y, 0.128, 0.04, 0.04, 0.03, 0.014, FUR);
+      holidayBelt(TP, 0.775, 0.222, 0.132, BELT);
+      break;
+    case 'elf_tunic':
+    case 'elf_dress':
+      zigzagCollar(TP, topSrc.patternColor === topC ? FUR : topSrc.patternColor);
+      holidayBelt(TP, 0.775, 0.222, 0.132, topType === 'elf_dress' ? STOCKING : BELT);
+      break;
+    case 'holiday_sweater': {
+      TP.box(-0.092, 1.06, -0.082, 0.092, 1.105, 0.082, trim);
+      // knitted bands at the top and the bottom, a tree in front and a snowflake on the back
+      const band = numberColor(topC, topSrc.patternColor);
+      knitBand(TP, 1.0, band, 0.214, 0.124);
+      knitBand(TP, 0.735, band, 0.22, 0.13); // on the long hem
+      const tree = DECALS.holiday_tree;
+      const greenish = (() => { const [r, g, b] = hexToRgb(topC); return g > r && g > b; })();
+      pixelDecal(TP, tree.rows, 0, 0.855, 0.121, 0.016, greenish ? { ...tree.palette, T: WHITE } : tree.palette);
+      pixelDecal(TP, DECALS.holiday_flake.rows, 0, 0.86, -0.121, 0.024, { W: band }, -1);
+      break;
+    }
     default:
       crew();
   }
@@ -282,6 +348,15 @@ export function buildOutfit(P) {
     }
     TP.box(-0.06, 0.8, 0.133, 0.06, 0.88, 0.14, shade(bottomC, -0.12));
   }
+  // wave 5: the Santa coat's skirt with a fur hem; the elf tunic's zigzag hem with bells
+  if (topType === 'santa_coat') {
+    P.B('hips', topMat).cbox(-0.222, 0.585, -0.136, 0.222, 0.79, 0.136, 0.025, WHITE);
+    furBand(HP, 0.545, 0.615, 0.236, 0.15);
+    HP.cbox(-0.04, 0.6, 0.13, 0.04, 0.79, 0.15, 0.012, FUR);
+  } else if (topType === 'elf_tunic') {
+    P.B('hips', topMat).cbox(-0.222, 0.6, -0.136, 0.222, 0.79, 0.136, 0.025, WHITE);
+    zigzagHem(P.B('hips', topMat), HP, 0.6, 0.226, 0.14);
+  }
 
   // ----- arms & sleeves -----
   const sleeve = SLEEVES[topType] || 'short';
@@ -309,6 +384,8 @@ export function buildOutfit(P) {
     } else if (sleeve === 'tee') {
       up.cbox(x - 0.073, 0.925, -0.079, x + 0.073, 1.092, 0.079, 0.022, WHITE);
     }
+    if (FUR_CUFFS.has(topType)) fo.cbox(x - 0.082, 0.655, -0.088, x + 0.082, 0.735, 0.088, 0.025, FUR); // fur cuffs
+    else if (topType === 'holiday_sweater') fo.box(x - 0.071, 0.74, -0.077, x + 0.071, 0.77, 0.077, numberColor(topC, topSrc.patternColor));
     if (topType === 'jersey') {
       const sc = numberColor(topC, topSrc.patternColor);
       for (const y of [0.95, 0.98]) up.box(x - 0.076, y, -0.082, x + 0.076, y + 0.014, 0.082, sc); // sleeve stripes
@@ -317,6 +394,9 @@ export function buildOutfit(P) {
 
   // ----- legs -----
   const pants = !dress && PANTS.has(bottomType);
+  // wave 5: striped stockings (the stripy tights, and under the elf dress)
+  const stripes = !dress && bottomType === 'holiday_tights' ? numberColor(bottomC, bottomSrc.patternColor)
+    : dress && dress.type === 'elf_dress' ? WHITE : null;
   for (const side of [1, -1]) {
     const x = side * 0.1;
     const leg = side > 0 ? 'legL' : 'legR';
@@ -325,7 +405,14 @@ export function buildOutfit(P) {
       P.B(leg, bottomMat).cbox(x - 0.093, 0.3, -0.098, x + 0.093, 0.665, 0.098, 0.02, WHITE);
       P.B(knee, bottomMat).cbox(x - 0.088, 0.06, -0.093, x + 0.088, 0.375, 0.093, 0.02, WHITE);
       if (bottomType === 'joggers') P.B(knee, 'plain').box(x - 0.093, 0.06, -0.098, x + 0.093, 0.12, 0.098, shade(bottomC, -0.15)); // ankle cuffs
-      else if (bottomType !== 'leggings') P.B(knee, 'plain').box(x - 0.093, 0.085, -0.098, x + 0.093, 0.135, 0.098, shade(bottomC, 0.28));
+      else if (bottomType === 'santa_pants') P.B(knee, 'plain').cbox(x - 0.1, 0.08, -0.105, x + 0.1, 0.15, 0.105, 0.02, FUR); // fur cuffs
+      else if (bottomType !== 'leggings' && bottomType !== 'holiday_tights') P.B(knee, 'plain').box(x - 0.093, 0.085, -0.098, x + 0.093, 0.135, 0.098, shade(bottomC, 0.28));
+      if (stripes) legStripes(P, leg, knee, x, stripes);
+    } else if (stripes) {
+      // the elf dress: red-and-white stockings instead of bare legs
+      P.B(leg, 'plain').cbox(x - 0.09, 0.3, -0.095, x + 0.09, 0.66, 0.095, 0.02, STOCKING);
+      P.B(knee, 'plain').cbox(x - 0.085, 0.06, -0.09, x + 0.085, 0.37, 0.09, 0.02, STOCKING);
+      legStripes(P, leg, knee, x, stripes);
     } else {
       P.B(leg, 'plain').cbox(x - 0.09, 0.3, -0.095, x + 0.09, 0.66, 0.095, 0.02, skin);
       P.B(knee, 'plain').cbox(x - 0.085, 0.06, -0.09, x + 0.085, 0.37, 0.09, 0.02, skin);
@@ -347,6 +434,76 @@ export function buildOutfit(P) {
 
   // ----- shoes -----
   buildShoes(P, L.shoes, skin);
+}
+
+// ---------- wave 5 holiday trims ----------
+
+/** A fluffy white fur ring around the body from y0 to y1 (half width w, half depth d). */
+function furBand(b, y0, y1, w, d) {
+  b.cbox(-w, y0, -d, w, y1, d, 0.03, FUR);
+  // a few soft tufts so it reads as fur, not a plastic ring
+  for (let i = 0; i < 5; i++) {
+    const x = -w * 0.8 + (i * w * 1.6) / 4;
+    b.ccube(x, (y0 + y1) / 2 - 0.004 * (i % 2), d + 0.004, 0.075, y1 - y0 + 0.012, 0.03, 0.014, i % 2 ? FUR_SHADE : FUR);
+  }
+}
+
+/** The fur collar of a Santa coat or dress. */
+function furCollar(b) {
+  b.cbox(-0.13, 1.045, -0.105, 0.13, 1.115, 0.11, 0.03, FUR);
+  for (const s of [-1, 1]) b.ccube(s * 0.065, 1.04, 0.113, 0.09, 0.06, 0.03, 0.014, FUR_SHADE);
+}
+
+/** A belt around the waist with a big gold buckle in front. */
+function holidayBelt(b, y, w, d, color) {
+  b.box(-w, y - 0.032, -d, w, y + 0.032, d, color);
+  b.box(-0.055, y - 0.045, d - 0.002, 0.055, y + 0.045, d + 0.014, GOLD);
+  b.box(-0.03, y - 0.022, d + 0.012, 0.03, y + 0.022, d + 0.016, color);
+}
+
+/** Pointed collar points around the neck (an elf's), each a turned square. */
+function zigzagCollar(b, color) {
+  const pts = [[-0.1, 0.122, 0], [0, 0.124, 0], [0.1, 0.122, 0], [-0.165, 0.07, 0.6], [0.165, 0.07, -0.6]];
+  for (const [x, z, ry] of pts) {
+    b.save().rotateAt(x, 1.05, z, 0, ry, Math.PI / 4);
+    b.cube(x, 1.05, z, 0.075, 0.075, 0.016, color);
+    b.restore();
+  }
+  b.box(-0.092, 1.07, -0.082, 0.092, 1.1, 0.082, color);
+}
+
+/** A zigzag hem (turned squares hanging below y) with a little gold bell on every point. */
+function zigzagHem(b, bells, y, w, d) {
+  const pts = [];
+  for (const x of [-0.17, -0.057, 0.057, 0.17]) pts.push([x, d, 0], [x, -d, 0]);
+  for (const z of [-0.06, 0.06]) pts.push([w, z, Math.PI / 2], [-w, z, Math.PI / 2]);
+  for (const [x, z, ry] of pts) {
+    b.save().rotateAt(x, y, z, 0, ry, Math.PI / 4);
+    b.cube(x, y, z, 0.08, 0.08, 0.018, WHITE);
+    b.restore();
+    const out = ry ? [x + Math.sign(x) * 0.012, z] : [x, z + Math.sign(z) * 0.012];
+    bells.sphere(out[0], y - 0.072, out[1], 0.019, 0.019, 0.019, GOLD, 7, 5);
+    bells.cube(out[0], y - 0.08, out[1], 0.008, 0.008, 0.008, shade(GOLD, -0.4));
+  }
+}
+
+/** A knitted zigzag band across the sweater (front, back and sides) at height y. */
+function knitBand(b, y, color, w, d) {
+  b.box(-w, y - 0.008, -d, w, y + 0.008, d, color);
+  for (let i = 0; i < 9; i++) {
+    const x = -0.19 + i * 0.0475;
+    const yy = y + (i % 2 ? 0.02 : -0.02);
+    for (const z of [d - 0.002, -d - 0.006]) b.box(x - 0.012, yy - 0.012, z, x + 0.012, yy + 0.012, z + 0.008, color);
+  }
+}
+
+/** Stripes around one leg (thigh on `leg`, shin on `knee`), on top of the leg's own boxes. */
+function legStripes(P, leg, knee, x, color) {
+  for (let k = 0; k < 7; k++) {
+    const y = 0.13 + k * 0.075;
+    const b = P.B(y > 0.36 ? leg : knee, 'plain');
+    b.box(x - 0.095, y, -0.1, x + 0.095, y + 0.036, 0.1, color);
+  }
 }
 
 function heartDecal(b, x, y, z, color, s = 0.018) {
@@ -453,6 +610,15 @@ const SKIRTS = {
     layers: [{ rings: [[0.745, 0.17, 0.1], [0.68, 0.24, 0.165], [0.5, 0.245, 0.175], [0.3, 0.235, 0.175], [0.16, 0.27, 0.21], [0.02, 0.44, 0.36]], jag: 0.05, seg: 20 }],
     stride: 0.22,
   },
+  // wave 5: a knee-length velvet dress with a deep fur hem; a zigzag elf dress
+  santa_dress: { layers: [{ rings: [[0.745, 0.17, 0.1], [0.68, 0.27, 0.18], [0.46, 0.35, 0.27], [0.38, 0.375, 0.295]], pleat: 0.025, seg: 18 }], hem: true, hemColor: FUR, hemH: 0.075, stride: 0.9 },
+  elf_dress: {
+    layers: [
+      { rings: [[0.7, 0.17, 0.1], [0.62, 0.3, 0.22], [0.41, 0.4, 0.32]], jag: 0.075, seg: 16, plain: FUR },
+      { rings: [[0.745, 0.17, 0.1], [0.68, 0.28, 0.19], [0.46, 0.37, 0.29]], jag: 0.07, seg: 16 },
+    ],
+    stride: 0.9,
+  },
 };
 
 function buildSkirt(P, type, mat, color) {
@@ -481,7 +647,8 @@ function buildSkirt(P, type, mat, color) {
     const layer = def.layers[def.layers.length - 1];
     const last = layer.rings[layer.rings.length - 1];
     const [y, rx, rz] = last;
-    const hr = [{ y: y + 0.035, rx: rx * 0.975, rz: rz * 0.975 }, { y: y - 0.012, rx: rx * 1.02, rz: rz * 1.02 }];
+    const top = def.hemH || 0.035; // a deep fur hem (wave 5) or the usual thin band
+    const hr = [{ y: y + top, rx: rx * (def.hemH ? 1.0 : 0.975), rz: rz * (def.hemH ? 1.0 : 0.975) }, { y: y - 0.012, rx: rx * 1.02, rz: rz * 1.02 }];
     P.flare('hips', 'plain2', hr, { seg: layer.seg, scallop: 0.02, color: def.hemColor || mixHex(color, WHITE, 0.7), range });
   }
 }
@@ -589,6 +756,32 @@ function buildShoes(P, shoes, skin) {
         for (const z of [0.03, 0.07]) b.box(x - 0.05, 0.145, z, x + 0.05, 0.155, z + 0.018, WHITE);
         b.box(x - 0.088, 0.145, -0.093, x + 0.088, 0.18, 0.093, WHITE); // socks
         break;
+      case 'santa_boots':
+        // tall shiny boots with a deep fur cuff and a gold buckle strap
+        b.box(x - 0.102, 0, -0.108, x + 0.102, 0.04, 0.17, shade(c, -0.35));
+        b.cbox(x - 0.097, 0.035, -0.102, x + 0.097, 0.14, 0.165, 0.035, c);
+        b.cbox(x - 0.098, 0.035, -0.102, x + 0.098, 0.29, 0.102, 0.025, c);
+        b.box(x - 0.1, 0.12, -0.104, x + 0.1, 0.15, 0.104, BELT);
+        b.box(x - 0.025, 0.115, 0.102, x + 0.025, 0.155, 0.11, GOLD);
+        b.cbox(x - 0.115, 0.27, -0.118, x + 0.115, 0.36, 0.118, 0.03, FUR);
+        b.ccube(x, 0.315, 0.12, 0.13, 0.08, 0.02, 0.012, FUR_SHADE);
+        break;
+      case 'elf_shoes': {
+        // a soft low shoe whose long pointed toe curls up to a jingle bell
+        b.box(x - 0.096, 0, -0.1, x + 0.096, 0.03, 0.14, shade(c, -0.3));
+        b.cbox(x - 0.094, 0.02, -0.1, x + 0.094, 0.13, 0.14, 0.035, c);
+        b.cbox(x - 0.1, 0.12, -0.104, x + 0.1, 0.16, 0.104, 0.015, mixHex(c, WHITE, 0.55)); // cuff
+        b.save().translate(x, 0.045, 0.12);
+        for (let k = 0; k < 4; k++) { // each piece a little smaller, turned a little more upward
+          const s = 0.15 - k * 0.03;
+          b.rotate(-0.38, 0, 0);
+          b.ccube(0, 0, 0.035, s, s * 0.6, 0.07, 0.015, c);
+          b.translate(0, 0, 0.05);
+        }
+        b.sphere(0, 0.012, 0.03, 0.026, 0.026, 0.026, GOLD, 8, 6);
+        b.restore();
+        break;
+      }
       default:
         b.cbox(x - 0.094, 0, -0.1, x + 0.094, 0.12, 0.155, 0.03, c);
     }

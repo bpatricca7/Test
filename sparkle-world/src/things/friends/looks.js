@@ -5,6 +5,7 @@
 // index); the invite panel shows them in ROSTER_ORDER.
 
 import { normalizeLook, STARTER_OUTFITS, applyOutfit, randomLook, HAIR_STYLES, tagged } from '../../player/wardrobe-data.js';
+import { HOLIDAY_OUTFITS } from '../../player/wardrobe-data.js'; // wave 5
 
 const acc = (o) => ({ head: 'none', headColor: '#FF5FA2', face: 'none', faceColor: null, back: 'none', backColor: '#B8E1FF', neck: 'none', neckColor: '#FFD54A', hand: 'none', handColor: null, ...o });
 
@@ -253,6 +254,52 @@ const extra = [
   },
 ];
 
+// wave 5 (docs/teams/holiday-looks.md): what friends wear in Holiday Village. Tag 'h': never on
+// the "Dress up" bubble (outfitsFor picks 'g' or 'b'); src/player/holiday/ puts them on.
+const RED = '#E5383B', GREEN = '#2FA84F';
+const holidayExtra = [
+  ...['elf_girl', 'elf', 'mrs_santa', 'santa', 'cozy'].map((k) => {
+    const o = HOLIDAY_OUTFITS.find((x) => x.key === k);
+    return { key: 'hl_' + k, name: o.name, icon: k === 'cozy' ? 'snow' : 'star', look: o.look };
+  }),
+  {
+    key: 'hl_snowflake', name: 'Snowflake Sweater', icon: 'snow',
+    look: {
+      top: { type: 'holiday_sweater', color: GREEN, pattern: 'snowflakes', patternColor: '#FFFFFF' },
+      bottom: { type: 'pants', color: '#3A63D9', pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'boots', color: '#FFFFFF' },
+      acc: acc({ head: 'santa_hat', headColor: RED, hand: 'present', handColor: '#6CC6FF' }),
+    },
+  },
+  {
+    key: 'hl_snowflake_girl', name: 'Snowflake Sweater', icon: 'snow',
+    look: {
+      top: { type: 'holiday_sweater', color: '#6CC6FF', pattern: 'snowflakes', patternColor: '#FFFFFF' },
+      bottom: { type: 'holiday_tights', color: RED, pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'boots', color: '#FFFFFF' },
+      acc: acc({ head: 'santa_hat', headColor: RED, neck: 'scarf', neckColor: '#FFFFFF', hand: 'candy_cane', handColor: RED }),
+    },
+  },
+  {
+    key: 'hl_reindeer', name: 'Reindeer', icon: 'star',
+    look: {
+      top: { type: 'hoodie', color: '#8B5E3C', pattern: 'none', patternColor: '#FFFFFF' },
+      bottom: { type: 'joggers', color: '#5A3A28', pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'boots', color: '#3B2419' },
+      acc: acc({ head: 'antlers', headColor: '#C8905E', neck: 'scarf', neckColor: RED, hand: 'candy_cane', handColor: RED }),
+    },
+  },
+  {
+    key: 'hl_reindeer_girl', name: 'Reindeer', icon: 'star',
+    look: {
+      top: { type: 'sweater', color: '#C8905E', pattern: 'trees', patternColor: '#FFFFFF' },
+      bottom: { type: 'skirt', color: RED, pattern: 'none', patternColor: '#FFFFFF' },
+      shoes: { type: 'boots', color: '#5A3A28' },
+      acc: acc({ head: 'antlers', headColor: '#8B5E3C', neck: 'scarf', neckColor: GREEN, hand: 'present', handColor: '#FF8CC6' }),
+    },
+  },
+];
+
 const ICONS = {
   princess: 'crown', sporty: 'ball', beach: 'sun', fairy: 'wand', winter: 'snow', rockstar: 'guitar',
   soccer: 'ball', skater: 'skate', space: 'rocket', dino: 'dino', camp: 'snow', dapper: 'star',
@@ -262,6 +309,7 @@ const ICONS = {
 export const OUTFITS = [
   ...STARTER_OUTFITS.map((o) => ({ key: o.key, name: o.name, icon: ICONS[o.key] || 'dress', tag: o.tag || 'g', outfit: o })),
   ...extra.map((o) => ({ key: o.key, name: o.name, icon: o.icon, tag: 'g', outfit: { key: o.key, name: o.name, look: o.look } })),
+  ...holidayExtra.map((o) => ({ key: o.key, name: o.name, icon: o.icon, tag: 'h', outfit: { key: o.key, name: o.name, look: o.look } })), // wave 5
 ];
 
 /** The outfit buttons for a friend: boys get the boy looks, girls the girl looks. */
