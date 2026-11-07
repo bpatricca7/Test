@@ -130,7 +130,7 @@ await test('H0', 'at most 16 holiday blocks, each tile painted, headroom left', 
       p(fakeCtx(), mulberry32(7));
     }
   }
-  assert(reg.count <= 240, `registry has ${reg.count} blocks (limit 256; keep room for later waves)`);
+  assert(reg.count <= 244, `registry has ${reg.count} blocks (limit 256; 214 before wave 5 + 14 cruise + 16 holiday; keep room for later waves)`);
 });
 
 await test('H1', 'every world generates fast, no unknown blocks, nothing dropped', () => {

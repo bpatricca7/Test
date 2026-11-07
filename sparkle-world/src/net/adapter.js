@@ -638,7 +638,18 @@ export class GameAdapter {
 
   /** Presence hi: treats and squishy toys are the writers of `hi` (a treat wins). */
   heldKey() {
-    return this.treatHeld() || this.squishHeld();
+    return this.treatHeld() || this.squishHeld() || this.giftHeld();
+  }
+
+  /** The wrapped gift in her hand (game.gifts.held(): 'gift_w' + 5 base-36 digits), or null. */
+  giftHeld() {
+    const g = this.game.gifts;
+    try {
+      const k = g && g.held();
+      return typeof k === 'string' ? k : null;
+    } catch {
+      return null;
+    }
   }
 
   /** The squishy toy's def key in her hand (game.squish.held()), or null. */

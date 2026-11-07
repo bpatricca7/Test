@@ -9,6 +9,9 @@
 // (src/core/squish-merge.js).
 
 import { mergeSquish } from '../core/squish-merge.js';
+import { mergeGifts } from '../things/gifts/data.js';
+import { mergeElves } from '../things/elves/data.js';
+import { mergeCruise } from '../things/cruise/logic.js';
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const when = (v) => (typeof v === 'number' ? v : Date.parse(v) || 0);
@@ -52,6 +55,10 @@ export function mergeProfile(local, server) {
   if (local.stickersSeen || server.stickersSeen) out.stickersSeen = union(local.stickersSeen, server.stickersSeen);
   out.stats = maxNumbers(local.stats, server.stats);
   if (isObj(local.squish) || isObj(server.squish)) out.squish = mergeSquish(local.squish, server.squish);
+  // wave 5: gifts, hiding elves and cruise progress join rather than newer-wins
+  if (isObj(local.gifts) || isObj(server.gifts)) out.gifts = mergeGifts(local.gifts, server.gifts);
+  if (isObj(local.elves) || isObj(server.elves)) out.elves = mergeElves(local.elves, server.elves);
+  if (isObj(local.cruise) || isObj(server.cruise)) out.cruise = mergeCruise(local.cruise, server.cruise);
   if ('coins' in local || 'coins' in server) out.coins = Math.max(local.coins || 0, server.coins || 0);
   // the Dress Up nudge stays gone once she opened the Studio on any device (one way, like a backup)
   if (local.lookPicked === true || server.lookPicked === true) out.lookPicked = true;

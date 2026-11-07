@@ -86,6 +86,7 @@ export function install(game) {
   const lightDir = new THREE.Vector3();
   let lastAbs = null;
   let fogBase = null;
+  let daylightMax = 1; // wave 5: a biome's sky.daylightMax (Holiday Village keeps a little dusk so its lights glow)
   let nextShoot = 8;
   let wished = false;
   let keyPhase = '', keyWeather = '', keySprinkles = false;
@@ -93,6 +94,7 @@ export function install(game) {
   const setBiomeSky = (world = game.world) => {
     const biome = world ? game.registry.biomes.get(world.meta.biome) : null;
     const sky = { ...DEFAULT_SKY, ...((biome && biome.sky) || {}) };
+    daylightMax = Math.min(1, Math.max(0.4, Number(sky.daylightMax) || 1));
     raw(sky.top, day.top);
     raw(sky.horizon, day.horizon);
     if (sky.mid) raw(sky.mid, day.mid);
@@ -295,7 +297,7 @@ export function install(game) {
       far = Math.max(far, near + 30);
       if (bu) {
         // nights stay a gentle, readable indigo; grey weather dims a little, never gloomy
-        bu.uDaylight.value = Math.max(0.4, (0.4 + 0.6 * dayF) * (1 - 0.13 * oc));
+        bu.uDaylight.value = Math.min(daylightMax, Math.max(0.4, (0.4 + 0.6 * dayF) * (1 - 0.13 * oc)));
         bu.uAmbient.value = clamp((0.22 + 0.38 * dayF) * (1 - 0.06 * oc), 0.22, 0.6);
         mix(tmp, moonTint, white, dayF);
         mix(tmp, tmp, warm, dusk * 0.6 * (1 - oc));

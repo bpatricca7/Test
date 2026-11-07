@@ -16,6 +16,9 @@
 
 import { sleep } from './util.js';
 import { mergeSquish } from './squish-merge.js';
+import { mergeGifts } from '../things/gifts/data.js';
+import { mergeElves } from '../things/elves/data.js';
+import { mergeCruise } from '../things/cruise/logic.js';
 
 const DB_NAME = 'sparkle-world';
 const LS_PREFIX = 'sparkle-world:';
@@ -84,7 +87,7 @@ export const BACKUP_FORMAT = 'sparkle-world-backup';
 
 // what of the profile a backup carries: her own things. Not the settings (this device's
 // volumes, quality and a grown-up's switches), not playing-with-friends ids, not lastWorldId.
-const BACKUP_PROFILE_KEYS = ['look', 'outfits', 'playerName', 'nameSet', 'stickers', 'stickersSeen', 'stats', 'coins', 'basket', 'tutorialDone', 'lookPicked', 'squish'];
+const BACKUP_PROFILE_KEYS = ['look', 'outfits', 'playerName', 'nameSet', 'stickers', 'stickersSeen', 'stats', 'coins', 'basket', 'tutorialDone', 'lookPicked', 'squish', 'holidayLooks', 'gifts', 'elves', 'cruise', 'reindeer']; // wave 5: holiday and cruise records
 
 export function newWorldId() {
   return 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
@@ -146,6 +149,12 @@ export function mergeBackupProfile(current, fromFile, { fresh = false } = {}) {
   if (isObj(f.squish)) {
     const joined = mergeSquish(current.squish, f.squish);
     if (canon(joined) !== canon(current.squish)) current.squish = joined;
+  }
+  // wave 5: gifts, hiding elves and cruise progress are joined the same way (nothing earned is lost)
+  for (const [k, join] of [['gifts', mergeGifts], ['elves', mergeElves], ['cruise', mergeCruise]]) {
+    if (!isObj(f[k])) continue;
+    const joined = join(current[k], f[k]);
+    if (canon(joined) !== canon(current[k])) current[k] = joined;
   }
   return JSON.stringify(current) !== before;
 }

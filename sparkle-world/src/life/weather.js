@@ -90,7 +90,8 @@ export function install(game) {
     },
     /** Weather the biome likes (used for new worlds). */
     startingWeather() {
-      return biomeKey() === 'snow' ? 'snow' : 'sunny';
+      const b = biomeDef();
+      return biomeKey() === 'snow' || (b && b.startWeather === 'snow') ? 'snow' : 'sunny'; // wave 5: Holiday Village starts snowy
     },
   };
   game.weather = weather;

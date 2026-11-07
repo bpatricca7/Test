@@ -60,6 +60,7 @@ export function heldModel(game, key) {
       if (m) return m;
     }
     if (/^squishg?_/.test(key) && game.squish && typeof game.squish.model === 'function') return game.squish.model(key);
+    if (/^gift_w/.test(key) && game.gifts && typeof game.gifts.model === 'function') return game.gifts.model(key); // wave 5: gifts
   } catch (err) {
     console.warn('[net] treat model failed', key, err);
   }

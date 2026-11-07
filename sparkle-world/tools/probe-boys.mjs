@@ -109,7 +109,7 @@ function unitPass(errors) {
   // A1 append only
   const appendOnly = Object.entries(OLD_KEYS).filter(([k, keys]) => !eq(W[k].slice(0, keys.length).map((o) => o.key), keys));
   c(!appendOnly.length, `A1 every option list keeps its old entries in place (${appendOnly.map(([k]) => k).join(', ') || 'all 13'})`);
-  const counts = { HAIR_STYLES: 19, TOPS: 14, BOTTOMS: 10, SHOES: 9, HEAD_ACC: 17, BACK_ACC: 7, NECK_ACC: 7, HAND_ACC: 9, PATTERNS: 12 };
+  const counts = { HAIR_STYLES: 19, TOPS: 17, BOTTOMS: 12, SHOES: 11, HEAD_ACC: 21, BACK_ACC: 8, NECK_ACC: 7, HAND_ACC: 11, PATTERNS: 15 }; // wave 5: + holiday pieces
   const badCounts = Object.entries(counts).filter(([k, n]) => W[k].length !== n);
   c(!badCounts.length, `A1 list sizes after the boy items (${badCounts.map(([k]) => `${k} ${W[k].length}`).join(', ') || 'as planned'})`);
   c(Object.keys(OLD_KEYS).every((k) => W[k].length <= 36), 'A1 every list stays under 36 entries (one base-36 token)');

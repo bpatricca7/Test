@@ -42,7 +42,8 @@ export function install(game) {
       for (const f of list) {
         if (!f || typeof f.kind !== 'string') continue;
         const fn = handlers.get(f.kind);
-        if (!fn) { warnOnce(`no owner for kind "${f.kind}"`); continue; }
+        // a ':spot' record only names a place (for a board or a hint); with no reader it is quietly skipped
+        if (!fn) { if (!f.kind.endsWith(':spot')) warnOnce(`no owner for kind "${f.kind}"`); continue; }
         try {
           if (fn(game, f, world) !== false) placed++;
         } catch (err) {
