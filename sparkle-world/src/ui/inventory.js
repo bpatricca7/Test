@@ -40,7 +40,7 @@ const TAB_PICS = {
   fun: ['furn:trampoline', 'furn:teddy_bear', 'furn:slide'],
   vehicles: ['furn:car_bubble', 'furn:car_convertible'],
   cruise: [], // wave 5: cruise-fun fills this line (wave5-plan.md §6.3)
-  holiday: [], // wave 5: holiday-world fills this line (wave5-plan.md §6.3)
+  holiday: ['block:holiday_lights', 'block:holiday_star', 'block:holiday_present', 'block:holiday_gingerbread'], // wave 5: holiday-world
 };
 
 const isLight = (hex) => {

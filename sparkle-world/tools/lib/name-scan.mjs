@@ -60,6 +60,16 @@ const EXTRA = {
     'cnVkb2xwaA==',
     'Z3JpbmNo',
     'cG9sYXJbIC1dZXhwcmVzcw==',
+    'ZGFzaGVy', // wave 5 holiday-world: more famous holiday characters (song reindeer, film and story names)
+    'cHJhbmNlcg==',
+    'YmxpdHplbg==',
+    'ZG9ubmVy',
+    'dml4ZW4=',
+    'c2Nyb29nZQ==',
+    'aGVybWV5',
+    'ZnJvc3R5WyAtXXRoZVsgLV1zbm93WyAtXT9tYW4=',
+    'YnVkZHlbIC1ddGhlWyAtXWVsZg==',
+    'Y2luZHlbIC1dbG91',
   ],
 };
 
