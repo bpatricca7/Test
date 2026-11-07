@@ -142,14 +142,13 @@ export class Party {
     // the music: the nearest party she can hear
     const song = best && bestD < HEAR ? songOf(best) : 0;
     if (song && playing) {
-      if (this.playing !== song) {
-        this.sfx.partyStart(song - 1);
-        this.playing = song;
-      }
+      // (audio still locked before her first tap: try again next frame, so the music starts
+      // as soon as sound is allowed)
+      if (this.playing !== song && this.sfx.partyStart(song - 1) !== false) this.playing = song;
       const vol = bestD <= LOUD ? 1 : Math.max(0, 1 - (bestD - LOUD) / (HEAR - LOUD));
       this.sfx.partyVolume(vol);
       this._duck(vol);
-    } else if (this.playing) {
+    } else if (this.playing || this.ducked) {
       this.stop();
     }
     // she dances on the floor

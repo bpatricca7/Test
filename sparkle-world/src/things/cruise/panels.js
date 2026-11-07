@@ -18,9 +18,10 @@ export const CSS = /* css */ `
 .cr-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .cr-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: #fff; border: 3px solid var(--sw-pink-soft, #FFD1E6); font-size: 19px; font-weight: 700; color: var(--sw-ink); white-space: nowrap; }
 .cr-chip .cr-icon { color: #FFB300; }
+.cr-chip svg { width: 1.2em; height: 1.2em; flex: none; }
 .cr-chip--time { margin-left: auto; border-color: #A6D8FF; }
 .cr-chip--time.cr-low { animation: cr-pulse .6s ease-in-out infinite; border-color: #FFC94D; }
-.cr-stage { position: relative; width: 100%; aspect-ratio: ${W} / ${H}; max-height: calc(100vh - 250px); margin: 0 auto; border-radius: 22px; overflow: hidden; border: 4px solid #fff; box-shadow: 0 6px 18px rgba(58,31,77,.18); background: #22205E; touch-action: none; }
+.cr-stage { position: relative; width: min(100%, max(320px, calc((100vh - 250px) * ${W / H}))); aspect-ratio: ${W} / ${H}; margin: 0 auto; border-radius: 22px; overflow: hidden; border: 4px solid #fff; box-shadow: 0 6px 18px rgba(58,31,77,.18); background: #22205E; touch-action: none; }
 .cr-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
 .cr-over { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; text-align: center; background: rgba(58,31,77,.42); color: #fff; }
 .cr-over[hidden] { display: none; }
@@ -53,7 +54,7 @@ export const CSS = /* css */ `
   .cr-over-score { font-size: 48px; }
   .cr-over-hint { font-size: 18px; }
   .cr-chip { font-size: 16px; padding: 4px 10px; }
-  .cr-stage { max-height: calc(100vh - 210px); }
+  .cr-stage { width: min(100%, max(300px, calc((100vh - 210px) * ${W / H}))); }
 }
 `;
 
@@ -248,6 +249,9 @@ function installPlay(game, ui, env) {
   const onKey = (e) => {
     if (!ui.isOpen('cruise-play')) return;
     if (e.code !== 'Space' && e.code !== 'Enter') return;
+    // a focused button (Play!, Throw!, Again!) answers the key itself: never a second throw
+    if (e.target && typeof e.target.closest === 'function' && e.target.closest('button')) return;
+    if (e.repeat) return;
     if (P.state === 'ready') start();
     else if (P.state === 'play' && P.g && P.g.act) P.g.action();
     else return;
@@ -346,6 +350,7 @@ function installLift(game, ui, env) {
           ui.close();
           env.goLift(s, L.args);
         } });
+        b.setAttribute('aria-label', s.name);
         const num = ui.el('span', 'cr-num', String(stops.length - i));
         b.append(num, ui.el('span', 'sw-btn-label', s.name));
         if (here) b.appendChild(ui.el('span', 'cr-lift-here', 'You are here'));

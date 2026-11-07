@@ -24,7 +24,7 @@ import * as THREE from 'three';
 import { Kit } from '../furniture/kit.js';
 import { material, paintTexture, glow, sheer } from '../furniture/paint.js';
 import { shade, mixHex } from '../../core/util.js';
-import { TV_W, TV_H } from '../furniture/tv.js';
+import { TV_W, TV_H, drawChannel, CHANNELS } from '../furniture/tv.js';
 
 const WHITE = '#FFFFFF', CREAM = '#FFF6EC', INK = '#3A1F4D', GOLD = '#FFC94D', NAVY = '#4B3A78', AQUA = '#4FB8FF';
 const FONT = "'Fredoka', ui-rounded, 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif";
@@ -587,6 +587,14 @@ export function movieScreen(color = SCREEN_COLORS[0], data = {}) {
     canvas.width = SCREEN_PX.w;
     canvas.height = SCREEN_PX.h;
     const ctx = canvas.getContext('2d');
+    // the show's first picture right away (the Bag's picture and the first frame are never blank)
+    try {
+      ctx.setTransform(SCREEN_PX.w / TV_W, 0, 0, SCREEN_PX.h / TV_H, 0, 0);
+      drawChannel(ctx, Math.max(1, Math.min(CHANNELS.length - 1, data.ch | 0)), 0, false);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    } catch (err) {
+      // a canvas without 2D drawing: the screen starts dark and the show fills it in
+    }
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.magFilter = THREE.LinearFilter;

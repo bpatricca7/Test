@@ -553,23 +553,15 @@ export function install(game) {
   // ---------------- world features (wave5-plan.md 4.1; host only, see features.js) ----------------
 
   /**
-   * Place a piece for a record. When the fit check fails only because of the player or a
-   * replaceable block it is forced; never into a solid block or another piece (then skipped).
+   * Place a piece for a record (players are ignored by placeOpts). A record whose cells are not
+   * free (a block that is not air or replaceable, another piece, outside the world) is skipped:
+   * never forced into a lantern, a ladder or a wall.
    */
   const put = (g, key, x, y, z, rot, color, data) => {
     const def = E.defs && E.defs.get(key);
     if (!def || ![x, y, z].every(isNum)) return null;
     const r = (((rot | 0) % 4) + 4) % 4;
-    const e = E.place(key, x | 0, y | 0, z | 0, r, color, data, g.worldFeatures.placeOpts());
-    if (e) return e;
-    const w = g.world, props = g.registry.blocks.props;
-    for (const [cx, cy, cz] of E.footprint(def, x | 0, y | 0, z | 0, r)) {
-      if (!w.inBounds(cx, cy, cz)) return null;
-      const id = w.get(cx, cy, cz);
-      if (id !== 0 && props.solid[id] === 1 && !props.replaceable[id]) return null;
-      if (E.at(cx, cy, cz)) return null;
-    }
-    return E.place(key, x | 0, y | 0, z | 0, r, color, data, g.worldFeatures.placeOpts({ force: true }));
+    return E.place(key, x | 0, y | 0, z | 0, r, color, data, g.worldFeatures.placeOpts()) || null;
   };
 
   let arcadeN = 0;
@@ -585,9 +577,19 @@ export function install(game) {
     WF.on('cruise:lift', (g, f) => {
       const list = Array.isArray(f.stops) ? f.stops.slice(0, 12) : [];
       let n = 0;
+      const props = g.registry.blocks.props;
+      const solidAt = (x, y, z) => {
+        const w = g.world;
+        if (!w || !w.inBounds(x, y, z)) return false;
+        const id = w.get(x, y, z);
+        return id !== 0 && !props.replaceable[id];
+      };
       for (const s of list) {
         if (!isObj(s) || !isNum(s.y)) continue;
-        if (put(g, 'cruise_lift', f.x, s.y, f.z, f.rot, M.LIFT_COLORS[0], { n: cleanName(s.name, 20) })) n++;
+        // a stop's y may name the deck's floor block (cruise-world does) or the air cell above
+        // it (wave5-plan.md 4): the booth stands on the floor either way
+        const y = solidAt(f.x | 0, s.y | 0, f.z | 0) ? (s.y | 0) + 1 : s.y | 0;
+        if (put(g, 'cruise_lift', f.x, y, f.z, f.rot, M.LIFT_COLORS[0], { n: cleanName(s.name, 20) })) n++;
       }
       return n > 0;
     });
@@ -607,7 +609,8 @@ export function install(game) {
       const sign = put(g, 'cruise_golf', f.x, f.y, f.z, f.rot, null, holes.length ? { h: n, par } : { h: n });
       holes.forEach((h, i) => {
         const c = Array.isArray(h.cup) && h.cup.length >= 3 && h.cup.slice(0, 3).every(isNum) ? h.cup : null;
-        if (c) put(g, 'cruise_flag', c[0], c[1], c[2], f.rot, null, { i, h: n });
+        // the flag knows the course's pars too, so a round started from a flag shows the same pars
+        if (c) put(g, 'cruise_flag', c[0], c[1], c[2], f.rot, null, { i, h: n, par });
       });
       return !!sign;
     });
