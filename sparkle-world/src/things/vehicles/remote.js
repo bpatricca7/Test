@@ -6,6 +6,7 @@
 
 import { LiveModel } from './live.js';
 import { WakeRibbon } from './fx.js';
+import { RainbowTrail, STARDUST } from '../pets/fx.js'; // wave 5: the sleigh's sparkle trail
 
 const fin = Number.isFinite;
 
@@ -22,6 +23,12 @@ export class RemoteVehicle {
     this.flags = 0;
     this._p = { x: 0, y: 0, z: 0 };
     this._splashT = 0;
+    // wave 5: a flying vehicle (the sleigh): airborne is a cheap guess (no solid just under it,
+    // checked every 0.2 s); the reindeer gallop in the sky and it leaves a sparkle trail
+    this.flying = false;
+    this.trail = null;
+    this._skyT = 0;
+    this._sparkT = 0;
   }
 
   /** Where the vehicle's pivot is for a seat at (x, y, z) facing yaw (into out). */
@@ -46,7 +53,8 @@ export class RemoteVehicle {
     const p = this.pivotFromSeat(x, y, z, yaw, this._p);
     const sp = (fin(speed) ? speed : 0) * (flags & 2 ? -1 : 1);
     this.live.setPose(p.x, p.y, p.z, yaw, 0, 0, 0, 0);
-    this.live.animate(dt, sp);
+    if (this.def.vehicle.flies) this._sky(dt, p, yaw, sp);
+    this.live.animate(dt, sp, this.flying);
     const g = this.game;
     const daylight = g.blockUniforms ? g.blockUniforms.uDaylight.value : 1;
     this.live.setLights(!!(flags & 1), Math.min(1, Math.max(0, (1.05 - daylight) / 0.6)));
@@ -68,11 +76,35 @@ export class RemoteVehicle {
     }
   }
 
+  /** wave 5: is her sleigh in the air (a guess), and its sparkle trail behind it. */
+  _sky(dt, p, yaw, sp) {
+    const g = this.game, ph = g.physics;
+    this._skyT -= dt;
+    if (this._skyT <= 0) {
+      this._skyT = 0.2;
+      this.flying = !!(ph && typeof ph.bodyBlocked === 'function') && !ph.bodyBlocked(p.x, p.y - 0.7, p.z, 0.45, 0.68);
+    }
+    if (!this.def.vehicle.sparkles) return;
+    const pv = this.live.pivot;
+    if (!this.trail && pv.parent) this.trail = new RainbowTrail(pv.parent, { colors: STARDUST, width: 0.5, life: 1.3 });
+    if (!this.trail) return;
+    const s = Math.sin(yaw), c = Math.cos(yaw), half = this.def.size[2] / 2;
+    if (this.flying || Math.abs(sp) > 1) this.trail.push(p.x - s * half, p.y + 0.7, p.z - c * half);
+    this.trail.update(dt);
+    this._sparkT -= dt;
+    if (this.flying && this._sparkT <= 0 && g.particles) {
+      this._sparkT = 0.15;
+      g.particles.emit('sparkle', { x: p.x - s * half, y: p.y + 0.5, z: p.z - c * half }, { count: 1, spread: 0.4 });
+    }
+  }
+
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
     if (this.wake) this.wake.dispose();
     this.wake = null;
+    if (this.trail) this.trail.dispose(); // wave 5
+    this.trail = null;
     this.live.dispose();
   }
 }

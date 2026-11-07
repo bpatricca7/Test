@@ -1,4 +1,4 @@
-// The fleet: nine cars, vans and boats she can drive (docs/teams/vehicles.md §2). Pure data,
+// The fleet: nine cars, vans and boats she can drive (docs/teams/vehicles.md §2), and the wave 5 sleigh. Pure data,
 // no models (index.js pairs each key with its build function), so Node tests can read it.
 //
 // Model space (the furniture convention): block units, footprint [0,w] x [0,h] x [0,d], nose
@@ -12,6 +12,8 @@
 //   speed / reverse (blocks per second), accel, turn (rad/s), cam (extra camera distance),
 //   horn, engine (sfx voices), lamps [[x,y,z], ...] (headlamps, model units),
 //   wheels { r, axles: [z, ...] } (spin), passenger (a second seat; unused in this wave).
+// wave 5 (docs/teams/reindeer.md): kind 'sleigh', flies (Up / Down lift it: drive.js flying),
+//   flySpeed (blocks per second in the air), sparkles (a sparkle trail while it moves).
 
 // Ice Cream Van swatches: the shops' Ice Cream Truck colors, so the two match
 const TRUCK_COLORS = ['#A6D8FF', '#FF9CCB', '#9BE8CF', '#C8B4FF', '#FFE38F', '#FFBFA0'];
@@ -105,6 +107,19 @@ export const VEHICLES = [
       kind: 'boat', water: true, noun: 'boat', hint: 'Tap to sail!', seat: [1.0, 1.05, 0.9], pose: 'sit', door: 1,
       body: { halfW: 0.85, halfL: 1.85, height: 1.0, clearance: 3.9 }, speed: 6.5, reverse: 1.5, accel: 2.5, turn: 1.5, cam: 3.0,
       horn: 'ding', engine: 'sail', lamps: [[0.75, 1.25, 3.6], [1.25, 1.25, 3.6]],
+    },
+  },
+  // wave 5 (reindeer team): the sleigh, appended last (append-only). Four reindeer pull a
+  // runner sleigh; it drives on snow like a car and flies (Up / Down).
+  {
+    key: 'sleigh', name: 'Jingle Sleigh', size: [2, 3, 6],
+    colors: ['#E8304A', '#2FA36B', '#3B6FD8', '#9C5BD6', '#FF6FA5', '#F4F1EA'],
+    colliders: [[0.08, 0, 0.06, 1.92, 1.55, 2.75], [0.12, 0, 2.75, 1.88, 1.95, 5.94]],
+    vehicle: {
+      kind: 'sleigh', noun: 'sleigh', hint: 'Tap to ride the sleigh!', seat: [1.0, 0.8, 1.0], pose: 'sit', door: 1,
+      body: { halfW: 0.88, halfL: 2.92, height: 2.0 }, speed: 7, reverse: 2.5, accel: 5, turn: 1.9, cam: 3.2,
+      horn: 'bells', engine: 'sail', lamps: [[0.18, 1.32, 2.72], [1.82, 1.32, 2.72]],
+      flies: true, flySpeed: 9.5, sparkles: true,
     },
   },
 ];

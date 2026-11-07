@@ -6,15 +6,22 @@ import { FONT } from './kit.js';
 
 const RAINBOW = ['#FF6F91', '#FFA25C', '#FFE066', '#7EE08A', '#6CC6FF', '#A98BFF'];
 
+// wave 5 (reindeer): the stardust palette of a flying reindeer and the sleigh (gold and snow)
+export const STARDUST = ['#FFFFFF', '#FFF1B8', '#FFD66B', '#F2C14E', '#FFE9A8', '#FFFFFF'];
+
 let rainbowTex = null;
-function rainbowTexture() {
-  if (rainbowTex) return rainbowTex;
+const paletteTex = new Map(); // wave 5: one texture per palette (shared, never disposed)
+function rainbowTexture(colors = null) {
+  if (!colors && rainbowTex) return rainbowTex;
+  const pkey = colors ? colors.join(',') : '';
+  if (colors && paletteTex.has(pkey)) return paletteTex.get(pkey);
+  const bands = colors || RAINBOW;
   const c = document.createElement('canvas');
   c.width = 4;
   c.height = 64;
   const g = c.getContext('2d');
-  const band = 64 / RAINBOW.length;
-  RAINBOW.forEach((col, i) => {
+  const band = 64 / bands.length;
+  bands.forEach((col, i) => {
     g.fillStyle = col;
     g.fillRect(0, Math.round(i * band), 4, Math.ceil(band));
   });
@@ -26,10 +33,12 @@ function rainbowTexture() {
   grad.addColorStop(1, 'rgba(255,255,255,0.55)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 4, 64);
-  rainbowTex = new THREE.CanvasTexture(c);
-  rainbowTex.colorSpace = THREE.SRGBColorSpace;
-  rainbowTex.userData.shared = true;
-  return rainbowTex;
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.userData.shared = true;
+  if (colors) paletteTex.set(pkey, tex);
+  else rainbowTex = tex;
+  return tex;
 }
 
 const N = 56; // trail points
@@ -37,17 +46,18 @@ const N = 56; // trail points
 /**
  * A vertical rainbow ribbon that follows a point. push(x, y, z) adds a point when it moved
  * far enough; update(dt) ages the points (they fade out and shrink).
+ * wave 5: opts { colors, width, life } (a stardust ribbon: colors = STARDUST).
  */
 export class RainbowTrail {
-  constructor(parent) {
+  constructor(parent, opts = null) {
     this.px = new Float32Array(N);
     this.py = new Float32Array(N);
     this.pz = new Float32Array(N);
     this.age = new Float32Array(N).fill(99);
     this.head = 0;
     this.count = 0;
-    this.life = 1.7;
-    this.width = 0.62;
+    this.life = opts && opts.life > 0 ? opts.life : 1.7;
+    this.width = opts && opts.width > 0 ? opts.width : 0.62;
     const geo = new THREE.BufferGeometry();
     this.pos = new Float32Array(N * 2 * 3);
     this.col = new Float32Array(N * 2 * 4);
@@ -69,7 +79,7 @@ export class RainbowTrail {
     geo.setIndex(idx);
     this.geo = geo;
     this.mat = new THREE.MeshBasicMaterial({
-      map: rainbowTexture(), vertexColors: true, transparent: true, depthWrite: false,
+      map: rainbowTexture(opts && Array.isArray(opts.colors) ? opts.colors : null), vertexColors: true, transparent: true, depthWrite: false,
       side: THREE.DoubleSide, fog: false,
     });
     this.mesh = new THREE.Mesh(geo, this.mat);
