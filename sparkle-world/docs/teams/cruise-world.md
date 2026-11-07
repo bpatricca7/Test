@@ -35,7 +35,9 @@ Outside: navy hull plates (waterline to y 25), a pink-and-gold stripe (26), whit
 portholes, the name in gold letters near the bow on both sides (each side reads correctly from
 outside), white anchors, flagstaffs at bow and stern, strings of party flags bow - mast -
 funnels - slide tower - stern, glass railings with a quartz handrail (1.5 blocks: she cannot
-auto-jump them) and a lantern every ninth post, lit windows and portholes (light 8 and 9), sea
+auto-jump them) and a lantern every ninth post (also round the slide tower's platform, beside each
+slide gate, along the outside of the tower's spiral stair and along the stairwell cut through the
+aft deck down to the swim platform), lit windows and portholes (light 8 and 9), sea
 lanterns in the pools. The island is off the starboard side (dock, swan boat and speedboat,
 palms, a picnic, shells), the rocks off port and aft, each with a gem.
 

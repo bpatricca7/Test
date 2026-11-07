@@ -352,6 +352,18 @@ test('C10', 'every spot can be reached on foot from the spawn', () => {
       else assert(near(f.x, f.y, f.z), `${what} reachable`);
     }
     for (const c of w.features.filter((f) => f.kind === 'furn' && f.key === 'bed_single')) assert(near(c.x, c.y, c.z), `${label}: bed at ${c.x},${c.y},${c.z} reachable`);
+    // every piece of furniture on the floor can be walked up to (ceiling lamps hang out of reach)
+    for (const f of w.features.filter((r) => r.kind === 'furn' && !cruise.HANGING.has(r.key))) {
+      assert(recordCells(f).cells.some(([x, y, z]) => near(x, y, z)), `${label}: ${f.key} at ${f.x},${f.y},${f.z} reachable`);
+    }
+    // the cabin corridor (3 wide) holds no furniture, so the lift in it never closes the way
+    const P = cruise.shipPlan(sx, sz);
+    for (const f of w.features.filter((r) => r.kind === 'furn' && r.y === cruise.F1 + 1 && !PASS.has(r.key))) {
+      for (const [x, , z] of recordCells(f).cells) {
+        const inCorridor = Math.abs(x - P.cx) <= 1 && z > P.zA0 + 10 && z < P.zLift - 4;
+        assert(!inCorridor, `${label}: ${f.key} at ${f.x},${f.y},${f.z} stands in the cabin corridor`);
+      }
+    }
   }
 });
 

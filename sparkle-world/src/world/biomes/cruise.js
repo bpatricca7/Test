@@ -431,6 +431,15 @@ class Ship {
       for (const x of [cx - 2, cx + 2]) for (let y = SEA + 1; y <= top; y++) g.set(x, y, z, B.cruise_white);
     }
     for (let x = cx - 1; x <= cx + 1; x++) for (let y = SEA + 2; y <= F1 + 3; y++) g.set(x, y, zs + 1, 0);
+    // glass railings along both sides of the stairwell where it cuts through the aft deck
+    // (the top steps by the snack bar's door stay open)
+    for (let z = zs + 1; z <= P.zA0 - 1; z++) {
+      for (const x of [cx - 2, cx + 2]) {
+        if (!this.solid(x, F1, z) || this.get(x, F1 + 1, z) !== 0) continue;
+        g.set(x, F1 + 1, z, B.cruise_rail);
+        g.setAir(x, F1 + 2, z, B.slab_quartz);
+      }
+    }
     this.marina = [cx, SEA + 2, zs - 1];
   }
 
@@ -674,13 +683,13 @@ class Ship {
     this.furn('bed_single', foot, y + 1, z0, rotIn, COLORS.pink);
     this.furn('nightstand', head, y + 1, z0 + 1, rotIn);
     this.furn('bed_bunk', foot, y + 1, z0 + 2, rotIn, COLORS.sky);
-    // a wardrobe and a toy chest by the corridor, an armchair by the porthole
+    // a wardrobe and a toy chest inside by the corridor wall (facing into the cabin, so the
+    // corridor stays 3 wide past the aft lift), an armchair by the porthole
     const w = s < 0 ? inner - 1 : inner + 2; // the wardrobe's anchor (it covers anchor-1..anchor)
     this.furn('wardrobe', w, y + 1, z0 + 3, 2);
-    this.furn(i % 3 === 0 ? 'toy_chest' : 'beanbag', inner - s, y + 1, z0, rotOut === 1 ? 3 : 1);
+    this.furn(i % 3 === 0 ? 'toy_chest' : 'beanbag', inner + s, y + 1, z0, rotOut);
     if (i % 2 === 0) this.furn('armchair', outer - 3 * s, y + 1, z0 + 3, 2);
     this.cabins.push({ s, z0, x: outer - 4 * s });
-    void rotOut;
   }
 
   // ---------- Fun deck rooms ----------
@@ -1157,6 +1166,39 @@ class Ship {
     for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) for (let y = FT + 1; y <= FT + 3; y++) g.set(cx + dx, y, zT + dz, B.cruise_white);
     for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) g.set(cx + dx, FT + 4, zT + dz, (dx + 2) % 2 ? B.wool_pink : B.wool_white);
     g.set(cx, FT + 5, zT, B.star_block);
+    // the aft lift stops on the platform's rim (spotsAndLifts), so its cell stays open
+    this.liftB = [cx, zT + 3];
+    // glass railings: round the platform's rim (the slides clear their own gates through it)
+    // and along the outside of the spiral stair, so she does not tumble 12 blocks to the deck
+    const inPlat = (dx, dz) => Math.hypot(dx, dz) <= 3.5;
+    for (let dz = -4; dz <= 4; dz++) {
+      for (let dx = -4; dx <= 4; dx++) {
+        if (!inPlat(dx, dz) || holes.has(`${dx},${dz}`)) continue;
+        if (inPlat(dx + 1, dz) && inPlat(dx - 1, dz) && inPlat(dx, dz + 1) && inPlat(dx, dz - 1)) continue;
+        if (cx + dx === this.liftB[0] && zT + dz === this.liftB[1]) continue;
+        g.set(cx + dx, FT + 1, zT + dz, B.cruise_rail);
+        g.set(cx + dx, FT + 2, zT + dz, B.slab_quartz);
+      }
+    }
+    // the lift's rim cell gets a little ledge with a railing beyond it
+    {
+      const [lx, lz] = this.liftB, s = Math.sign(lz - zT) || 1;
+      g.set(lx, FT, lz + s, B.cruise_deck);
+      g.set(lx, FT + 1, lz + s, B.cruise_rail);
+      g.set(lx, FT + 2, lz + s, B.slab_quartz);
+    }
+    for (let i = 2; i < steps - 1; i++) {
+      const [dx, dz] = ring[i];
+      const out = [];
+      if (Math.abs(dx) === 2) out.push([dx + Math.sign(dx), dz]);
+      if (Math.abs(dz) === 2) out.push([dx, dz + Math.sign(dz)]);
+      if (out.length === 2) out.push([dx + Math.sign(dx), dz + Math.sign(dz)]);
+      const top = F3 + 1 + i;
+      for (const [ox, oz] of out) {
+        if (top + 1 <= FT) g.setAir(cx + ox, top + 1, zT + oz, B.cruise_rail);
+        if (top + 2 <= FT) g.setAir(cx + ox, top + 2, zT + oz, B.slab_quartz);
+      }
+    }
     this.towerTop = [cx + 1, FT + 1, zT - 1];
     g.gem(cx - 1, FT + 1, zT + 1, 'tower');
   }
@@ -1253,6 +1295,16 @@ class Ship {
         let ok = true;
         for (let k = F3 + 1; k <= y - 2 && ok; k++) ok = this.free(x, k, z) && !keep(x, k, z);
         if (ok && this.solid(x, F3, z) && !this.water(x, F3, z)) for (let k = F3 + 1; k <= y - 2; k++) g.set(x, k, z, B.cruise_white);
+      }
+    }
+    // the start gate stands on the platform's rim: a railing on any side that drops away
+    {
+      const [gx, gy, gz] = path[0];
+      for (const [ox, oz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const x = gx + ox, z = gz + oz;
+        if (keep(x, gy, z) || this.solid(x, gy - 1, z)) continue;
+        this.deco(x, gy, z, B.cruise_rail);
+        this.deco(x, gy + 1, z, B.slab_quartz);
       }
     }
     for (const [x, y, z] of path) for (let k = 0; k <= 1; k++) this.reserve(x, y + k, z);
@@ -1489,7 +1541,7 @@ class Ship {
     const { cx, zT } = P;
     // lifts: forward (all four decks) and aft (by the slide tower, up to its platform)
     const liftA = [cx, P.zLift];
-    const liftB = [cx, zT + 3];
+    const liftB = this.liftB;
     const lift = (x, z, stops) => {
       const cells = [];
       for (const s of stops) cells.push([x, s.y + 1, z], [x, s.y + 2, z]);
