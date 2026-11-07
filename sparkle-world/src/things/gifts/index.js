@@ -23,6 +23,7 @@ import { lifeHud, basketAdd, basketTake, basketCount } from '../pets/kit.js';
 import { partsOf } from '../furniture/kit.js';
 import { disposeObject } from '../../core/models.js';
 import { nameUnset } from '../../player/wardrobe-data.js';
+import { FOOD } from '../food-models.js';
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const HAND = 'gift:hand'; // the Bag / hotbar item that is "the gift in her hands"
@@ -421,8 +422,8 @@ export function install(game) {
 
   const friendsList = () => (game.friends && Array.isArray(game.friends.friends) ? game.friends.friends : []);
   const npcNamed = (name) => {
-    const n = String(name || '').toLowerCase();
-    return n ? friendsList().find((f) => f && String(f.name).toLowerCase() === n) || null : null;
+    const n = D.cleanName(String(name || '')).toLowerCase();
+    return n ? friendsList().find((f) => f && D.cleanName(String(f.name || '')).toLowerCase() === n) || null : null;
   };
 
   /** Coins, counters, stickers and the event for one gift given (to a friend or put down). */
@@ -444,13 +445,16 @@ export function install(game) {
   /** Give the gift in her hands to a friend in her world (tap, or the Give button). */
   function giveTo(f) {
     const e = heldEntry || wanted();
-    if (!e || !f || giver.busy()) return false;
+    if (!e || !f) return false;
+    // one gift in the air at a time; a tap on the friend meanwhile does nothing (it must not
+    // fall through to the Build tap and put the next gift down beside the friend)
+    if (giver.busy()) return true;
     if (f.act === 'sleep' || f.act === 'toBed') {
       game.toast(D.fmt('sleeping', { friend: f.name }), { icon: 'moon', key: 'gift-hint' });
       return true;
     }
     // a gift tagged for someone else: the friend points it out, nothing is given
-    if (e.to && String(e.to).toLowerCase() !== String(f.name).toLowerCase()) {
+    if (e.to && e.to.toLowerCase() !== D.cleanName(String(f.name || '')).toLowerCase()) {
       if (game.friends && typeof game.friends.say === 'function') {
         f.faceT = 3;
         game.friends.say(f, 'giftOther', { extra: { to: e.to } });
@@ -501,6 +505,9 @@ export function install(game) {
   function putDownAt(hit) {
     const e = heldEntry || wanted() || front();
     if (!e || !E) return null;
+    // the Put down button skips the Build tap's check: a friend's world that is not open for
+    // building would refuse the present, and the gift would already be off her shelf
+    if (!hit && typeof game._netRefuses === 'function' && game._netRefuses('build')) return null;
     const data = D.giftData({ ...e, from: e.from || myName() });
     game.beginHistoryGroup();
     let entity = null;
@@ -533,6 +540,7 @@ export function install(game) {
     for (const dist of [1.3, 1.9, 0.9]) {
       for (const da of [0, 0.6, -0.6, 1.2, -1.2]) {
         const x = Math.floor(p.x + Math.sin(yaw + da) * dist), z = Math.floor(p.z + Math.cos(yaw + da) * dist);
+        if (x === Math.floor(p.x) && z === Math.floor(p.z)) continue; // never inside her own feet
         const dx = p.x - (x + 0.5), dz = p.z - (z + 0.5);
         const rot = Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? 1 : 3) : dz > 0 ? 0 : 2;
         for (const dy of [0, -1, 1]) {
@@ -622,7 +630,9 @@ export function install(game) {
     treats: () => {
       const b = profile() && profile().basket;
       if (!isObj(b)) return [];
-      return Object.keys(b).filter((k) => basketCount(game, k) > 0 && D.isInside('t:' + k)).slice(0, 24);
+      // the treats a friend would eat (the friends' isTreat rule): no flowers, no bare ingredients
+      const edible = (k) => k.startsWith('treat_') || (!!FOOD[k] && FOOD[k].kind !== 'flower');
+      return Object.keys(b).filter((k) => basketCount(game, k) > 0 && D.isInside('t:' + k) && edible(k)).slice(0, 24);
     },
   });
 
@@ -656,13 +666,24 @@ export function install(game) {
       return !!E.place(BENCH, x, y, z, r0, color, {}, g.worldFeatures.placeOpts({ force: true }));
     });
     game.worldFeatures.on('holiday:presents', (g, rec) => {
-      const n = Math.max(3, Math.min(8, Number.isFinite(rec.n) ? rec.n | 0 : 5));
-      const o = g.worldFeatures.placeOpts();
-      const cx = rec.x | 0, cy = rec.y | 0, cz = rec.z | 0;
-      const free = (x, y, z) => !!boxDef && E.canPlace(boxDef, x, y, z, 0, null, { players: false }) && (E._solidAt(x, y - 1, z) || !!E.surfaceBelow(x, y, z));
-      const spots = Array.isArray(rec.spots) && rec.spots.length
+      const given = Array.isArray(rec.spots) && rec.spots.length
         ? rec.spots.slice(0, 8).filter((s) => Array.isArray(s) && s.length >= 3 && s.every((v) => Number.isFinite(v))).map((s) => [s[0] | 0, s[1] | 0, s[2] | 0])
-        : D.presentSpots(cx, cy, cz, n, free);
+        : null;
+      const n = Math.max(3, Math.min(8, Number.isFinite(rec.n) ? rec.n | 0 : given ? given.length : 5));
+      const o = g.worldFeatures.placeOpts();
+      let cx = rec.x | 0, cz = rec.z | 0;
+      const cy = rec.y | 0;
+      // the tree the presents face away from: the record's `tree: [x, z]` (holiday-world puts
+      // the record's own x, y, z on its first spot), else the middle of the given spots
+      if (Array.isArray(rec.tree) && Number.isFinite(rec.tree[0]) && Number.isFinite(rec.tree[1])) {
+        cx = Math.floor(rec.tree[0]);
+        cz = Math.floor(rec.tree[1]);
+      } else if (given && given.length > 1) {
+        cx = Math.round(given.reduce((a, s) => a + s[0], 0) / given.length);
+        cz = Math.round(given.reduce((a, s) => a + s[2], 0) / given.length);
+      }
+      const free = (x, y, z) => !!boxDef && E.canPlace(boxDef, x, y, z, 0, null, { players: false }) && (E._solidAt(x, y - 1, z) || !!E.surfaceBelow(x, y, z));
+      const spots = given || D.presentSpots(cx, cy, cz, n, free);
       const day = today();
       let placed = 0;
       spots.slice(0, n).forEach((s, i) => {

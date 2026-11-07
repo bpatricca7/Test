@@ -14,6 +14,7 @@ import { mulberry32 } from '../../core/util.js';
 import { ICONS, boxSvg, bowSvg } from './art.js';
 import { FX_CSS, confetti, rays } from './fx.js';
 import { giftSfx } from './sfx.js';
+import { icon as uiIcon } from '../../ui/icons.js';
 
 const CSS = /* css */ `
 .gf-ws { display: flex; flex-direction: column; gap: 12px; }
@@ -606,7 +607,7 @@ export function installPanel(game, api) {
       el.btns.appendChild(btn(S.done, () => commit(true), 'sun', ICONS.present, 'gf-go'));
       return;
     }
-    if (st.step > 0) el.btns.appendChild(btn(S.back, () => go(st.step - 1), 'white'));
+    if (st.step > 0) el.btns.appendChild(btn(S.back, () => go(st.step - 1), 'white', uiIcon('back')));
     el.btns.appendChild(btn(S.random, () => surprise(), 'lav', ICONS.dice));
     if (st.step < 3) {
       el.btns.appendChild(btn(S.next, () => go(st.step + 1), 'mint', ICONS[POSES[st.step + 1]]));

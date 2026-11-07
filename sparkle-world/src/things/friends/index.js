@@ -13,7 +13,7 @@ import { makeId } from '../../core/util.js';
 import { FOOD, foodModel, foodIcon, foodName, hasFoodModel } from '../food-models.js';
 import { basketTake } from '../pets/kit.js';
 import { sfx } from '../pets/sfx.js';
-import { disposeObject } from '../../core/models.js';
+import { disposeObject } from '../../core/models.js'; // wave 5: gifts
 import { Friend, HALF_W, HEIGHT } from './friend.js';
 import { FRIENDS, FRIEND_KEYS, friendDef, wearOutfit, nextHair, surpriseLook, twinLook, OUTFITS, pronouns, rosterFriends } from './looks.js';
 import { pickLine, lineCount } from './chat.js';
@@ -136,7 +136,7 @@ class FriendSystem {
       this.game.celebrate([p.x, p.y + 1.5, p.z], 'heart', { quiet: true });
     }
     if (this.ui) this.ui.dropFriend(f);
-    this.dropGiftToy(f);
+    this.dropGiftToy(f); // wave 5: gifts
     disposeTag(this.tags.get(f));
     this.tags.delete(f);
     f.dispose();
@@ -254,7 +254,7 @@ class FriendSystem {
 
   onBuild(f, item) {
     if (item && item.key === 'friend:invite') return false;
-    // the gifts team: her wrapped gift (Bag item gift:hand) goes to this friend
+    // wave 5, the gifts team: her wrapped gift (Bag item gift:hand) goes to this friend
     if (item && item.key === 'gift:hand' && this.game.gifts && typeof this.game.gifts.giveTo === 'function') {
       if (this.game.gifts.giveTo(f)) return true;
     }
@@ -272,7 +272,7 @@ class FriendSystem {
     if (tool === 'build') {
       const item = g.selectedItem();
       if (item && item.key.startsWith('food:') && this.isTreat(item.key.slice(5))) return `Tap to give ${f.name} a treat`;
-      if (item && item.key === 'gift:hand') return `Tap to give ${f.name} your gift!`;
+      if (item && item.key === 'gift:hand') return `Tap to give ${f.name} your gift!`; // wave 5: gifts
     }
     return `Tap to play with ${f.name}`;
   }
@@ -443,7 +443,7 @@ class FriendSystem {
     if (f.act !== 'sit') f.emote('heart', 0.1);
   }
 
-  // ---------- gifts (the gifts team: src/things/gifts) ----------
+  // ---------- gifts (wave 5, the gifts team: src/things/gifts) ----------
 
   /**
    * A wrapped gift popped open in front of the friend (game.gifts' giving animation): the toy
@@ -654,7 +654,7 @@ class FriendSystem {
       f.inView = !far && _frustum.intersectsSphere(_sphere);
       if (this.remote) f.puppet(dt, f.inView);
       else f.update(dt, f.inView);
-      if (f.giftToy) this._giftTick(f, dt);
+      if (f.giftToy) this._giftTick(f, dt); // wave 5: gifts
       const tag = this.tags.get(f);
       if (tag) {
         tag.visible = f.inView && d2 < TAG_DIST * TAG_DIST && d2 > 1.4;
@@ -702,7 +702,7 @@ class FriendSystem {
     if (this.ui) this.ui.clear();
     for (const f of this.friends) {
       this.game.pickables.delete(f.pickable);
-      this.dropGiftToy(f);
+      this.dropGiftToy(f); // wave 5: gifts
       f.dispose();
     }
     for (const t of this.tags.values()) disposeTag(t);
@@ -823,7 +823,7 @@ export function install(game) {
     }
   });
   // things that happen around her
-  for (const n of ['shop:buy', 'zipline:ride', 'camp:marshmallow', 'photo:taken', 'sticker:earned', 'pet:adopt', 'cook:done', 'garden:harvest', 'prefab:place', 'sea:ride', 'gift:wrap', 'gift:open']) {
+  for (const n of ['shop:buy', 'zipline:ride', 'camp:marshmallow', 'photo:taken', 'sticker:earned', 'pet:adopt', 'cook:done', 'garden:harvest', 'prefab:place', 'sea:ride', 'gift:wrap', 'gift:open']) { // wave 5: gift:wrap, gift:open
     game.events.on(n, () => sys.react(n));
   }
   // her tail appears (merfolk): one line the first time in each world visit, never on turning

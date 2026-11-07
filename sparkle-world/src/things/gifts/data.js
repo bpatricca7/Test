@@ -39,7 +39,7 @@ export const PAPERS = [
   { key: 'blue', name: 'Blue', color: '#3D8BEA', ink: '#FFFFFF', ink2: '#BFE4FF' },
   { key: 'pink', name: 'Pink', color: '#FF7EB6', ink: '#FFFFFF', ink2: '#FFE38A' },
   { key: 'purple', name: 'Purple', color: '#8A5CF0', ink: '#FFE38A', ink2: '#FFFFFF' },
-  { key: 'snow', name: 'Snow White', color: '#F4F6FF', ink: '#E23B4E', ink2: '#2E9E5B' },
+  { key: 'snow', name: 'Snowy White', color: '#F4F6FF', ink: '#E23B4E', ink2: '#2E9E5B' },
   { key: 'mint', name: 'Mint', color: '#3CCFAE', ink: '#FFFFFF', ink2: '#FF7EB6' },
 ];
 

@@ -38,7 +38,7 @@ export const LINES = {
   twins: ['We\'re twins! Matchy matchy!', 'Best friends in matching outfits!'],
   hair: ['New hair! I love it!', 'Ooh, so pretty!', 'My hair looks amazing!'],
   tickle: ['Hee hee! That tickles!', 'Stop, stop! Hee hee!', 'Ticklish! Ha ha!'],
-  // the gifts team (src/things/gifts): a present for a friend ({toy}: what was inside)
+  // wave 5, the gifts team (src/things/gifts): a present for a friend ({toy}: what was inside)
   gift: ['A {toy}! I love it! Thank you!', 'Wow, a {toy}! You\'re the best!', 'For me? A {toy}! Yay!', 'I\'ll keep my {toy} forever and ever!', 'Best present ever! Thank you, {name}!', 'A {toy}! How did you know?!'],
   giftTreat: ['A treat in a present! Yummy!', 'Ooh, a yummy surprise! Thank you!', 'My favorite treat! Thank you, {name}!'],
   giftAsk: ['For me?!', 'Is that for me?!', 'Ooh, a present!', 'A present? Yay!'],
@@ -87,8 +87,8 @@ export const LINES = {
     tent: ['Camping is so much fun!'],
     zipline_tower: ['The zip line looks so fun!', 'Wheee! Let\'s zip!'],
     hammock: ['A hammock! So relaxing!'],
-    gift_workshop: ['Let\'s wrap presents!', 'I love the Gift Workshop!', 'Who should we make a gift for?'],
-    gift_box: ['Ooh, a present! Who is it for?', 'I wonder what\'s inside!', 'Presents! Yay!'],
+    gift_workshop: ['Let\'s wrap presents!', 'I love the Gift Workshop!', 'Who should we make a gift for?'], // wave 5
+    gift_box: ['Ooh, a present! Who is it for?', 'I wonder what\'s inside!', 'Presents! Yay!'], // wave 5
   },
   events: {
     'shop:buy': ['Ooh, what did you get?', 'Yum! Can I have a taste?', 'Good choice!'],
@@ -103,8 +103,8 @@ export const LINES = {
     'player:seaform': ['Whoa! Look at your tail!', 'So sparkly! Let\'s swim!', 'You swim so fast now!'],
     'sea:meet': ['Wow! A sea friend!', 'So cute! Hi there!', 'I love the ocean!'],
     'sea:ride': ['You\'re riding a dolphin! Wheee!', 'Go, go, dolphin!', 'So fast! Yay!'],
-    'gift:wrap': ['What a pretty present!', 'Ooh, who is that for?', 'Is it a surprise? I won\'t peek!'],
-    'gift:open': ['What did you get?!', 'A surprise! Yay!', 'Presents are so much fun!'],
+    'gift:wrap': ['What a pretty present!', 'Ooh, who is that for?', 'Is it a surprise? I won\'t peek!'], // wave 5
+    'gift:open': ['What did you get?!', 'A surprise! Yay!', 'Presents are so much fun!'], // wave 5
   },
   // ocean: sea animals near the friend (game.ocean.nearAny) and an invite to find dolphins
   seaKinds: {
@@ -164,7 +164,7 @@ export const LINES = {
 export const LINES_BOY = {
   style: ['I love it! Thank you!', 'I look so cool!', 'Do I look awesome?', 'This is my new favorite!', 'So stylish!'],
   hair: ['New hair! I love it!', 'Ooh, so cool!', 'My hair looks awesome!'],
-  gift: ['A {toy}! So cool! Thank you!', 'Whoa, a {toy}! Awesome!', 'For me? A {toy}! Yes!', 'Best present ever! Thanks, {name}!', 'A {toy}! You\'re awesome!'],
+  gift: ['A {toy}! So cool! Thank you!', 'Whoa, a {toy}! Awesome!', 'For me? A {toy}! Yes!', 'Best present ever! Thanks, {name}!', 'A {toy}! You\'re awesome!'], // wave 5
 };
 
 const HAIR_NAMES = Object.fromEntries(HAIR_STYLES.map((h) => [h.key, h.name.toLowerCase()]));
@@ -184,7 +184,7 @@ function fill(line, game, friend, extra = {}) {
   const num = look && look.top && Number.isInteger(look.top.num) ? look.top.num : 7;
   return line.replace(/\{name\}/g, name).replace(/\{friend\}/g, friend ? friend.name : '')
     .replace(/\{pet\}/g, extra.pet || 'your pet').replace(/\{num\}/g, String(num))
-    .replace(/\{toy\}/g, extra.toy || 'present').replace(/\{to\}/g, extra.to || 'someone');
+    .replace(/\{toy\}/g, extra.toy || 'present').replace(/\{to\}/g, extra.to || 'someone'); // wave 5: gifts
 }
 
 /** Compliments about her outfit (a list, maybe empty). */
@@ -257,7 +257,7 @@ function contextLines(game, friend) {
     if (kind && LINES.seaKinds[kind]) add(LINES.seaKinds[kind], 2);
     if (g.ocean.met('dolphin') === 0 && g.ocean.nearDeep(p.x, p.z, 40)) add(LINES.seaInvite);
   }
-  // the toy she gave this friend (the gifts team)
+  // wave 5: the toy she gave this friend (the gifts team)
   if (friend && friend.giftToy && friend.giftToy.name) add(LINES.giftHave.map((l) => fill(l, g, friend, { toy: friend.giftToy.name })));
   // her own lines
   if (friend && friend.def) add(friend.def.lines, 2);

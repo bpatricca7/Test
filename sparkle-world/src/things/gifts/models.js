@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import { Kit } from '../furniture/kit.js';
 import { paintTexture, material, glow, sheer } from '../furniture/paint.js';
 import { shade, mixHex } from '../../core/util.js';
-import { foodModel, hasFoodModel } from '../food-models.js';
+import { FOOD, foodModel, hasFoodModel } from '../food-models.js';
 import * as D from './data.js';
 
 const PI = Math.PI;
@@ -472,7 +472,8 @@ export function insideModel(inside) {
   if (t) {
     const g = new THREE.Group();
     try {
-      const m = foodModel(hasFoodModel(t) ? t : 'cupcake');
+      // a shop ice cream has its own baked model once the shops know its key (FOOD[t])
+      const m = foodModel(hasFoodModel(t) || (t.startsWith('treat_') && FOOD[t]) ? t : 'cupcake');
       m.scale.multiplyScalar(1.6);
       g.add(m);
     } catch {

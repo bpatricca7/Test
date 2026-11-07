@@ -99,7 +99,7 @@ Friends react to `gift:wrap` and `gift:open` (the existing `react` list).
 | kind | fields | what gifts does |
 |---|---|---|
 | `holiday:workshop` | `x, y, z, rot?, color?` | places `gift_workshop` (2 x 2 x 1 footprint, the front faces `rot`); tries the other turns, then one block over each way, then forces it |
-| `holiday:presents` | `x, y, z` (the tree's foot), `n` (3-8), `spots?` (`[[x, y, z], ...]`) | places n wrapped presents round the tree, on free floor 1-6 blocks out (up to 3 blocks up or down), spread round the circle, each facing away from the tree; with `spots` it uses those cells |
+| `holiday:presents` | `x, y, z` (the tree's foot), `n` (3-8, default: the number of `spots`), `spots?` (`[[x, y, z], ...]`), `tree?` (`[x, z]` of the trunk) | places n wrapped presents round the tree, on free floor 1-6 blocks out (up to 3 blocks up or down), spread round the circle, each facing away from the tree; with `spots` it uses those cells and faces them away from `tree` (or from the middle of the spots when `tree` is missing), so holiday-world's record, whose own `x, y, z` is its first spot, works as it is |
 
 ## 4. Numbers
 

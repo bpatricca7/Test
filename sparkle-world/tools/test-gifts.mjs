@@ -900,6 +900,21 @@ describe('gifts: the module on a fake game (G13)', () => {
     const n0 = E.all().length;
     game.worldFeatures.run(game.world, [{ kind: 'holiday:presents', x: 20, y: 0, z: 20, n: 50, spots: [[20, 0, 22], [22, 0, 20], ['x', 0, 0]] }]);
     assert.equal(E.all().length - n0, 2, 'bad spots are skipped');
+    // holiday-world's record: x, y, z on its first spot, the trunk in `tree`; every present faces
+    // away from the trunk (rot 0..3 fronts +Z, +X, -Z, -X)
+    const n1 = E.all().length;
+    const ring = [[44, 0, 40], [40, 0, 44], [36, 0, 40], [40, 0, 36]];
+    game.worldFeatures.run(game.world, [{ kind: 'holiday:presents', x: 44, y: 0, z: 40, n: 4, spots: ring, tree: [40, 40] }]);
+    const placed = E.all().slice(n1);
+    assert.equal(placed.length, 4);
+    const rotAt = (list, x, z) => list.find((p) => p.x === x && p.z === z).rot;
+    assert.deepEqual([rotAt(placed, 44, 40), rotAt(placed, 40, 44), rotAt(placed, 36, 40), rotAt(placed, 40, 36)], [1, 0, 3, 2], 'fronts face away from the tree');
+    // without `tree`, the middle of the spots stands in for it
+    const n2 = E.all().length;
+    game.worldFeatures.run(game.world, [{ kind: 'holiday:presents', x: 64, y: 0, z: 60, spots: ring.map(([x, y, z]) => [x + 20, y, z + 20]) }]);
+    const placed2 = E.all().slice(n2);
+    assert.equal(placed2.length, 4, 'n defaults to the spots given');
+    assert.equal(rotAt(placed2, 64, 60), 1);
   });
 });
 
