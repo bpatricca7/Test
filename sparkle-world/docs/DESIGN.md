@@ -1124,3 +1124,44 @@ unless its own probe turns it on; the Girl / Boy / Mix button is read on the dev
 - **Friends**: the animals are each page's own, but the world's buddy dolphin (name and color
   from the world seed), the whale's visit time, a friend riding (presence `sr`) and a friend's
   dolphin trick (`sk`) are the same on every page (docs/MULTIPLAYER.md §7).
+
+## 8. Wave 5: the Cruise Ship and the Holiday Village (added 2026-11-07)
+
+From the dad: a whole cruise ship world with decks, pools, games and lots to do, and a Christmas
+world with lights, a giant tree, elves, Santa and elf costumes, gifts to wrap and give, and
+reindeer and a sleigh to ride. Everything is an original design: the ship is the **Glimmer Star**,
+the helper elves are the **Twinkle Elves** (Pip, Tinsel, Juniper, Sprout, Clove, Nutmeg, Holly,
+Sparkle, Jingle, Maple, Pepper, Snowdrop), and no real cruise line, film character or toy brand
+name appears anywhere (`tools/lib/name-scan.mjs` checks). Seven teams built it; the contract
+(namespaces, feature kinds, block and sticker budgets, coin caps, shared-file owners, merge
+order) is `docs/teams/wave5-plan.md`, and each team's doc is `docs/teams/<team>.md`.
+
+- **World features** (`src/world/features.js`): a biome's `generate()` can only write blocks, so
+  it leaves `world.features` records; on the first `world:load` of a new world the host hands
+  each to the module that registered its kind with `game.worldFeatures.on(kind, fn)`. Kind
+  `furn` (any furniture key) is built in; `*:spot` records with no reader are skipped quietly.
+- **Cruise Ship** (`biomes/cruise.js`, `paint/cruise.js`, 14 blocks): four decks (Promenade,
+  Fun, Pool, Sports) on a turquoise sea with a palm island; cabins, kids' club, arcade,
+  theater, Sweet Street, slide tower, pools, hot tubs, mini golf and the bridge.
+- **Cruise fun** (`src/things/cruise/`): water slides, lifts between decks, arcade games, deck
+  games, mini golf, the light-up dance deck with a DJ booth, the big movie screen, the ship's
+  wheel, the activity board, pool floats, loungers and towel animals; `profile.cruise`.
+- **Holiday Village** (`biomes/holiday.js`, `paint/holiday.js`, 16 blocks): a snowy valley with
+  the giant tree, the workshop, cottages, a frozen pond, a stable and pasture and a sleigh pad;
+  it starts in falling snow (`def.startWeather`) and caps daylight (`sky.daylightMax`) so the
+  light strings glow.
+- **Holiday looks** (`src/player/holiday/`): Santa, Mrs. Claus style and elf costumes appended
+  to the look lists, the Holiday Dress-Up booth, Studio "Holiday looks"; `profile.holidayLooks`
+  keeps "Back to me".
+- **Gifts** (`src/things/gifts/`): wrap a toy at the Gift Workshop, carry it, give it to a friend
+  or put it under the tree; friends open presents; `profile.gifts`.
+- **Twinkle Elves** (`src/things/elves/`): elves hide around the village to be found, and a
+  house elf moves to a new spot every morning in her home world; `profile.elves`.
+- **Reindeer and the Jingle Sleigh** (`src/things/reindeer/`, `pets/reindeer.js`,
+  `vehicles/models-sleigh.js`): a pasture herd to pet and ride, flying in the village, and a
+  sleigh that flies (Up / Down on touch, Space / Shift on a keyboard); `profile.reindeer`.
+- **Profiles**: gifts, elves and cruise are joined (not newer-wins) on account sync and backup
+  restore; reindeer counters take the larger value.
+- **Checks**: `npm run test:wave5` (both worlds, seeds 1 to 4, Cozy and Big, every feature placed
+  through the real placers, save and load, guest) plus each team's `test:<team>`;
+  `node tools/worldview.mjs cruise|holiday` draws a world without a browser.
