@@ -287,6 +287,7 @@ const PATHS = {
   // wave 5 (reindeer): Land (a down arrow onto the snow), and a reindeer head with antlers
   rd_land: `<path d="M10.2 2.6h3.6v8.2h3.6L12 16.6l-5.4-5.8h3.6Z"/><path opacity=".7" d="M2.6 19.2c2.4-1.6 5.6-2.4 9.4-2.4s7 .8 9.4 2.4v2.2H2.6Z"/>`,
   rd_head: `<path d="M7.6 9.6h8.8v7.2c0 2.6-2 4.6-4.4 4.6s-4.4-2-4.4-4.6Z"/><path d="M8.6 9.4 5.4 3.2l1.4-.6 1.4 2.8.8-2.6 1.4.4-1.2 4Zm6.8 0 3.2-6.2-1.4-.6-1.4 2.8-.8-2.6-1.4.4 1.2 4Z"/><path d="M7.8 11.2 3.4 10l.4 1.8 3.8 1.4Zm8.4 0 4.4-1.2-.4 1.8-3.8 1.4Z"/><circle fill="#fff" cx="12" cy="18.6" r="1.4"/>`,
+  el_elf: `<path d="M4.6 17.4C5 11.2 8.4 5.6 13.8 4c2.8-.8 5 .4 5.6 2.4-2.4-.6-4.2.4-4.8 2.6-.8 2.8-.8 5.4-.4 8.4Z"/><rect x="2.6" y="16.6" width="17.2" height="4.6" rx="2.3" opacity=".75"/><path d="m20.4 1.4.8 1.6 1.7.3-1.3 1.2.3 1.7-1.5-.8-1.5.8.3-1.7-1.3-1.2 1.7-.3Z"/>`, // wave 5: elves (an elf hat with its star)
 };
 
 export function lifeIcon(name) {
