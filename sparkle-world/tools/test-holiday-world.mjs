@@ -175,7 +175,10 @@ await test('H3', 'every record: in bounds, air cells, solid floor, no overlaps, 
     for (const r of world.features) {
       const what = `${w.tag}: ${r.kind} ${r.key || r.where || r.name || ''} at ${r.x},${r.y},${r.z}`;
       assert(KINDS.has(r.kind), `${what}: known kind`);
-      assert([r.x, r.y, r.z].every(Number.isInteger) && [0, 1, 2, 3].includes(r.rot), `${what}: integer cell, rot 0..3`);
+      assert([r.x, r.y, r.z].every(Number.isInteger), `${what}: integer cell`);
+      // an elf record has no rot (the elf faces the spawn, docs/teams/elves.md); every other record turns 0..3
+      if (r.kind === 'holiday:elf') assert(r.rot === undefined, `${what}: no rot (faces the spawn)`);
+      else assert([0, 1, 2, 3].includes(r.rot), `${what}: rot 0..3`);
       if (r.kind === 'furn') assert(holiday.FURN_SIZE[r.key], `${what}: size known`);
       if (r.kind === 'holiday:presents') {
         assert(Number.isInteger(r.n) && r.n >= 3 && r.n <= 8, `${what}: n ${r.n}`);

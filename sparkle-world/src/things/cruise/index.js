@@ -584,12 +584,23 @@ export function install(game) {
         const id = w.get(x, y, z);
         return id !== 0 && !props.replaceable[id];
       };
+      // she arrives in the lift facing its front (goLift: "facing out"), so each stop's booth
+      // faces a cell she can step out into: the record's turn when its front is open, else the
+      // first turn that is (one record turns every stop, and a deck's wall or rail may stand
+      // right in front of one of them)
+      const openFront = (x, y, z, r) => {
+        const [dx, dz] = rotXZ(0, 1, r);
+        const fx = x + dx, fz = z + dz;
+        return !solidAt(fx, y, fz) && !solidAt(fx, y + 1, fz) && solidAt(fx, y - 1, fz) && !E.at(fx, y, fz);
+      };
+      const r0 = (((f.rot | 0) % 4) + 4) % 4;
       for (const s of list) {
         if (!isObj(s) || !isNum(s.y)) continue;
         // a stop's y may name the deck's floor block (cruise-world does) or the air cell above
         // it (wave5-plan.md 4): the booth stands on the floor either way
         const y = solidAt(f.x | 0, s.y | 0, f.z | 0) ? (s.y | 0) + 1 : s.y | 0;
-        if (put(g, 'cruise_lift', f.x, y, f.z, f.rot, M.LIFT_COLORS[0], { n: cleanName(s.name, 20) })) n++;
+        const r = [r0, (r0 + 1) % 4, (r0 + 3) % 4, (r0 + 2) % 4].find((k) => openFront(f.x | 0, y, f.z | 0, k)) ?? r0;
+        if (put(g, 'cruise_lift', f.x, y, f.z, r, M.LIFT_COLORS[0], { n: cleanName(s.name, 20) })) n++;
       }
       return n > 0;
     });

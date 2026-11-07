@@ -30,6 +30,7 @@
     "test:gifts": "node tools/test-gifts.mjs",
     "test:elves": "node tools/test-elves.mjs",
     "test:cruise-fun": "node --test tools/test-cruise-fun.mjs",
+    "test:wave5": "node tools/test-wave5-integration.mjs",
     "probe:ocean": "node tools/build.mjs && node tools/probe-ocean.mjs",
     "probe:railway": "node tools/probe-railway.mjs",
     "test:accounts": "node --test tools/test-accounts.mjs",

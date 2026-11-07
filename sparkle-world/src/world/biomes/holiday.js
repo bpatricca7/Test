@@ -179,7 +179,12 @@ class Village {
     return r;
   }
 
-  elf(x, y, z, where) { return this.feat('holiday:elf', x, y, z, 0, { where }); }
+  /** An elf record carries no rot, so the elf faces the spawn (docs/teams/elves.md: "unless the record has rot"). */
+  elf(x, y, z, where) {
+    const r = this.feat('holiday:elf', x, y, z, 0, { where });
+    delete r.rot;
+    return r;
+  }
 
   spot(name, x, y, z, rot = 0) { return this.feat('holiday:spot', x, y, z, rot, { name }); }
 
