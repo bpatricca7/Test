@@ -13,6 +13,8 @@
 //   H6 our furniture sizes and colors match the furniture catalog (the cells we keep clear are the
 //      cells used, every color one of the piece's swatches)
 //   H7 the biome def: sky colors, snowy weather, the New World card paints without throwing
+//   H8 every gem and every elf spot has an air path to the open sky (nothing sealed in a loft or
+//      a pine's crown) and no gem sits inside a feature record's cells
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -307,6 +309,23 @@ await test('H7', 'sky, snowy weather, the New World card', () => {
   assert(g.draws > 500, `the card paints (${g.draws} draws)`);
   // and with no tiles at all (a fallback color for each block)
   b.paintArt(fakeCtx(288, 176), 288, 176, { rand: mulberry32(2), reg, tileFor: () => null, drawSparkle, pixelCloud() {} });
+});
+
+await test('H8', 'every gem and every elf can be reached from the open sky (none sealed in, no gem in a feature)', () => {
+  each((world, w) => {
+    const g = { world, sx: world.sx, sy: world.sy, sz: world.sz, inside: (x, y, z) => x >= 0 && y >= 0 && z >= 0 && x < world.sx && y < world.sy && z < world.sz, get: (x, y, z) => world.get(x, y, z) };
+    const tops = holiday.skyTops(g);
+    const cells = new Set();
+    for (const r of world.features) for (const c of holiday.recordCells(r)) cells.add(c.join(','));
+    for (const [x, y, z] of world.gemSpots) {
+      assert(!cells.has([x, y, z].join(',')), `${w.tag}: gem ${x},${y},${z} inside a feature`);
+      assert(holiday.openToSky(g, tops, x, y, z, 4000), `${w.tag}: gem ${x},${y},${z} sealed in`);
+    }
+    for (const r of world.features) {
+      if (r.kind !== 'holiday:elf') continue;
+      assert(holiday.openToSky(g, tops, r.x, r.y, r.z, 4000), `${w.tag}: elf (${r.where}) at ${r.x},${r.y},${r.z} sealed in`);
+    }
+  });
 });
 
 console.log(`\n${passed} passed, ${failures} failed (${worlds.map((w) => `${w.tag} ${w.ms.toFixed(0)}ms`).join(', ')})`);

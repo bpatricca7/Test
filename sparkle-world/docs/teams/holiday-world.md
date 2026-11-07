@@ -87,7 +87,9 @@ lanes and lots).
   mountains, lights down both sides of the run, a candy-cane flag pole with a red bauble on top.
 - **Pine forest** everywhere else (denser in noisy patches): 30% of pines wear baubles, about
   18% light strings, 8% a star on top. Snowmen and snowy bushes in the clearings. Gems: under
-  trees, by snowmen, on hilltops, on the tree's star, in the workshop loft, by the hay.
+  trees, by snowmen, on hilltops, on the tree's star, beside Santa's chair, by the hay. A gem
+  candidate inside a feature record's cells, or sealed in (no air path to the sky), is dropped
+  before the gems are picked (`openToSky`); the tree elves are checked the same way.
 - **Mountains**: from 24 (Cozy) / 30 (Big) blocks in from the edge the ground rises 10 to 28
   blocks with ridged peaks; steep sides show grey rock; at the very edge it eases down to 8 above
   the floor to meet the flat snowy horizon (`world.outside = { block: 'snow', surface: 31 }`).

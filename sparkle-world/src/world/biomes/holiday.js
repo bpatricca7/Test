@@ -87,6 +87,43 @@ export function recordCells(r) {
   return boxCells(CLEAR[r.kind] || [1, 1, 1], r.x, r.y, r.z, r.rot | 0);
 }
 
+/**
+ * Can she get to (x, y, z) from the open sky through air (or see-through sprites), without
+ * breaking a block? A bounded flood fill (at most `max` cells), so a gem or an elf is never
+ * sealed in a loft or inside a pine's crown. `tops` is skyTops(g) (refresh after building).
+ */
+export function openToSky(g, tops, x, y, z, max = 1500) {
+  const reg = g.world.registry;
+  const pass = (id) => { if (id === 0) return true; const d = reg.byId(id); return !!d && !d.solid; };
+  if (!g.inside(x, y, z) || !pass(g.get(x, y, z))) return false;
+  const seen = new Set([(y * g.sz + z) * g.sx + x]);
+  const q = [x, y, z];
+  for (let i = 0; i < q.length && i < max * 3; i += 3) {
+    const cx = q[i], cy = q[i + 1], cz = q[i + 2];
+    if (cy > tops[cz * g.sx + cx]) return true;
+    for (const [dx, dy, dz] of [[0, 1, 0], [1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, -1, 0]]) {
+      const nx = cx + dx, ny = cy + dy, nz = cz + dz;
+      if (!g.inside(nx, ny, nz)) continue;
+      const k = (ny * g.sz + nz) * g.sx + nx;
+      if (seen.has(k) || !pass(g.get(nx, ny, nz))) continue;
+      seen.add(k);
+      q.push(nx, ny, nz);
+    }
+  }
+  return false;
+}
+
+/** The highest non-air cell of every column (-1 for an empty column), for openToSky. */
+export function skyTops(g) {
+  const tops = new Int16Array(g.sx * g.sz).fill(-1);
+  for (let z = 0; z < g.sz; z++) {
+    for (let x = 0; x < g.sx; x++) {
+      for (let y = g.sy - 1; y >= 0; y--) if (g.get(x, y, z) !== 0) { tops[z * g.sx + x] = y; break; }
+    }
+  }
+  return tops;
+}
+
 // ---------- cottage looks ----------
 
 const COTTAGES = [
@@ -707,7 +744,7 @@ function workshop(v, W) {
   s.elf(-5, 4, -11, 'shelf');
   s.elf(6, 4, -11, 'shelf');
   s.elf(-5, 16, -9, 'chimney');
-  s.gem(0, 8, -6, 'loft');
+  s.gem(-2, 1, -10, 'chair'); // beside Santa's chair (the loft above the ceiling is sealed)
   s.spot('workshop', 0, 1, 3, 2);
 }
 
@@ -809,7 +846,7 @@ function pondSide(v, L, pond) {
   }
   const rim = P.r + 2;
   // benches facing the ice (only where the bank is the village floor)
-  const around = [[0, -1, 0], [0, 1, 2], [1, 0, 1], [-1, 0, 3]];
+  const around = [[0, -1, 0], [0, 1, 2], [1, 0, 3], [-1, 0, 1]]; // [ax, az, rot]: the front (rot 0..3 = +Z, +X, -Z, -X) faces the ice
   const level = (x0, z0, x1, z1) => {
     for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) if (g.h(x, z) !== G || g.get(x, G + 1, z) !== 0) return false;
     return true;
@@ -981,6 +1018,12 @@ export function generate(world, rand, noise) {
 
   world.features = v.finalize();
   world.holidayDropped = v.dropped; // records that did not fit, with why (tests expect none)
+  // gems: never inside a feature's cells (a lamp post, the sleigh) and never sealed in (under a
+  // pine's crown on a steep slope), so every gem she is asked to find can be reached
+  const featCells = new Set();
+  for (const r of world.features) for (const [x, y, z] of recordCells(r)) featCells.add((y * g.sz + z) * g.sx + x);
+  const tops = skyTops(g);
+  g.gems = g.gems.filter((c) => !featCells.has((c.y * g.sz + c.z) * g.sx + c.x) && openToSky(g, tops, c.x, c.y, c.z, 400));
   world.outside = { block: 'snow', surface: G + EDGE_H + 1 };
   const w = g.finish();
   w.waterLevel = 0; // no sea (the pond is frozen)
@@ -991,6 +1034,8 @@ export function generate(world, rand, noise) {
 /** Elf spots in trees: on a low branch of the giant tree, and in a forest pine near the pond. */
 function treeElves(v, L) {
   const g = v.g, G = v.G;
+  const tops = skyTops(g);
+  const open = (x, y, z) => openToSky(g, tops, x, y, z, 600);
   const leafy = (id) => id === v.id('pine_leaves') || id === v.id('snow_leaves');
   // the giant tree: an outer branch tip on its south side (toward the spawn) with room above
   let done = false;
@@ -998,7 +1043,7 @@ function treeElves(v, L) {
     for (let r = 11; r >= 4 && !done; r--) {
       for (const dx of [2, -2, 3, -3, 1, -1]) {
         const x = L.tx + dx, z = L.tz + r;
-        if (g.get(x, y, z) !== 0 && g.get(x, y + 1, z) === 0 && g.get(x, y + 2, z) === 0) { v.elf(x, y + 1, z, 'tree'); done = true; break; }
+        if (g.get(x, y, z) !== 0 && g.get(x, y + 1, z) === 0 && g.get(x, y + 2, z) === 0 && open(x, y + 1, z)) { v.elf(x, y + 1, z, 'tree'); done = true; break; }
       }
     }
   }
@@ -1011,7 +1056,7 @@ function treeElves(v, L) {
       if (g.get(x, h + 1, z) !== v.id('log_pine')) continue;
       for (let y = h + 3; y < h + 8 && !found; y++) {
         for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) {
-          if (leafy(g.get(x + dx, y, z + dz)) && g.get(x + dx, y + 1, z + dz) === 0) { v.elf(x + dx, y + 1, z + dz, 'tree'); found = true; break; }
+          if (leafy(g.get(x + dx, y, z + dz)) && g.get(x + dx, y + 1, z + dz) === 0 && open(x + dx, y + 1, z + dz)) { v.elf(x + dx, y + 1, z + dz, 'tree'); found = true; break; }
         }
       }
     }
