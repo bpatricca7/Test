@@ -454,6 +454,125 @@ if (existsSync(reindeerLogic)) {
   });
 }
 
+// ---------- the module on a fake game (no DOM: a tiny canvas stand-in for the ribbon) ----------
+
+if (existsSync(reindeerLogic)) {
+  await test('R4: the reindeer module on a fake game (herd, sleigh, stickers, coins, flight)', async () => {
+    if (!globalThis.document) {
+      const ctx = new Proxy({}, { get: (t, k) => (k in t ? t[k] : k === 'createLinearGradient' ? () => ({ addColorStop() {} }) : () => {}), set: (t, k, v) => { t[k] = v; return true; } });
+      globalThis.document = { createElement: () => ({ width: 1, height: 1, getContext: () => ctx, style: {} }) };
+    }
+    const THREE = await import('three');
+    const { install } = await import('../src/things/reindeer/index.js');
+    const { SPECIES } = await import('../src/things/pets/species.js');
+    const L = await import(reindeerLogic);
+    const listeners = new Map();
+    const emitted = [];
+    const events = {
+      on(n, fn) { (listeners.get(n) || listeners.set(n, []).get(n)).push(fn); },
+      emit(n, p) { emitted.push(n); for (const fn of listeners.get(n) || []) fn(p); },
+    };
+    const awarded = [], coins = [], placedRecs = [];
+    const pets = {
+      pets: [], max: 12, rider: null, remote: false, group: new THREE.Group(),
+      findSpot: (probe, x, y, z) => [x, y - 1 + 0.01, z],
+      deserialize(list) { for (const d of list) this.pets.push({ ...d, pos: new THREE.Vector3(d.x, d.y, d.z), anim: { flying: false }, rig: null }); },
+    };
+    const sys = [];
+    const game = {
+      events, mode: 'play', world: { meta: { biome: 'holiday', seed: 7 } }, profile: { stats: {} },
+      registry: { stickers: new Map() }, stickers: { has: (id) => awarded.includes(id) },
+      award: (id) => awarded.push(id), saveProfile() {}, toast() {}, celebrate() {}, audio: { play() {}, ctx: null },
+      particles: { emit() {} }, input: { press() {} }, net: null, ui: null, debug: {},
+      coins: { add: (n, reason) => coins.push([n, reason]) },
+      pets,
+      vehicles: { placeRecord: (rec) => (placedRecs.push(rec), { uid: 1 }), flying: () => false, land: () => false, pose: () => ({ x: 1, y: 2, z: 3 }) },
+      worldFeatures: { kinds: new Map(), on(k, fn) { this.kinds.set(k, fn); } },
+      addSystem: (s) => sys.push(s),
+    };
+    install(game);
+    const R = sys.find((s) => s.name === 'reindeer');
+    assert(R && game.reindeer && game.debug.reindeer, 'installed: a system, a facade and a debug handle');
+    assert(game.worldFeatures.kinds.has('holiday:reindeer') && game.worldFeatures.kinds.has('holiday:sleigh'), 'both feature kinds');
+    // the sky
+    assert(SPECIES.reindeer.flies === true, 'flies in Holiday Village');
+    game.world.meta.biome = 'meadow';
+    assert(SPECIES.reindeer.flies === false, 'not in the meadow');
+    assert(game.debug.reindeer.sky(true) === true && SPECIES.reindeer.flies === true, 'debug sky on');
+    game.debug.reindeer.sky(null);
+    game.world.meta.biome = 'holiday';
+    // the herd
+    const ok = game.worldFeatures.kinds.get('holiday:reindeer')(game, { kind: 'holiday:reindeer', x: 20, y: 5, z: 30, n: 3 });
+    assert(ok === true && pets.pets.length === 3, 'three reindeer in the pasture');
+    assert(pets.pets.every((p) => p.species === 'reindeer' && p.mode === 'home' && Math.hypot(p.x - 20.5, p.z - 30.5) <= L.HERD_RADIUS + 0.01), 'home-mode reindeer inside the pasture');
+    assert(new Set(pets.pets.map((p) => p.name)).size === 3 && new Set(pets.pets.map((p) => p.id)).size === 3, 'different names and ids');
+    assert(emitted.includes('reindeer:herd') && !emitted.includes('pet:adopt'), 'reindeer:herd, never pet:adopt');
+    pets.pets.length = 11;
+    game.worldFeatures.kinds.get('holiday:reindeer')(game, { x: 20, y: 5, z: 30, n: 4 });
+    assert(pets.pets.length === 12, 'never past MAX_PETS');
+    assert(game.worldFeatures.kinds.get('holiday:reindeer')(game, { x: 20, y: 5, z: 30, n: 4 }) === false, 'full: nothing');
+    assert(game.worldFeatures.kinds.get('holiday:reindeer')(game, { x: NaN, y: 5, z: 30 }) === false, 'junk record: nothing');
+    pets.pets.length = 0;
+    // the sleigh
+    assert(game.worldFeatures.kinds.get('holiday:sleigh')(game, { x: 10.7, y: 4, z: 12.2, rot: 3 }) === true, 'a sleigh placed');
+    const sr = placedRecs[0];
+    assert(sr.key === 'sleigh' && sr.x === 10 && sr.y === 4 && sr.z === 12 && sr.rot === 3, 'whole cells and its turn');
+    game.worldFeatures.kinds.get('holiday:sleigh')(game, { x: 1, y: 4, z: 1, rot: 9 });
+    assert(placedRecs[1].rot === 0, 'a junk turn is 0');
+    // stickers are registered and awarded once each
+    events.emit('game:ready');
+    assert(['reindeer_friend', 'reindeer_rider', 'sleigh_ride'].every((id) => game.registry.stickers.has(id)), 'three stickers');
+    assert([...game.registry.stickers.values()].every((s) => typeof s.art === 'function' && s.name && s.hint), 'art, names, hints');
+    const deer = { species: 'reindeer', pos: new THREE.Vector3(5, 4, 5), anim: { flying: false }, rig: null, yaw: 0 };
+    events.emit('pet:pet', { pet: { species: 'pony' } });
+    assert(!awarded.length, 'a pony is not a reindeer');
+    game.net = { remoteApplying: true };
+    events.emit('pet:pet', { pet: deer });
+    assert(!awarded.length, 'a friend\'s action applied here: nothing');
+    game.net = null;
+    events.emit('pet:pet', { pet: deer });
+    events.emit('pet:pet', { pet: deer });
+    assert(awarded.filter((a) => a === 'reindeer_friend').length === 1, 'reindeer_friend once');
+    assert(game.profile.reindeer.petted === 2, 'petted counted');
+    events.emit('pet:ride', { pet: deer });
+    assert(awarded.includes('reindeer_rider'), 'reindeer_rider');
+    // the sleigh's flight: a sticker and 3 coins once a day
+    events.emit('sleigh:takeoff', { key: 'sleigh' });
+    events.emit('sleigh:takeoff', { key: 'sleigh' });
+    assert(awarded.includes('sleigh_ride') && coins.length === 1 && coins[0][0] === 3, 'sleigh: 3 coins once: ' + JSON.stringify(coins));
+    // her reindeer takes off and lands: 2 coins once, events, a ribbon
+    pets.pets.push(deer);
+    pets.rider = deer;
+    deer.anim.flying = true;
+    R.update(1 / 60);
+    assert(emitted.includes('reindeer:fly') && coins.length === 2 && coins[1][0] === 2, 'reindeer flight: 2 coins');
+    assert(game.debug.reindeer.state().trails === 1 && game.reindeer.flying() === true, 'a ribbon, flying');
+    deer.anim.flying = false;
+    R.update(1 / 60);
+    assert(emitted.includes('reindeer:land') && game.reindeer.flying() === false, 'landed');
+    deer.anim.flying = true;
+    R.update(1 / 60);
+    assert(coins.length === 2, 'the second flight today pays nothing');
+    const total = coins.reduce((a, [n]) => a + n, 0);
+    assert(total <= 5, 'at most 5 coins a day: ' + total);
+    // the pet goes away: its ribbon too; a guest's page (remote pets) never counts her flights
+    pets.pets.length = 0;
+    pets.rider = null;
+    R.update(1 / 60);
+    assert(game.debug.reindeer.state().trails === 0, 'ribbon dropped');
+    pets.remote = true;
+    pets.pets.push(deer);
+    pets.rider = deer;
+    deer.anim.flying = true;
+    const before = game.profile.reindeer.flights;
+    R.update(1 / 60);
+    assert(game.profile.reindeer.flights === before, 'a puppet flight is not hers');
+    R.onWorldUnload();
+    assert(game.debug.reindeer.state().trails === 0, 'world unload clears');
+    return `${awarded.length} stickers, ${total} coins`;
+  });
+}
+
 // famous holiday names (the eight of the song, the gift-giver's names), kept encoded so this
 // file never spells them: none may appear in our files (the gift-giver's) or in our names and
 // strings (all of them; several are ordinary words, so only string tables are checked for those)

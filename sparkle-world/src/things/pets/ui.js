@@ -114,7 +114,7 @@ export function installPetUI(game, sys) {
   // ---------------- adoption panel ----------------
   const adopt = { species: 'puppy', variant: null, spot: null, rig: null, anim: null, hopT: 0, braids: false };
   let stage, variantsEl, optsEl, nameInput, chipsEl, fallbackImg, goBtn, pickText;
-  const PICK_TEXT = { puppy: 'Pick a color or a breed', kitty: 'Pick a color or a breed', horse: 'Pick a coat', turtle: 'Pick a shell' };
+  const PICK_TEXT = { puppy: 'Pick a color or a breed', kitty: 'Pick a color or a breed', horse: 'Pick a coat', turtle: 'Pick a shell', reindeer: 'Pick a coat' }; // wave 5: reindeer
   const adoptOpts = () => (adopt.species === 'horse' && adopt.braids ? { braids: true } : {});
 
   const suggestions = (species) => {

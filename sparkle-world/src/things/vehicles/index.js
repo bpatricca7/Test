@@ -734,7 +734,11 @@ class VehicleSystem {
       if (g.particles) g.particles.emit('star', { x: d.pos.x + s * half * dir, y: d.pos.y + 0.9, z: d.pos.z + c * half * dir }, { count: 4, spread: 0.4 });
       g.events.emit('vehicle:bump', { speed: d.bumpSpeed });
     }
-    if (d.hit === 'water') this._toast('water', "Cars can't swim! Try a boat!");
+    if (d.hit === 'water') {
+      // wave 5: the sleigh flies over water instead
+      if (cur.v.flies) this._toast('water', g.input.touchMode ? 'Hold Honk to fly over the water!' : 'Hold Space to fly over the water!');
+      else this._toast('water', "Cars can't swim! Try a boat!");
+    }
     if (d.hit === 'shore') {
       const now = performance.now();
       if (now - (this._toastAt.get('shore-splash') ?? -Infinity) > 900) {

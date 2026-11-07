@@ -12,6 +12,7 @@ import { BLUSH, GOLD, RAINBOW, pivot, part, partL, eyeMesh, newRig } from './rig
 import { buildBreedDog, buildBreedCatExtras, DOG_BREEDS, CAT_BREEDS } from './breeds.js';
 import { buildTurtle, TURTLE } from './turtle.js';
 import { buildBigHorse, HORSE } from './horse.js';
+import { buildReindeer, REINDEER } from './reindeer.js'; // wave 5
 import { mergeRig } from './skin.js';
 
 // ---------- species table ----------
@@ -104,6 +105,7 @@ export const SPECIES = {
   },
   turtle: TURTLE,
   horse: HORSE,
+  reindeer: REINDEER, // wave 5 (reindeer team), appended last
 };
 
 export const SPECIES_KEYS = Object.keys(SPECIES);
@@ -528,6 +530,7 @@ const BUILDERS = {
   unicorn: (rig, v) => buildHorse(rig, v, true),
   turtle: buildTurtle,
   horse: buildBigHorse,
+  reindeer: buildReindeer, // wave 5
 };
 
 /** Per-pet options a species offers (the horse's braided mane), normalized. */

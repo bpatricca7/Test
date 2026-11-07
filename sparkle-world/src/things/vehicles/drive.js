@@ -338,7 +338,7 @@ export class Drive {
     const m = this.halfL + 0.02, w = this.world;
     this.pos.x = clamp(this.pos.x, m, w.sx - m);
     this.pos.z = clamp(this.pos.z, m, w.sz - m);
-    if (this.pos.y > this.world.sy + FLY.CEIL) this.pos.y = this.world.sy + FLY.CEIL; // wave 5
+    if (this.flies && this.pos.y > this.world.sy + FLY.CEIL) this.pos.y = this.world.sy + FLY.CEIL; // wave 5
     this.sanitize();
     if ((this.boat || this.onGround || this.flying) && this.poseFree(this.pos.x, this.pos.y, this.pos.z, this.yaw)) {
       const g = this.good;
