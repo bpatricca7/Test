@@ -37,6 +37,14 @@ export class LiveModel {
     this.paddle = parts.paddle || null;
     this.sail = parts.sail || null;
     this.hull = parts.hull || null;
+    // wave 5: the sleigh's reindeer rows bob and their legs gallop (models-sleigh.js)
+    this.deer = [];
+    for (let i = 0; i < 4; i++) {
+      const row = parts['deer' + i];
+      if (row) this.deer.push({ row, y0: row.position.y, f: parts['legF' + i] || null, b: parts['legB' + i] || null });
+    }
+    this.gait = 0;
+    this.air = 0; // 0 on the ground .. 1 flying (eased)
     this.lights = new Headlights(this.v.lamps, this.size);
     this.lights.group.position.copy(this.model.position);
     this.tilt.add(this.lights.group);
@@ -61,11 +69,15 @@ export class LiveModel {
     this.tilt.scale.set(1 + s, 1 - s, 1 + s);
   }
 
-  /** Wheels spin, propeller and paddles turn, the sail fills: speed in blocks/s (signed). */
-  animate(dt, speed) {
+  /**
+   * Wheels spin, propeller and paddles turn, the sail fills: speed in blocks/s (signed).
+   * wave 5: flying (the sleigh in the air): the reindeer gallop through the sky.
+   */
+  animate(dt, speed, flying = false) {
     if (!(dt > 0)) return;
     const sp = fin(speed) ? speed : 0;
     this.t += dt;
+    if (this.deer.length) this._gallop(dt, sp, !!flying);
     const turn = (sp * dt) / this.wheelR;
     for (const a of this.axles) a.rotation.x = (a.rotation.x + turn) % (Math.PI * 2);
     if (this.prop) this.prop.rotation.z = (this.prop.rotation.z + dt * (2 + Math.abs(sp) * 4)) % (Math.PI * 2);
@@ -74,6 +86,28 @@ export class LiveModel {
       const max = this.v.speed || 6;
       const fill = 1 + 0.15 * Math.min(1, Math.abs(sp) / max) + 0.03 * Math.sin(this.t * 3);
       this.sail.scale.set(1 + (fill - 1) * 3, 1, fill);
+    }
+  }
+
+  /** wave 5: reindeer legs (a gallop on the snow, a stretched sky gallop) and a row bob. */
+  _gallop(dt, sp, flying) {
+    this.air += ((flying ? 1 : 0) - this.air) * Math.min(1, 4 * dt);
+    const a = Math.abs(sp);
+    const walk = Math.min(1, a / 4);
+    const rate = 4 + Math.min(a, 10) * 1.3 + this.air * 3;
+    this.gait = (this.gait + dt * rate) % (Math.PI * 2);
+    const air = this.air;
+    for (let i = 0; i < this.deer.length; i++) {
+      const d = this.deer[i];
+      const ph = this.gait + i * 0.9;
+      const s = Math.sin(ph);
+      // ground: front and back legs swing against each other; sky: reach out front and back
+      const gf = -s * 0.6 * walk, gb = Math.sin(ph + 0.7) * 0.6 * walk;
+      const af = -0.55 + 0.35 * s, ab = 0.55 - 0.35 * Math.sin(ph + 0.5);
+      if (d.f) d.f.rotation.x = gf + (af - gf) * air;
+      if (d.b) d.b.rotation.x = gb + (ab - gb) * air;
+      const bob = (0.05 * walk * Math.abs(s)) * (1 - air) + 0.07 * air * Math.sin(ph * 0.5 + 1);
+      d.row.position.y = d.y0 + (fin(bob) ? bob : 0);
     }
   }
 

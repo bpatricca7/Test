@@ -12,6 +12,9 @@
 // - Lights, a horn (Space / the Honk button), Get out (E or X / the button), the engine.
 // - Friends see the car under her avatar through the presence field `vh` (remote.js); the host
 //   keeps custody of a car a friend drives (src/net/host.js).
+// - wave 5 (reindeer team, docs/teams/reindeer.md): the Jingle Sleigh flies (drive.js flying):
+//   Jump / Space (the Honk button) lifts it, Down / Shift brings it down, letting go glides;
+//   Get out in the air lands first, then parks; bells for a horn, a sparkle trail.
 
 import * as THREE from 'three';
 import { ITEM_CATEGORIES, SHAPES } from '../../core/registry.js';
@@ -21,6 +24,9 @@ import { VEHICLES } from './defs.js';
 import { bubbleCar, convertible, jeep, kart } from './models-cars.js';
 import { roadTripVan, iceCreamVan } from './models-vans.js';
 import { speedboat, swanBoat, sailboat } from './models-boats.js';
+import { sleigh } from './models-sleigh.js'; // wave 5
+import { sfx as lifeSfx } from '../pets/sfx.js'; // wave 5: the sleigh's bells
+import { RainbowTrail, STARDUST } from '../pets/fx.js'; // wave 5: the sleigh's sparkle trail
 import { partsOf } from '../furniture/kit.js';
 import { Drive, angleDelta, waterTopAt } from './drive.js';
 import { findParkSpot, bottomCells, isLandSpot, isWaterSpot, centerFromAnchor } from './park.js';
@@ -35,6 +41,7 @@ const BUILD = {
   car_bubble: bubbleCar, car_convertible: convertible, car_jeep: jeep, car_kart: kart,
   van_camper: roadTripVan, van_icecream: iceCreamVan,
   boat_speed: speedboat, boat_swan: swanBoat, boat_sail: sailboat,
+  sleigh, // wave 5
 };
 const HOST_RANGE = 1e6; // the host's own uids (docs/MULTIPLAYER.md §5.2)
 const TOAST_GAP = 6000; // ms between two of the same driving toasts
@@ -278,6 +285,11 @@ class VehicleSystem {
       lightItem: { object3d: live.pivot, lightPoint: [start.x, start.y + 0.6, start.z], lightCell: null, lightScale: 1.25, moving: true },
     };
     if (v.water) cur.wake = new WakeRibbon(this.group);
+    // wave 5: the sleigh's stardust ribbon, sparkles and bells in the air
+    cur.trail = v.sparkles ? new RainbowTrail(this.group, { colors: STARDUST, width: 0.5, life: 1.3 }) : null;
+    cur.sparkT = 0;
+    cur.bellT = 1;
+    cur.parkWhenLanded = false;
     cur.mount = this._mount(cur);
     this.current = cur;
     this._plan = null;
@@ -302,7 +314,7 @@ class VehicleSystem {
     if (boat) stats.boatRides = (stats.boatRides | 0) + 1;
     else stats.drives = (stats.drives | 0) + 1;
     g.saveProfile();
-    this.award(boat ? 'ahoy' : 'beep_beep');
+    if (v.kind !== 'sleigh') this.award(boat ? 'ahoy' : 'beep_beep'); // wave 5: the sleigh has its own stickers
     g.events.emit('vehicle:drive', { key: def.key, kind: v.kind, uid: rec.uid });
     return true;
   }
@@ -310,10 +322,13 @@ class VehicleSystem {
   /** The first drive of each kind this session: how to steer. */
   _tip(v) {
     const boat = v.kind === 'boat';
-    if (this._firstTip.has(boat)) return;
-    this._firstTip.add(boat);
+    const kind = boat ? 'boat' : v.flies ? 'sky' : 'car'; // wave 5: the sleigh's own tip
+    if (this._firstTip.has(kind)) return;
+    this._firstTip.add(kind);
     const touch = this.game.input.touchMode;
-    const text = touch
+    const text = v.flies
+      ? (touch ? 'Hold Honk to fly up! Let go to glide down. Land brings you down.' : 'Drive with W A S D! Hold Space to fly up, Shift to come down, E gets out.')
+      : touch
       ? (boat ? 'Push the joystick to steer! Tap Honk to toot! The pink button gets out.' : 'Push the joystick to drive! Tap Honk to beep! The pink button gets out.')
       : (boat ? 'Steer with W A S D! Space toots, E gets out.' : 'Drive with W A S D! Space honks, E gets out.');
     this.game.toast(text, { icon: 'star', duration: 4200 });
@@ -373,7 +388,9 @@ class VehicleSystem {
   /** The park spot for the live pose (land, or water for boats), bounded. */
   _spot(cur, extended = false) {
     const d = cur.drive;
-    const pose = { x: d.pos.x, y: cur.v.water ? d.waterY : d.pos.y, z: d.pos.z, yaw: d.yaw };
+    // wave 5: a flying sleigh parks on the ground under it
+    const y = cur.v.water ? d.waterY : d.flying ? d.groundPose().y : d.pos.y;
+    const pose = { x: d.pos.x, y, z: d.pos.z, yaw: d.yaw };
     return findParkSpot(this._ctx(), cur.def, pose, { extended });
   }
 
@@ -414,7 +431,7 @@ class VehicleSystem {
   /** The very last resort: its old spot (or here, on whole cells), placed with force. */
   _forceSpot(def, rec, drive) {
     if (this._recValid(rec)) return { x: rec.x, y: rec.y, z: rec.z, rot: rec.rot, force: true };
-    const w = this.game.world, p = drive ? drive.pos : this.game.player.position;
+    const w = this.game.world, p = drive ? (drive.flying ? drive.groundPose() : drive.pos) : this.game.player.position; // wave 5
     const x = Math.max(0, Math.min(w.sx - 1, Math.floor(p.x))), z = Math.max(0, Math.min(w.sz - 1, Math.floor(p.z)));
     const y = Math.max(0, Math.min(w.sy - 1, Math.floor(p.y)));
     return { x, y, z, rot: 0, force: true };
@@ -461,6 +478,18 @@ class VehicleSystem {
     if (!cur || cur.parked) return false;
     const g = this.game, pl = g.player;
     const asked = reason === 'button' || reason === 'key';
+    // wave 5: in the air, Get out lands first and parks on touch down (update); over water it
+    // says where to go (it never lands in water)
+    if (asked && cur.drive.flying) {
+      if (cur.drive.floorBelow().wet) {
+        this._toast('sky-water', 'Fly over land, then get out!', 1500);
+        return false;
+      }
+      cur.drive.land();
+      cur.parkWhenLanded = true;
+      this._toast('sky-land', 'Landing!', 1200);
+      return false;
+    }
     let swim = false, stand = null, spot = null;
     // 'sea': she slides over onto a dolphin (src/life/ocean): the confirmed second Get out on
     // open water (she swims beside the boat), no shore search, no toast
@@ -579,6 +608,8 @@ class VehicleSystem {
     cur.live.dispose();
     if (cur.wake) cur.wake.dispose();
     cur.wake = null;
+    if (cur.trail) cur.trail.dispose(); // wave 5
+    cur.trail = null;
     if (g.cameraRig) g.cameraRig.extraWant = 0;
   }
 
@@ -621,7 +652,12 @@ class VehicleSystem {
     if (this._netChecks(cur)) return;
     const input = g.input, rig = g.cameraRig;
     const paused = g.paused;
-    const controls = paused ? null : { mx: input.move.x, mz: input.move.z, camYaw: rig ? rig.yaw : cur.drive.yaw };
+    // wave 5: a flying vehicle also reads Up (Jump / Space / the Honk button) and Down
+    const fly = !!cur.v.flies;
+    const controls = paused ? null : {
+      mx: input.move.x, mz: input.move.z, camYaw: rig ? rig.yaw : cur.drive.yaw,
+      up: fly && !!input.jump, down: fly && !!input.down,
+    };
     const d = cur.drive;
     d.step(paused ? 0 : dt, controls);
     if (d.trouble) {
@@ -633,15 +669,61 @@ class VehicleSystem {
     // the picture, then her seat (after the car moved: she never lags behind it)
     const live = cur.live;
     live.setPose(d.pos.x, d.pos.y, d.pos.z, d.yaw, d.pitchVis, d.rollVis, d.liftVis, d.squash);
-    live.animate(paused ? 0 : dt, d.speed);
+    live.animate(paused ? 0 : dt, d.speed, d.flying);
     this._seat(cur);
     if (!paused) {
       this._honk(cur, input);
       this._chase(cur, dt);
       this._effects(cur, dt);
+      if (fly) this._sky(cur, dt);
     }
     this._autoLights(cur);
-    this.sfx.engineSpeed(paused ? 0 : Math.abs(d.speed) / (cur.v.speed || 6));
+    this.sfx.engineSpeed(paused ? 0 : (d.flying ? 0.6 : 0) + Math.abs(d.speed) / (cur.v.speed || 6));
+    // wave 5: she asked to get out in the air: park now that it touched down (Up again means
+    // she changed her mind: no surprise parking at some later touch down)
+    if (cur.parkWhenLanded && d.flying && !d.landing) cur.parkWhenLanded = false;
+    if (cur.parkWhenLanded && this.current === cur && !d.flying) {
+      cur.parkWhenLanded = false;
+      this.park({ reason: 'button' });
+    }
+  }
+
+  /**
+   * wave 5: the sleigh in the air: take off and touch down (a whoosh, sparkles, the events
+   * sleigh:takeoff / sleigh:land), the stardust ribbon, sparkles and a jingle now and then.
+   */
+  _sky(cur, dt) {
+    const g = this.game, d = cur.drive, p = g.particles;
+    const s = Math.sin(d.yaw), c = Math.cos(d.yaw), half = cur.def.size[2] / 2;
+    const bx = d.pos.x - s * half, bz = d.pos.z - c * half;
+    if (d.tookOff) {
+      g.audio.play('whoosh', { volume: 0.7, pitch: 1.1 });
+      lifeSfx(g, 'sleighbells', { volume: 0.7 });
+      if (p) p.emit('sparkle', { x: d.pos.x, y: d.pos.y + 0.3, z: d.pos.z }, { count: 14, spread: 1.4, colors: ['#FFFFFF', '#FFE38A', '#FFD43B'] });
+      g.events.emit('sleigh:takeoff', { key: cur.key });
+    }
+    if (d.landed) {
+      g.audio.play('place', { volume: 0.6, pitch: 0.8 });
+      if (p) p.emit('snowflake', { x: d.pos.x, y: d.pos.y + 0.2, z: d.pos.z }, { count: 10, spread: 1.6 });
+      g.events.emit('sleigh:land', { key: cur.key, airTime: d.airTime });
+    }
+    if (cur.trail) {
+      if (d.flying || Math.abs(d.speed) > 1) cur.trail.push(bx, d.pos.y + 0.7 + d.liftVis, bz);
+      cur.trail.update(dt);
+    }
+    if (!d.flying) return;
+    cur.sparkT -= dt;
+    if (p && cur.sparkT <= 0) {
+      cur.sparkT = 0.08;
+      p.emit('sparkle', { x: bx, y: d.pos.y + 0.5, z: bz }, { count: 2, spread: 0.6, colors: ['#FFFFFF', '#FFE38A', '#FFD43B'] });
+    }
+    cur.bellT -= dt;
+    if (cur.bellT <= 0) {
+      cur.bellT = 1.1 + Math.random() * 0.6;
+      lifeSfx(g, 'jingle', { volume: 0.45 });
+    }
+    const st = g.profile.stats || (g.profile.stats = {});
+    st.sleighAir = (fin(st.sleighAir) ? st.sleighAir : 0) + dt;
   }
 
   /** Bumps, water and shores: a boing and stars, friendly toasts. */
@@ -654,7 +736,11 @@ class VehicleSystem {
       if (g.particles) g.particles.emit('star', { x: d.pos.x + s * half * dir, y: d.pos.y + 0.9, z: d.pos.z + c * half * dir }, { count: 4, spread: 0.4 });
       g.events.emit('vehicle:bump', { speed: d.bumpSpeed });
     }
-    if (d.hit === 'water') this._toast('water', "Cars can't swim! Try a boat!");
+    if (d.hit === 'water') {
+      // wave 5: the sleigh flies over water instead
+      if (cur.v.flies) this._toast('water', g.input.touchMode ? 'Hold Honk to fly over the water!' : 'Hold Space to fly over the water!');
+      else this._toast('water', "Cars can't swim! Try a boat!");
+    }
     if (d.hit === 'shore') {
       const now = performance.now();
       if (now - (this._toastAt.get('shore-splash') ?? -Infinity) > 900) {
@@ -691,7 +777,7 @@ class VehicleSystem {
     if (now - this._honkAt < HONK_GAP) return false;
     this._honkAt = now;
     this._honkN = (this._honkN + 1) % 1000;
-    this.sfx.horn(cur.v.horn, 1);
+    this._horn(cur.v.horn, 1);
     const g = this.game;
     const st = g.profile.stats || (g.profile.stats = {});
     st.honks = (st.honks | 0) + 1;
@@ -849,7 +935,13 @@ class VehicleSystem {
     const def = this.defs.get(key);
     if (!def || !fin(dist) || dist > 24) return;
     this.stats.remoteHonks++;
-    this.sfx.horn(def.vehicle.horn, Math.max(0.15, 1 - dist / 24));
+    this._horn(def.vehicle.horn, Math.max(0.15, 1 - dist / 24));
+  }
+
+  /** A horn by name; wave 5: 'bells' (the sleigh) rings the life sounds' sleigh bells. */
+  _horn(name, volume) {
+    if (name === 'bells') lifeSfx(this.game, 'sleighbells', { volume });
+    else this.sfx.horn(name, volume);
   }
 
   // =====================================================================================
@@ -1010,7 +1102,20 @@ class VehicleSystem {
     const cur = this.current;
     if (!cur || cur.parked || !cur.drive) return null;
     const d = cur.drive;
-    return { x: d.pos.x, y: d.pos.y, z: d.pos.z, yaw: d.yaw, speed: d.speed, boat: !!d.boat };
+    return { x: d.pos.x, y: d.pos.y, z: d.pos.z, yaw: d.yaw, speed: d.speed, boat: !!d.boat, flying: !!d.flying };
+  }
+
+  /** wave 5: the Land button: a flying vehicle comes down (and stays parked-ready). */
+  land() {
+    const cur = this.current;
+    if (!cur || cur.parked || !cur.drive.flying) return false;
+    if (!cur.drive.land()) return false;
+    // over water it only comes down to its hover height: say where it can touch down
+    if (cur.drive.floorBelow().wet) {
+      this._toast('sky-water', 'Fly over land to land!', 1500);
+      return false;
+    }
+    return true;
   }
 
   facade() {
@@ -1029,6 +1134,12 @@ class VehicleSystem {
       placeRecord: (rec, o) => sys.placeRecord(rec, o),
       honk: () => sys.honk(),
       toggleLights: () => sys.toggleLights(),
+      // wave 5 (reindeer): flying vehicles
+      /** Is the vehicle she drives in the air? */
+      flying: () => !!(sys.current && !sys.current.parked && sys.current.drive.flying),
+      /** Does the vehicle she drives fly at all (the sleigh)? */
+      canFly: () => !!(sys.current && !sys.current.parked && sys.current.v.flies),
+      land: () => sys.land(),
     };
   }
 
@@ -1045,6 +1156,8 @@ class VehicleSystem {
           water: cur.v.water ? d.waterY : null, lights: cur.lights, bumps: d.bumps, nanResets: d.nanResets, src: cur.src,
           reversing: d.reversing, hit: d.hit, free: d.poseFree(d.pos.x, d.pos.y, d.pos.z, d.yaw),
           wake: !!(cur.wake && cur.wake.mesh.visible),
+          // wave 5
+          flying: d.flying, landing: d.landing, airTime: d.airTime, airHeight: d.airHeight, vy: d.vy,
         };
       },
       drive: (uid) => { const e = g.entities.byUid(uid); return e ? sys.drive(e) : false; },
@@ -1075,6 +1188,9 @@ class VehicleSystem {
         if (g.cameraRig) g.cameraRig.yaw = yaw;
         return d.poseFree(x, y, z, yaw);
       },
+      /** wave 5, test only: take off now (a flying vehicle), or land. */
+      takeOff: () => !!(sys.current && sys.current.drive.flies && sys.current.drive._takeOff()),
+      land: () => sys.land(),
       stats: () => ({ ...sys.stats }),
       plan: () => (sys.current ? sys._planFor(sys.current).rec : null),
     };

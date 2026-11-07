@@ -69,7 +69,7 @@ function noise(a, { t = 0, decay = 0.2, vol = 0.2, type = 'bandpass', freq = 120
 /**
  * Play one of our sounds. Names: squeak peep quack mew purr yip unicorn plop stir ding
  * sizzle whirr freeze tick pour till harvest crunch slurp tada boing bloop shell whinny
- * giggle babble hello nope, or any core name.
+ * giggle babble hello nope, reindeer sleighbells jingle (wave 5), or any core name.
  */
 export function sfx(game, name, { volume = 1, pitch = 1 } = {}) {
   if (CORE.has(name)) {
@@ -194,6 +194,30 @@ export function sfx(game, name, { volume = 1, pitch = 1 } = {}) {
       case 'nope':
         tone(a, { f0: 420 * p, f1: 300 * p, type: 'triangle', decay: 0.12, vol: 0.15 * v });
         tone(a, { f0: 360 * p, f1: 260 * p, type: 'triangle', t: 0.12, decay: 0.14, vol: 0.13 * v });
+        break;
+      // wave 5 (reindeer team)
+      case 'reindeer': // a soft snuffly grunt and a tiny bell
+        noise(a, { attack: 0.03, decay: 0.16, vol: 0.12 * v, type: 'lowpass', freq: 520 * p, q: 1.2 });
+        tone(a, { f0: 230 * p, f1: 300 * p, type: 'triangle', attack: 0.03, decay: 0.16, vol: 0.12 * v, vib: 10 });
+        tone(a, { f0: hz(93) * p, t: 0.12, decay: 0.3, vol: 0.05 * v });
+        break;
+      case 'jingle': // one shake of a few small bells
+        for (let i = 0; i < 4; i++) {
+          const m = [91, 95, 93, 98][i];
+          tone(a, { f0: hz(m) * p, t: i * 0.035 + Math.random() * 0.01, decay: 0.22, vol: 0.06 * v });
+          tone(a, { f0: hz(m) * 2.76 * p, t: i * 0.035, decay: 0.08, vol: 0.02 * v });
+        }
+        noise(a, { decay: 0.1, vol: 0.03 * v, type: 'highpass', freq: 6000, q: 0.7 });
+        break;
+      case 'sleighbells': // the sleigh's horn: a happy jingle-jingle
+        for (let r = 0; r < 2; r++) {
+          for (let i = 0; i < 5; i++) {
+            const m = [91, 95, 93, 98, 96][i];
+            tone(a, { f0: hz(m) * p, t: r * 0.24 + i * 0.03 + Math.random() * 0.012, decay: 0.26, vol: 0.075 * v });
+            tone(a, { f0: hz(m) * 2.76 * p, t: r * 0.24 + i * 0.03, decay: 0.09, vol: 0.025 * v });
+          }
+          noise(a, { t: r * 0.24, decay: 0.14, vol: 0.04 * v, type: 'highpass', freq: 6500, q: 0.7 });
+        }
         break;
       default:
         game.audio.play('pop', { volume: v, pitch: p });
