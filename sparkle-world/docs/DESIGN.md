@@ -1150,7 +1150,7 @@ order) is `docs/teams/wave5-plan.md`, and each team's doc is `docs/teams/<team>.
   the giant tree, the workshop, cottages, a frozen pond, a stable and pasture and a sleigh pad;
   it starts in falling snow (`def.startWeather`) and caps daylight (`sky.daylightMax`) so the
   light strings glow.
-- **Holiday looks** (`src/player/holiday/`): Santa, Mrs. Claus style and elf costumes appended
+- **Holiday looks** (`src/player/holiday/`): Santa and elf costumes appended
   to the look lists, the Holiday Dress-Up booth, Studio "Holiday looks"; `profile.holidayLooks`
   keeps "Back to me".
 - **Gifts** (`src/things/gifts/`): wrap a toy at the Gift Workshop, carry it, give it to a friend
