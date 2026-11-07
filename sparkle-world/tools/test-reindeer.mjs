@@ -257,6 +257,18 @@ await test('F3: landing finds ground (cliff, pit, ceiling); water: hover, never 
   d4.flying = true; d4.onGround = false;
   run(d4, 10, DOWN);
   assert(d4.flying && d4.floorBelow().wet, 'half over water: keeps hovering');
+  // a high bank (one block over the water) with the nose over the water: it lands on the bank
+  // (the bank holds it up, not the water) instead of hovering on the shore for ever
+  const w5 = flatWorld(4);
+  w5.fill(0, 4, 0, 47, 4, 23, STONE);
+  w5.fill(0, 1, 24, 47, 3, 47, WATER);
+  const e5 = setup(w5);
+  for (const z of [23, 24]) {
+    const d5 = make(e5, SLEIGH, 20, 9, z);
+    d5.flying = true; d5.onGround = false;
+    run(d5, 12, IDLE);
+    assert(!d5.flying && Math.abs(d5.pos.y - 5) < 0.01 && !d5.floorBelow().wet, 'lands on the bank at z ' + z + ': y ' + d5.pos.y.toFixed(2));
+  }
   return `cliff ${(t * DT).toFixed(1)} s, from the top ${(t2 * DT).toFixed(1)} s`;
 });
 
@@ -545,13 +557,15 @@ if (existsSync(reindeerLogic)) {
     pets.rider = deer;
     deer.anim.flying = true;
     R.update(1 / 60);
+    assert(!emitted.includes('reindeer:fly') && game.reindeer.flying() === false, 'a hop (a moment in the air) is no flight');
+    R.update(0.7);
     assert(emitted.includes('reindeer:fly') && coins.length === 2 && coins[1][0] === 2, 'reindeer flight: 2 coins');
     assert(game.debug.reindeer.state().trails === 1 && game.reindeer.flying() === true, 'a ribbon, flying');
     deer.anim.flying = false;
     R.update(1 / 60);
     assert(emitted.includes('reindeer:land') && game.reindeer.flying() === false, 'landed');
     deer.anim.flying = true;
-    R.update(1 / 60);
+    R.update(0.7);
     assert(coins.length === 2, 'the second flight today pays nothing');
     const total = coins.reduce((a, [n]) => a + n, 0);
     assert(total <= 5, 'at most 5 coins a day: ' + total);

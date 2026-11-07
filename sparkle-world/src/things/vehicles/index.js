@@ -679,7 +679,9 @@ class VehicleSystem {
     }
     this._autoLights(cur);
     this.sfx.engineSpeed(paused ? 0 : (d.flying ? 0.6 : 0) + Math.abs(d.speed) / (cur.v.speed || 6));
-    // wave 5: she asked to get out in the air: park now that it touched down
+    // wave 5: she asked to get out in the air: park now that it touched down (Up again means
+    // she changed her mind: no surprise parking at some later touch down)
+    if (cur.parkWhenLanded && d.flying && !d.landing) cur.parkWhenLanded = false;
     if (cur.parkWhenLanded && this.current === cur && !d.flying) {
       cur.parkWhenLanded = false;
       this.park({ reason: 'button' });
@@ -1107,7 +1109,13 @@ class VehicleSystem {
   land() {
     const cur = this.current;
     if (!cur || cur.parked || !cur.drive.flying) return false;
-    return cur.drive.land();
+    if (!cur.drive.land()) return false;
+    // over water it only comes down to its hover height: say where it can touch down
+    if (cur.drive.floorBelow().wet) {
+      this._toast('sky-water', 'Fly over land to land!', 1500);
+      return false;
+    }
+    return true;
   }
 
   facade() {

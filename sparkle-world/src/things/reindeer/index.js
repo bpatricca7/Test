@@ -28,6 +28,7 @@ import {
 
 const GOLDS = ['#FFFFFF', '#FFE38A', '#FFD43B'];
 const fin = Number.isFinite;
+const AIR_MIN = 0.6; // seconds in the air before a ride counts as a flight (a one-block drop glides about 0.55 s)
 
 export function install(game) {
   const sys = new ReindeerSystem(game);
@@ -56,11 +57,13 @@ class ReindeerSystem {
     this.trails = new Map(); // pet -> RainbowTrail (flying reindeer)
     this.flyingPet = null; // the ridden reindeer that is in the air (her own)
     this.landingPet = false; // the Land button holds Down until it touches down
+    this.airT = 0; // seconds her ridden reindeer has been off the ground (a hop is not a flight)
     this.sparkT = 0;
     this.bellT = 0;
     this.hudT = 0;
     this.hud = null;
     this.landShown = false;
+    this.skyTold = false; // "Reindeer fly in Holiday Village!" (once a session)
     this.award = () => {};
     this.stats = { herds: 0, herdPets: 0, sleighs: 0, flights: 0, coins: 0 };
   }
@@ -172,6 +175,11 @@ class ReindeerSystem {
       g.saveProfile();
       sfx(g, 'jingle', { volume: 0.7 });
       this.award('reindeer_rider');
+      // outside Holiday Village Jump only hops: say once where reindeer fly (after the ride tip)
+      if (!this.skyTold && !this.skyNow()) {
+        this.skyTold = true;
+        g.toast(STRINGS.noSky, { icon: 'star', duration: 3200 });
+      }
     });
     g.events.on('sleigh:takeoff', () => {
       if (g.net?.remoteApplying) return;
@@ -206,8 +214,8 @@ class ReindeerSystem {
     const g = this.game;
     const V = g.vehicles;
     if (V && typeof V.flying === 'function' && V.flying()) {
-      V.land();
-      g.toast(STRINGS.landing, { icon: 'star', duration: 1200 });
+      // over water the vehicles module says where to go instead
+      if (V.land()) g.toast(STRINGS.landing, { icon: 'star', duration: 1200 });
       return true;
     }
     if (this.flyingPet) {
@@ -236,6 +244,7 @@ class ReindeerSystem {
   onWorldLoad() {
     this._clearTrails();
     this.flyingPet = null;
+    this.airT = 0;
     this._endLanding();
   }
 
@@ -266,17 +275,23 @@ class ReindeerSystem {
     if (!g.world || g.mode !== 'play' || !(dt > 0)) return;
     const P = g.pets;
     if (P && Array.isArray(P.pets)) {
-      this._riderFlight(P);
+      this._riderFlight(P, dt);
       this._trails(P, dt);
     }
     this._refreshHud(dt);
   }
 
-  /** Her own ridden reindeer: take-off and touch-down (events, the coin, the Land button). */
-  _riderFlight(P) {
+  /**
+   * Her own ridden reindeer: take-off and touch-down (events, the coin, the Land button). A
+   * flight starts after AIR_MIN seconds off the ground, so hopping up a step or a little drop
+   * (pet.js calls any airborne moment of a flier "flying") is no take-off with bells and a toast.
+   */
+  _riderFlight(P, dt) {
     const g = this.game;
     const pet = P.rider && P.rider.species === 'reindeer' && !P.remote ? P.rider : null;
-    const flying = !!(pet && pet.anim && pet.anim.flying);
+    const air = !!(pet && pet.anim && pet.anim.flying);
+    this.airT = air ? Math.min(10, this.airT + dt) : 0;
+    const flying = air && (this.flyingPet === pet || this.airT >= AIR_MIN);
     if (flying && this.flyingPet !== pet) {
       this.flyingPet = pet;
       const s = state(g.profile);

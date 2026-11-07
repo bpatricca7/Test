@@ -140,8 +140,9 @@ node --test tools/test-name.mjs
   - it slides along walls and hops low things;
   - it finds the floor with two overlap scans;
   - it eases the vertical speed and slows near the floor.
-- It lands only on solid ground, never in water.
-- Getting out in the air never drops her. The sleigh lands first and parks when it touches down. Over water she gets a friendly hint instead.
+- It lands only on solid ground, never in water. The floor counts as water only when the water is the highest thing under it, so a sleigh with its tail on a bank and its nose over a pond lands on the bank (F3) instead of hovering on the shore.
+- Getting out in the air never drops her. The sleigh lands first and parks when it touches down. Over water she gets a friendly hint instead. Pressing Up again before it touches down cancels that parking.
+- A ridden reindeer's flight (events, bells, the coin, the Land button) starts only after 0.6 s in the air, so a little drop is not a take-off. Riding a reindeer outside Holiday Village says once a session where reindeer fly.
 - The reindeer pet's flight reuses the unicorn's flight in `pet.js` through a `flies` getter, so `src/things/pets.js` needed no change. A missing or throwing sky check means "no flying".
 - Friends' copies guess "in the air" from whether the body has support (every 0.2 s). The height already comes through the normal pose.
 - No browser was available in this container, so the models were checked with a scratch software rasterizer in Node. The sleigh, all six coats and the face were checked this way, and the Node tests cover the rest.

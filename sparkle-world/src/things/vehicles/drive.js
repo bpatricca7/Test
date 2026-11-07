@@ -528,6 +528,9 @@ export class Drive {
       f.top = f.ground = fin(y) ? y : 0;
       return f;
     }
+    // wet only when water is what holds it up: a sleigh resting on a bank with its nose over
+    // the water lands on the bank (else it would hover on the shore and never touch down)
+    let dry = -Infinity, wetTop = -Infinity;
     for (const i of this.probes) {
       const px = this._px(x, yaw, i), pz = this._pz(z, yaw, i);
       let t = -Infinity;
@@ -545,11 +548,12 @@ export class Drive {
         const surf = (w >= 0 ? w : Math.floor(t)) + 1;
         top = surf + FLY.HOVER;
         ground = surf;
-        f.wet = true;
-      }
+        if (top > wetTop) wetTop = top;
+      } else if (top > dry) dry = top;
       if (top > f.top) f.top = top;
       if (ground > f.ground) f.ground = ground;
     }
+    f.wet = wetTop > dry;
     if (!fin(f.top)) f.top = y - 2 * FLY.SCAN;
     if (!fin(f.ground)) f.ground = f.top;
     return f;
