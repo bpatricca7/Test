@@ -111,7 +111,11 @@ export function install(game) {
   function pumpQueue(dt) {
     if (!st.queue.length) return;
     st.queueT -= dt;
-    if (st.queueT > 0 || blocked(game)) return;
+    if (st.queueT > 0) return;
+    if (blocked(game)) {
+      st.queueT = 0.25;
+      return;
+    }
     const q = st.queue.shift();
     if (performance.now() - q.at > 120000) return; // too old to matter now
     game.toast(q.text, q.opts);
@@ -354,11 +358,11 @@ export function install(game) {
     const fresh = markHomeFind(pe, st.wk, d.hide | 0);
     meet();
     const p = giggle(e, fresh);
-    const buttons = [
-      { label: 'Yay!', icon: 'heart', color: '#FF5FA2' },
-      { label: 'Name', icon: 'pencil', color: '#9C7BFF', onClick: () => rename() },
-    ];
-    if (!guest()) buttons.push({ label: 'Bye', icon: 'wave', color: '#6CC6FF', onClick: () => goodbye() });
+    const buttons = [{ label: 'Yay!', icon: 'heart', color: '#FF5FA2' }];
+    if (!guest()) {
+      buttons.push({ label: 'Name', icon: 'pencil', color: '#9C7BFF', onClick: () => rename() });
+      buttons.push({ label: 'Bye', icon: 'wave', color: '#6CC6FF', onClick: () => goodbye() });
+    }
     if (!fresh) {
       ui.showBubble(e, { name, line: pickOne(LINES.houseAgain, Math.random), buttons, ttl: 7 });
       return true;
@@ -410,7 +414,7 @@ export function install(game) {
         return true;
       }
       if (guest()) {
-        game.net.refuse('npc');
+        game.toast('Knock knock! The elves are out playing. Come back soon!', { icon: 'home', color: 'mint' });
         return true;
       }
       if (st.data.house) st.data.house.away = false;
@@ -459,9 +463,10 @@ export function install(game) {
   function eligible() {
     if (!game.world || guest() || game.world.meta.shared) return false;
     const h = st.data.house;
-    const anyDoor = doors().length > 0;
-    if (h && h.away && !anyDoor) return false;
-    if (anyDoor) return true;
+    // it said bye: it stays with the Twinkle Elves until you tap an Elf Door or put one up
+    // (both clear `away` before they call arrive())
+    if (h && h.away) return false;
+    if (doors().length > 0) return true;
     const pe = prof();
     return !!(pe && pe.met) && !isHoliday() && beds().length > 0;
   }
@@ -613,7 +618,7 @@ export function install(game) {
     const e = houseEntity();
     if (!e || guest()) return;
     const name = nameOf(e);
-    const ok = await game.ui.confirm({ title: `Say bye to ${name}?`, text: `${name} will go home to the Twinkle Elves. Put an Elf Door on a wall to invite an elf back.`, yes: 'Bye bye', no: 'Stay!', icon: 'heart' });
+    const ok = await game.ui.confirm({ title: `Say bye to ${name}?`, text: `${name} will go home to the Twinkle Elves. Knock on an Elf Door to invite an elf back.`, yes: 'Bye bye', no: 'Stay!', icon: 'heart' });
     if (!ok || !E.byUid(e.uid)) return;
     if (st.data.house) st.data.house.away = true;
     const p = E.localToWorld(e, 0.5, 0.5, 0.5);
@@ -687,6 +692,9 @@ export function install(game) {
     let house = null;
     for (const e of E.all()) {
       if (!isElf(e) || !e.data) continue;
+      // a reload (entities.deserialize) ties an elf on a table to that table, so taking the
+      // table away would take the elf too; a hiding elf hops down instead (the sweep)
+      if (e.restsOn && ROLES.has(e.data.role)) e.restsOn = null;
       if (e.data.role === 'hide' && Number.isInteger(e.data.idx) && e.data.idx >= 0 && e.data.idx < MAX_HIDERS) hs.push(e);
       else if (e.data.role === 'house') house = e;
     }
@@ -745,10 +753,12 @@ export function install(game) {
   /** Host: an elf whose shelf, bed or block went away hops down to the nearest good spot. */
   function sweep() {
     if (guest() || !game.world || game.loading) return;
-    let view = null, vView = null;
+    let view = null;
     for (const e of [...st.hiders, ...(st.house ? [st.house] : []), ...greeters()]) {
       if (E.byUid(e.uid) !== e || !ROLES.has(e.data.role)) continue;
-      const v = e.data.role === 'house' ? (view = view || makeView(game)) : (vView = vView || makeView(game, { village: true }));
+      // plain air only: a village elf hopping down never lands on (and clears) a planted flower or
+      // a snow tuft (the village view is only for the brand-new world's own records)
+      const v = view || (view = makeView(game));
       const s = withElfAway(e, () => v.support(e.x, e.y, e.z));
       const want = autoOffset(e.x, e.y, e.z) + ((e.data && e.data.dy) || 0);
       if (s && Math.abs(s.dy - want) < 0.02) continue;
