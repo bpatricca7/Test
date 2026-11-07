@@ -53,6 +53,16 @@ const EXTRA = {
     'bm9yd2VnaWFuWyAtXWNydWlzZQ==',
     'bWlja2V5',
     'bWlubmll',
+    'Y2VsZWJyaXR5WyAtXWNydWlzZXM=', // wave 5 (cruise-world)
+    'bXNjWyAtXWNydWlzZXM=', // wave 5 (cruise-world)
+    'Y3VuYXJk', // wave 5 (cruise-world)
+    'dGl0YW5pYw==', // wave 5 (cruise-world)
+    'cXVlZW5bIC1dbWFyeQ==', // wave 5 (cruise-world)
+    'bHVzaXRhbmlh', // wave 5 (cruise-world)
+    'aG9sbGFuZFsgLV1hbWVyaWNh', // wave 5 (cruise-world)
+    'Y29zdGFbIC1dY3J1aXNlcw==', // wave 5 (cruise-world)
+    'cHJpbmNlc3NbIC1dY3J1aXNlcw==', // wave 5 (cruise-world)
+    'KD86b2FzaXN8d29uZGVyfGljb258c3ltcGhvbnl8aGFybW9ueXxhbGx1cmUpWyAtXW9mWyAtXXRoZVsgLV1zZWFz', // wave 5 (cruise-world)
   ],
   holiday: [
     'ZWxmWyAtXT9vblsgLV0/dGhlWyAtXT9zaGVsZg==',
