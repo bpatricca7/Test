@@ -963,7 +963,7 @@ describe('gifts: the Workshop panel (G14)', () => {
       btn('Wrap').click();
       assert.equal(P.state().phase, 'wrapping');
       assert.equal(buttons().length, 0, 'no buttons while wrapping');
-      mock.timers.tick(D.WRAP_SECONDS * 1000 + 50);
+      mock.timers.tick(D.WRAP_SECONDS * 1000 + 450);
       assert.equal(P.state().phase, 'who');
       assert.ok(body.querySelector('.gf-stage').classList.contains('gf-ready'), 'rays behind the finished gift');
       assert.ok(body.querySelectorAll('.gf-confetti').length > 0, 'confetti');

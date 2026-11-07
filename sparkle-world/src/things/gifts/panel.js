@@ -102,6 +102,7 @@ const CSS = /* css */ `
 `;
 
 const POSES = ['toy', 'box', 'paper', 'ribbon'];
+const UNWRAP_MS = 380; // Wrap it!: the preview paper whisks off before the real wrapping
 const FACE = { npc: '#FF7EB6', boy: '#4FB3F6', player: '#9C7BFF', anyone: '#F2B93B' };
 const WRAP_CUES = [
   [0.05, 'pick', { pitch: 0.7 }],
@@ -135,7 +136,7 @@ export function installPanel(game, api) {
     spec: { ...D.DEFAULT_GIFT },
     to: D.ANYONE,
     built: '', // the stage model's spec key
-    anim: null, // { t0, t1, start, speed } over data.js wrapPose time
+    anim: null, // { t0, t1, start, dur } over data.js wrapPose time (t1 < t0 plays it backwards)
     bump: 0, // the stage's little hop after a choice (seconds left)
     spinT: 0, // the ta-da spin (seconds left)
     spinLen: 1.1,
@@ -292,7 +293,7 @@ export function installPanel(game, api) {
   function stagePose(t) {
     if (st.anim) {
       const a = st.anim;
-      const s = Math.min(1, ((now() - a.start) / 1000) * a.speed / Math.max(0.01, a.t1 - a.t0));
+      const s = Math.max(0, Math.min(1, (now() - a.start) / 1000 / a.dur));
       return D.wrapPose(a.t0 + (a.t1 - a.t0) * s);
     }
     if (st.phase === 'wrapping' || st.phase === 'who' || st.phase === 'done') return 'done';
@@ -302,7 +303,7 @@ export function installPanel(game, api) {
 
   function onFrame(dt, t, obj) {
     const pose = stagePose(t);
-    if (st.anim && typeof pose === 'object' && now() - st.anim.start > ((st.anim.t1 - st.anim.t0) / st.anim.speed) * 1000 + 30) st.anim = null;
+    if (st.anim && !st.anim.hold && now() - st.anim.start > st.anim.dur * 1000 + 30) st.anim = null;
     M.poseStage(obj, pose, t);
     // a little hop after every choice, and the ta-da spin
     let s = 1;
@@ -368,8 +369,9 @@ export function installPanel(game, api) {
     st.bump = 0.32;
   }
 
-  function play(t0, t1, speed = 1) {
-    st.anim = { t0, t1, start: now(), speed };
+  /** Play the wrapping curve from t0 to t1 (seconds of data.js wrapPose) at `speed`. hold: stay on t1. */
+  function play(t0, t1, speed = 1, hold = false) {
+    st.anim = { t0, t1, start: now(), dur: Math.max(0.05, Math.abs(t1 - t0) / Math.max(0.1, speed)), hold };
   }
 
   // ---------------- rendering ----------------
@@ -656,9 +658,13 @@ export function installPanel(game, api) {
     }
     st.phase = 'wrapping';
     clearTimers();
-    play(0, D.WRAP_SECONDS);
-    for (const [at, name, o] of WRAP_CUES) later(at * 1000, () => giftSfx(game, name, o || {}));
-    later(D.WRAP_SECONDS * 1000, () => taDa());
+    // the preview paper whisks off (a snip and a whoosh), then the real wrapping from the start
+    play(D.WRAP_SECONDS, 0, D.WRAP_SECONDS / (UNWRAP_MS / 1000), true);
+    giftSfx(game, 'snip');
+    giftSfx(game, 'whoosh', { volume: 0.6 });
+    later(UNWRAP_MS, () => play(0, D.WRAP_SECONDS, 1, true));
+    for (const [at, name, o] of WRAP_CUES) later(UNWRAP_MS + at * 1000, () => giftSfx(game, name, o || {}));
+    later(UNWRAP_MS + D.WRAP_SECONDS * 1000, () => taDa());
     render();
   }
 
