@@ -39,7 +39,7 @@ const TAB_PICS = {
   garden: ['furn:swing', 'furn:fountain'],
   fun: ['furn:trampoline', 'furn:teddy_bear', 'furn:slide'],
   vehicles: ['furn:car_bubble', 'furn:car_convertible'],
-  cruise: [], // wave 5: cruise-fun fills this line (wave5-plan.md §6.3)
+  cruise: ['furn:cruise_waterslide', 'furn:cruise_arcade', 'furn:cruise_slide'], // wave 5: cruise-fun (wave5-plan.md §6.3)
   holiday: [], // wave 5: holiday-world fills this line (wave5-plan.md §6.3)
 };
 
