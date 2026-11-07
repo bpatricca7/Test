@@ -8,6 +8,11 @@ import { bow } from './outfit.js';
 const GOLD = '#FFD54A';
 const WHITE = '#FFFFFF';
 const PINK = '#FF7EB6';
+// wave 5 holiday pieces (docs/teams/holiday-looks.md)
+const FUR = '#FFFDF7';
+const FUR_SHADE = '#F1ECE6';
+const HOLLY = '#2FA84F';
+const BERRY = '#E5383B';
 
 // ---------- head ----------
 
@@ -215,7 +220,128 @@ const HEAD = {
       b.cube(s * (R + 0.022), 1.4, 0, 0.006, 0.05, 0.05, WHITE);
     }
   },
+  // ----- wave 5 holiday hats -----
+  santa_hat(P, b, c) {
+    // a soft red cone that flops over to one side, a fluffy fur band and a pompom
+    const w = 0.37 + (P.hairPuff || 0), back = -0.35 - (P.hairPuff || 0) * 1.4;
+    b.save().translate(0, 1.66, (back + 0.31) / 2);
+    const segs = [[0.33, 0.27, 0.17, 0.04], [0.27, 0.2, 0.15, 0.3], [0.2, 0.13, 0.13, 0.62], [0.13, 0.06, 0.12, 0.7]];
+    for (const [r, r2, h, tilt] of segs) { // a turtle: each piece tips further toward her left
+      b.rotate(0.1, 0, -tilt);
+      b.cone(0, 0, 0, r, h + 0.02, c, 12, r2);
+      b.translate(0, h, 0);
+    }
+    b.sphere(0, 0.03, 0, 0.08, 0.08, 0.08, FUR, 10, 7);
+    b.restore();
+    furRing(b, w, back, 0.31, 1.58, 1.7);
+  },
+  elf_hat(P, b, c) {
+    // a tall pointy hat with a zigzag band, a bent tip and a gold jingle bell; pointy ears below
+    const w = 0.36 + (P.hairPuff || 0), back = -0.34 - (P.hairPuff || 0) * 1.4;
+    const band = shade(c, -0.25);
+    b.save().translate(0, 1.66, (back + 0.31) / 2);
+    const segs = [[0.33, 0.24, 0.2, 0.05], [0.24, 0.15, 0.2, 0.12], [0.15, 0.07, 0.18, 0.35], [0.07, 0.025, 0.12, 0.7]];
+    for (const [r, r2, h, tilt] of segs) {
+      b.rotate(-0.12, 0, tilt);
+      b.cone(0, 0, 0, r, h + 0.02, c, 12, r2);
+      b.translate(0, h, 0);
+    }
+    b.sphere(0, 0.03, 0, 0.045, 0.045, 0.045, GOLD, 8, 6);
+    b.cube(0, 0.0, 0, 0.03, 0.012, 0.03, shade(GOLD, -0.35));
+    b.restore();
+    b.cbox(-w, 1.58, back, w, 1.69, 0.31, 0.03, band);
+    for (let i = 0; i < 5; i++) { // band points in front
+      const x = -0.24 + i * 0.12;
+      b.save().rotateAt(x, 1.6, 0.315, 0, 0, Math.PI / 4);
+      b.cube(x, 1.6, 0.315, 0.07, 0.07, 0.014, band);
+      b.restore();
+    }
+    elfEars(P, b, P.skin);
+  },
+  antlers(P, b, c) {
+    // a headband with two branching antlers, soft ears beside them and a sprig of holly
+    const R = 0.37 + (P.hairPuff || 0);
+    const band = shade(c, -0.3);
+    const up = ANTLER_LIFT[P.look.hair.style] || 0; // tall hair: the antlers stand on top of it
+    for (let i = 0; i <= 14; i++) {
+      const a = (-0.5 + i / 14) * Math.PI * 0.9;
+      const x = Math.sin(a) * R, y = 1.43 + Math.cos(a) * (R - 0.01);
+      b.save().rotateAt(x, y, 0.02, 0, 0, -a);
+      b.box(x - 0.04, y - 0.022, -0.03, x + 0.04, y + 0.022, 0.07, band);
+      b.restore();
+    }
+    for (const s of [-1, 1]) {
+      b.save().translate(s * 0.17, 1.76 + up, 0.02).rotate(0, 0, -s * 0.35);
+      b.cbox(-0.03, 0, -0.03, 0.03, 0.27, 0.03, 0.012, c); // the beam
+      b.save().translate(0, 0.08, 0).rotate(0, 0, s * 1.0);
+      b.cbox(-0.022, 0, -0.022, 0.022, 0.12, 0.022, 0.01, c); // a tine out
+      b.restore();
+      b.save().translate(0, 0.17, 0).rotate(0, 0, -s * 0.9);
+      b.cbox(-0.022, 0, -0.022, 0.022, 0.11, 0.022, 0.01, c); // a tine in
+      b.restore();
+      b.save().translate(0, 0.25, 0).rotate(0, 0, s * 0.7);
+      b.cbox(-0.02, 0, -0.02, 0.02, 0.09, 0.02, 0.01, c);
+      b.restore();
+      b.restore();
+      // a soft ear pointing out under each antler
+      const ex = R - 0.02;
+      b.save().rotateAt(s * ex, 1.66, 0.02, 0, -s * 0.3, s * 0.45);
+      sideBox(b, s, ex, ex + 0.13, 1.635, 1.695, -0.025, 0.045, 0.025, mixHex(c, WHITE, 0.35));
+      sideBox(b, s, ex + 0.02, ex + 0.11, 1.65, 1.68, 0.045, 0.051, 0, '#FFB6D0');
+      b.restore();
+    }
+    // holly: two leaves and three berries on her left
+    for (const [x, rz] of [[0.18, 0.5], [0.27, -0.4]]) {
+      b.save().rotateAt(x, 1.73, 0.27, 0, 0, rz);
+      b.ccube(x, 1.73, 0.27, 0.1, 0.045, 0.02, 0.01, HOLLY);
+      b.restore();
+    }
+    for (const [x, y] of [[0.21, 1.76], [0.245, 1.775], [0.235, 1.74]]) b.sphere(x, y, 0.29, 0.022, 0.022, 0.022, BERRY, 7, 5);
+  },
+  elf_ears(P, b, c) {
+    elfEars(P, b, P.skin);
+    // a tiny jingle-bell earring in the chosen color
+    for (const s of [-1, 1]) {
+      b.box(s * 0.335, 1.24, 0.03, s * 0.343, 1.27, 0.038, shade(c, -0.2));
+      b.sphere(s * 0.339, 1.225, 0.034, 0.02, 0.02, 0.02, c, 7, 5);
+    }
+  },
 };
+
+/** How far the antlers stand up on hair that puffs high above the head. */
+const ANTLER_LIFT = { afro: 0.17, spiky: 0.1, short_curly: 0.06, fauxhawk: 0.03 };
+
+/** A fluffy fur band around the head (the Santa hat's), sized to the hair under it. */
+function furRing(b, w, back, front, y0, y1) {
+  b.cbox(-w - 0.01, y0, back - 0.01, w + 0.01, y1, front + 0.015, 0.045, FUR);
+  // soft overlapping puffs along the front so it reads as fluffy, not as a plain band
+  const n = 6, step = (w * 1.7) / (n - 1);
+  for (let i = 0; i < n; i++) {
+    const x = -w * 0.85 + i * step;
+    b.sphere(x, (y0 + y1) / 2 + (i % 2 ? 0.008 : -0.006), front + 0.012, step * 0.62, (y1 - y0) * 0.62, 0.035, i % 2 ? FUR_SHADE : FUR, 8, 6);
+  }
+}
+
+/** A (rounded) box from x0 to x1 out from the middle on side s (-1 her right, 1 her left). */
+function sideBox(b, s, x0, x1, y0, y1, z0, z1, round, color) {
+  const xa = Math.min(s * x0, s * x1), xb = Math.max(s * x0, s * x1);
+  if (round > 0) b.cbox(xa, y0, z0, xb, y1, z1, round, color);
+  else b.box(xa, y0, z0, xb, y1, z1, color);
+}
+
+/** Pointy elf ears on the sides of the head, tipped up and back. */
+function elfEars(P, b, skin) {
+  const inner = shade(skin, -0.12);
+  const out = 0.3 + Math.max(0, P.hairPuff || 0);
+  for (const s of [-1, 1]) {
+    b.save().rotateAt(s * out, 1.33, 0.02, 0, -s * 0.35, -s * 0.75);
+    sideBox(b, s, out - 0.02, out + 0.09, 1.28, 1.38, -0.035, 0.035, 0.015, skin);
+    sideBox(b, s, out + 0.08, out + 0.17, 1.295, 1.36, -0.025, 0.025, 0.012, skin);
+    sideBox(b, s, out + 0.16, out + 0.22, 1.31, 1.345, -0.015, 0.015, 0, skin);
+    sideBox(b, s, out + 0.01, out + 0.12, 1.3, 1.355, 0.035, 0.04, 0, inner);
+    b.restore();
+  }
+}
 
 /** A baseball cap: rounded crown, top button, front brim and a star badge (sized to the hair). */
 function cap(P, b, c) {
@@ -240,6 +366,7 @@ const GLASS_DEFAULT = { glasses: '#FF5FA2', sunglasses: '#FFFFFF', heart_glasses
 function buildFace(P) {
   const type = P.look.acc.face;
   if (!type || type === 'none') return;
+  if (type === 'beard') return beard(P, P.look.acc.faceColor || FUR);
   const color = P.look.acc.faceColor || GLASS_DEFAULT[type] || '#FF5FA2';
   const z = 0.305;
   P.B('head', `glasses:${type}:${color}`).quad([-0.25, 1.235, z], [0.25, 1.235, z], [0.25, 1.485, z], [-0.25, 1.485, z], WHITE);
@@ -247,6 +374,30 @@ function buildFace(P) {
   for (const s of [-1, 1]) {
     b.box(s * 0.26, 1.39, 0.29, s * 0.335, 1.41, 0.305, color);
     b.box(s * 0.318, 1.39, 0.0, s * 0.338, 1.41, 0.3, color);
+  }
+}
+
+/**
+ * A big fluffy beard (wave 5): sideburns, a round chin mass, a soft point and a curly
+ * mustache. The smile shows between the mustache and the beard.
+ */
+function beard(P, c) {
+  const b = P.B('head', 'plain');
+  const soft = shade(c, -0.07);
+  // a solid core so no gaps show, then round puffs over it
+  b.ccube(0, 1.06, 0.18, 0.54, 0.3, 0.16, 0.08, soft);
+  for (const s of [-1, 1]) b.ccube(s * 0.285, 1.27, 0.12, 0.07, 0.26, 0.22, 0.03, c); // sideburns
+  const puffs = [
+    [-0.25, 1.17, 0.21, 0.09], [0.25, 1.17, 0.21, 0.09],
+    [-0.17, 1.1, 0.25, 0.1], [0.17, 1.1, 0.25, 0.1], [0, 1.12, 0.27, 0.1],
+    [-0.12, 0.99, 0.24, 0.1], [0.12, 0.99, 0.24, 0.1],
+    [0, 0.91, 0.22, 0.095], [-0.07, 0.85, 0.2, 0.07], [0.07, 0.85, 0.2, 0.07], [0, 0.8, 0.18, 0.06],
+  ];
+  puffs.forEach(([x, y, z, r], i) => b.sphere(x, y, z, r, r, r * 0.75, i % 3 === 1 ? soft : c, 9, 7));
+  // a curly mustache with the smile peeking out under it
+  for (const s of [-1, 1]) {
+    b.sphere(s * 0.065, 1.245, 0.29, 0.075, 0.042, 0.04, c, 9, 6);
+    b.sphere(s * 0.145, 1.255, 0.28, 0.04, 0.035, 0.035, soft, 7, 5);
   }
 }
 
@@ -317,6 +468,7 @@ function buildBack(P) {
     }
     return;
   }
+  if (type === 'toy_sack') return toySack(P, c);
   if (type === 'cape') {
     const dz = P.backZ + 0.12;
     const pts = [[0, 1.07, -0.15 + dz], [0, 0.86, -0.19 + dz], [0, 0.64, -0.21 + dz], [0, 0.42, -0.22 + dz]];
@@ -349,6 +501,29 @@ function buildBack(P) {
     for (const s of [-1, 1]) t.box(s * 0.16, 1.05, -0.14, s * 0.215, 1.1, 0.13, shade(c, -0.15));
     P.B('torso', 'glow').save().rotateAt(0, 1.07, 0.13, 0, 0, Math.PI / 4).cube(0, 1.07, 0.13, 0.05, 0.05, 0.02, '#FFE27A').restore();
   }
+}
+
+/** A full sack of toys on her back (wave 5): tied with gold rope, toys peeking out the top. */
+function toySack(P, c) {
+  const b = P.B('torso', 'plain');
+  const z0 = P.backZ - 0.005, zc = z0 - 0.15;
+  const light = mixHex(c, WHITE, 0.25);
+  b.ccube(0.03, 0.86, zc, 0.42, 0.34, 0.28, 0.1, c); // the round bottom
+  b.ccube(0.03, 1.04, zc, 0.36, 0.2, 0.25, 0.08, c);
+  b.ccube(0.03, 1.15, zc, 0.22, 0.06, 0.17, 0.025, GOLD); // the tied neck
+  b.ccube(0.03, 1.2, zc, 0.28, 0.07, 0.22, 0.03, light); // the gathered top
+  b.cbox(-0.1, 0.8, zc - 0.142, 0.07, 0.94, zc - 0.13, 0.01, light); // a patch
+  // toys peeking out: a teddy, a present and a candy cane
+  b.ccube(-0.04, 1.29, zc + 0.02, 0.13, 0.12, 0.11, 0.035, '#C8905E');
+  for (const s of [-1, 1]) b.ccube(-0.04 + s * 0.05, 1.355, zc + 0.02, 0.045, 0.045, 0.04, 0.015, '#C8905E');
+  b.ccube(0.12, 1.27, zc - 0.03, 0.12, 0.12, 0.12, 0.012, '#6CC6FF');
+  b.box(0.11, 1.21, zc - 0.092, 0.13, 1.335, zc + 0.032, WHITE);
+  for (let k = 0; k < 5; k++) b.cube(0.0 + (k > 3 ? 0.03 : 0), 1.26 + Math.min(k, 3) * 0.035, zc + 0.08, 0.025, 0.035, 0.025, k % 2 ? WHITE : BERRY);
+  // the rope over her shoulder and across her front
+  b.box(0.13, 1.06, z0, 0.18, 1.09, 0.13, GOLD);
+  b.save().rotateAt(0, 0.9, 0.125, 0, 0, -0.75);
+  b.box(-0.025, 0.66, 0.122, 0.025, 1.16, 0.134, GOLD);
+  b.restore();
 }
 
 // ---------- neck ----------
@@ -422,6 +597,7 @@ function buildNeck(P) {
 const HAND_DEFAULT = {
   wand: '#FFE27A', purse: '#FF8CC6', balloon: '#FF5FA2', teddy: '#C8905E', ice_cream: '#FFB6D0',
   soccer_ball: '#FFFFFF', toy_car: '#FF6B6B', dino_toy: '#6BD68A',
+  candy_cane: '#E5383B', present: '#FF5FA2', // wave 5
 };
 // Dark patches on the soccer ball (directions from its centre).
 const BALL_PATCHES = [[0, 0.3, 0.95], [0.85, 0.45, 0.3], [-0.85, 0.45, 0.3], [0.55, -0.6, 0.55], [-0.55, -0.6, 0.55], [0, 0.85, -0.5]];
@@ -536,6 +712,33 @@ function buildHand(P) {
       b.restore();
     }
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) b.cube(hx + sx * 0.025, y + 0.005, z + sz * 0.04, 0.025, 0.04, 0.025, c); // legs
+  } else if (type === 'candy_cane') {
+    // a striped stick with a hook at the top (the stripes turn as they go up)
+    const z = hz + 0.06;
+    for (let k = 0; k < 9; k++) {
+      const y = hy - 0.06 + k * 0.034;
+      b.save().rotateAt(hx, y, z, 0, k * 0.5, 0);
+      b.cube(hx, y + 0.017, z, 0.042, 0.034, 0.042, k % 2 ? WHITE : c);
+      b.restore();
+    }
+    const top = hy - 0.06 + 9 * 0.034;
+    for (let k = 0; k < 6; k++) { // the hook curls forward and down
+      const a = (k + 0.5) / 6 * Math.PI;
+      const y = top + Math.sin(a) * 0.065, zz = z + 0.065 - Math.cos(a) * 0.065;
+      b.save().rotateAt(hx, y, zz, -a + Math.PI / 2, 0, 0);
+      b.cube(hx, y, zz, 0.042, 0.04, 0.042, k % 2 ? c : WHITE);
+      b.restore();
+    }
+  } else if (type === 'present') {
+    // a wrapped box with a ribbon cross and a bow on top
+    const y = hy + 0.1, z = hz + 0.1, s = 0.17;
+    const ribbon = c === '#FFD54A' || c === '#FFD43B' || c === '#FFE58A' ? BERRY : GOLD;
+    b.ccube(hx, y, z, s, s, s, 0.015, c);
+    b.box(hx - 0.02, y - s / 2 - 0.004, z - s / 2 - 0.004, hx + 0.02, y + s / 2 + 0.004, z + s / 2 + 0.004, ribbon);
+    b.box(hx - s / 2 - 0.004, y - s / 2 - 0.004, z - 0.02, hx + s / 2 + 0.004, y + s / 2 + 0.004, z + 0.02, ribbon);
+    b.save().rotateAt(hx, y + s / 2, z, -Math.PI / 2, 0, 0);
+    bow(b, hx, y + s / 2, z - 0.01, 0.75, ribbon);
+    b.restore();
   }
 }
 
