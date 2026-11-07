@@ -28,7 +28,7 @@ const FRIEND_DRESS_DELAY = 1600; // ms after a friend arrives (after the hello l
 const CSS = `
 .lf-bubble[data-owner="holiday-looks"] .lf-bubble-name { color: #C0392B; }
 .lf-bubble[data-owner="holiday-looks"] .lf-bubble-name svg { width: 24px; height: 24px; }
-.lf-bubble[data-owner="holiday-looks"] .lf-bubble-row { gap: 10px; }
+.lf-bubble[data-owner="holiday-looks"] .lf-bubble-row { gap: 10px; flex-wrap: wrap; justify-content: center; row-gap: 8px; }
 .lf-bubble[data-owner="holiday-looks"] .sw-round-face { width: 70px; height: 70px; background: var(--c); }
 .lf-bubble[data-owner="holiday-looks"] .sw-round-face svg { width: 50px; height: 50px; }
 .lf-bubble[data-owner="holiday-looks"] .sw-round.hl-on .sw-round-face { border-color: #FFD54A; box-shadow: 0 0 0 4px rgba(255,213,74,.55), 0 8px 18px var(--sw-shadow); }
@@ -151,6 +151,7 @@ export function install(game) {
   // (no holiday piece left: "Back to me" has nothing to go back to), and dressing up from the
   // Studio's Holiday looks earns the stickers too
   const outside = ({ look } = {}) => {
+    if (game.net?.remoteApplying) return; // a friend's change on this page is never hers (DESIGN.md §5)
     if (applying || !look) return;
     const st = game.profile.holidayLooks;
     if (st && (st.own || st.wearing)) {
@@ -163,7 +164,7 @@ export function install(game) {
   game.events.on('avatar:changed', outside);
 
   // ---------- the bubble: big buttons over her head ----------
-  let bubble = null, booth = null, life = 0;
+  let bubble = null, booth = null, life = 0, openedAt = 0;
   if (ui && typeof document !== 'undefined') ui.addStyles(CSS);
 
   function closeBubble() {
@@ -192,7 +193,7 @@ export function install(game) {
       ev.stopPropagation();
       if (b.off) {
         game.audio.play('click', { pitch: 0.8 });
-        game.toast('You are you already!', { icon: 'heart', key: 'hl-me' });
+        game.toast('You are you already!', { icon: 'heart', key: 'holiday-looks-me' });
         return;
       }
       game.audio.play('click');
@@ -203,18 +204,25 @@ export function install(game) {
     return el;
   };
 
+  /** Project a world point to container px; null when behind the camera or not a number. */
+  const screenAt = (pos, up, cam, W, H) => {
+    const v = pos.clone();
+    v.y += up;
+    v.project(cam);
+    if (!(v.z <= 1) || !Number.isFinite(v.x) || !Number.isFinite(v.y)) return null;
+    return { x: ((v.x + 1) / 2) * W, y: ((1 - v.y) / 2) * H };
+  };
+
   const place = () => {
     const p = game.player, cam = game.camera;
     if (!bubble || !p || !cam || !game.container) return;
-    const v = p.position.clone();
-    v.y += 2.3;
-    v.project(cam);
-    if (v.z > 1) {
-      bubble.style.visibility = 'hidden';
-      return;
-    }
     const W = game.container.clientWidth, H = game.container.clientHeight;
-    const x = ((v.x + 1) / 2) * W, y = ((1 - v.y) / 2) * H;
+    // over her head; seen through her own eyes (camera 'first') her head is the camera, so
+    // over the booth instead; and if neither shows, in the middle: the buttons never vanish
+    const first = !!(game.cameraRig && game.cameraRig.mode === 'first');
+    const o = booth && booth.object3d ? booth.object3d.position : null;
+    const s = (!first && screenAt(p.position, 2.3, cam, W, H)) || (o && screenAt(o, 3.1, cam, W, H)) || { x: W / 2, y: H * 0.45 };
+    const x = s.x, y = s.y;
     bubble.style.visibility = '';
     const w = bubble.offsetWidth || 340, h = bubble.offsetHeight || 150;
     bubble.style.left = Math.round(Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, x))) + 'px';
@@ -233,6 +241,7 @@ export function install(game) {
     }
     booth = entity || null;
     life = 0;
+    openedAt = typeof performance !== 'undefined' ? performance.now() : 0;
     bubble.textContent = '';
     const name = ui.el('div', 'lf-bubble-name');
     name.innerHTML = picture('holiday', 24);
@@ -255,6 +264,13 @@ export function install(game) {
     return Math.hypot(a.x - b.x, a.z - b.z) > BUBBLE_AWAY;
   };
 
+  // a tap anywhere else in the world puts the buttons away (like a pet's or a friend's bubble);
+  // the tap that opened them is not that tap
+  if (game.input && typeof game.input.on === 'function') {
+    game.input.on('tap', () => {
+      if (bubble && performance.now() - openedAt > 120) closeBubble();
+    });
+  }
   game.events.on('ui:open', closeBubble);
   game.events.on('world:unload', closeBubble);
   game.events.on('ui:bubble-closed', ({ owner } = {}) => { if (owner === 'holiday-looks') closeBubble(); });

@@ -157,7 +157,6 @@ function dinoShape(g, x, y, s) {
   for (const lx of [-0.2, 0.08]) g.fillRect(x + lx * s, y + s * 0.15, s * 0.09, s * 0.16); // legs
 }
 
-/** A small rocket pointing up, with a sparkle puff below (no flames). */
 /** A six-armed snowflake drawn with strokes (each arm has two little twigs). */
 function snowflake(g, x, y, r, lw) {
   g.lineWidth = lw;
@@ -194,6 +193,7 @@ function pine(g, x, y, s, color) {
   g.fill();
 }
 
+/** A small rocket pointing up, with a sparkle puff below (no flames). */
 function rocketShape(g, x, y, s) {
   g.beginPath(); // body with a pointed nose
   g.moveTo(x, y - s * 0.5);
