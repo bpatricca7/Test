@@ -106,7 +106,8 @@ four songs; after the fourth a tap rests the DJ. While a party plays:
 - when she stands still on the floor she dances (`player.emote('dance')`, which friends within 10
   blocks mirror), and notes float up.
 
-The song lives in the booth's entity data (`data.p`), so friends in a shared world hear and see
+The song lives in the booth's entity data (`data.song`, an `ANY_FIELDS` key; older saves keep it in
+`data.p`, still read), so friends in a shared world hear and see
 the same party. Starting one gives **Disco Deck**.
 
 ### 1.7 Movie screen (`cruise_movie`)
@@ -157,13 +158,13 @@ of it and facing it. "You are here" when she already is.
 | `cruise_shuffle` | Shuffleboard | 1 x 1 x 4 | court | `cruise-game` | none |
 | `cruise_golf` | Mini Golf | 1 x 2 x 1 | sign | `cruise-golf` | `{ h?: holes 1..9, par?: [2..5] }` |
 | `cruise_flag` | Golf Hole Flag | 1 x 2 x 1 | none | `cruise-golf` | `{ i: hole index, h: holes }` |
-| `cruise_dj` | DJ Booth | 2 x 3 x 1 | desk | `cruise-dj` | `{ p?: song 0..4, fx0, fz0, fx1, fz1, fy? }` |
+| `cruise_dj` | DJ Booth | 2 x 3 x 1 | desk | `cruise-dj` | `{ song?: 0..4 (older saves: p), fx0, fz0, fx1, fz1, fy? }` |
 | `cruise_movie` | Movie Screen | 5 x 3 x 1 | frame | `cruise-movie` | `{ ch: 0..3, w?: 5..24, h?: 3..14 }` |
 | `cruise_wheel` | Captain's Wheel | 1 x 2 x 1 | stand | `cruise-wheel` | none |
 | `cruise_board` | What's On Board | 2 x 2 x 1 | board | `cruise-board` | none |
 | `cruise_float` | Pool Float | 1 x 1 x 1 | none | `cruise-float` | `{ s?: shape }` (else by colour) |
 | `cruise_lounger` | Sun Lounger | 1 x 1 x 2 | lounger | `cruise-lounge` | none |
-| `cruise_towel` | Towel Animal | 1 x 1 x 1 | none | `cruise-towel` | `{ a: 0..3 }` |
+| `cruise_towel` | Towel Animal | 1 x 1 x 1 | none | `cruise-towel` | `{ towel: 0..3 }` (older saves: `a`) |
 | `cruise_bell` | Ship's Bell | 1 x 2 x 1 | post | `cruise-bell` | none |
 
 Lights: lift 8, arcade 6, DJ booth 7. Every data object is plain JSON of depth 1 or 2 and at

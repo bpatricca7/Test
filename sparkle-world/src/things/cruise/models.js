@@ -759,10 +759,17 @@ export const LOUNGER_LIE = [0.5, 0.42, 1.0];
 export const TOWEL_ANIMALS = ['swan', 'elephant', 'bunny', 'puppy'];
 export const TOWEL_NAMES = { swan: 'Towel Swans', elephant: 'Towel Elephant', bunny: 'Towel Bunny', puppy: 'Towel Puppy' };
 
+/** A towel's animal index: data.towel (data.a in older saves). */
+export function towelOf(data) {
+  if (!data) return 0;
+  const v = typeof data.towel === 'number' ? data.towel : data.a;
+  return Math.abs(v | 0) % TOWEL_ANIMALS.length;
+}
+
 export function towel(color = TOWEL_COLORS[0], data = {}) {
   const k = new Kit();
   const c = color || TOWEL_COLORS[0];
-  const a = TOWEL_ANIMALS[((data && data.a) | 0) % TOWEL_ANIMALS.length] || 'swan';
+  const a = TOWEL_ANIMALS[towelOf(data)] || 'swan';
   const sh = shade(c, -0.06);
   const b = k.part('body', 0.5, 0, 0.5);
   const eye = (x, y, z) => b.ball(0.022, INK, x, y, z, { seg: 6 });

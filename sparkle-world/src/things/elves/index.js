@@ -31,6 +31,7 @@ import { elfSfx } from './sfx.js';
 import { ELF_STICKERS } from './art.js';
 import { installElfUI, blocked, elfPortrait } from './ui.js';
 import { FOOD } from '../food-models.js';
+import { sanitizeName } from '../../net/names.js';
 import { basketAdd } from '../pets/kit.js';
 
 export const KEY_ELF = 'elf_twinkle';
@@ -88,7 +89,11 @@ export function install(game) {
   const nameOf = (e) => {
     const d = (e && e.data) || {};
     if (d.role === 'greet') return GREETER;
-    return cleanName(d.name, NAMES[schemeIndex(d, e && e.color)]);
+    const fallback = NAMES[schemeIndex(d, e && e.color)];
+    const n = cleanName(d.name, fallback);
+    // the house elf's name was typed by the host: a friend sees it only once it passed the
+    // sanitizer (docs/MULTIPLAYER.md section 11.8)
+    return guest() ? sanitizeName(n, fallback) : n;
   };
 
   /** Is this elf found by this player (the gold star over it; the jingle stops)? */

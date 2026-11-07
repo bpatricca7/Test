@@ -117,6 +117,8 @@ export function mergeBackupProfile(current, fromFile, { fresh = false } = {}) {
   const f = fromFile;
   if (fresh) {
     if (isObj(f.look)) current.look = { ...(current.look || {}), ...f.look };
+    // her own clothes under a costume ("Back to me") travel with the look they belong to
+    if (isObj(f.holidayLooks)) current.holidayLooks = JSON.parse(JSON.stringify(f.holidayLooks));
     if (Array.isArray(f.outfits) && f.outfits.length === 6) current.outfits = JSON.parse(JSON.stringify(f.outfits));
     if (typeof f.playerName === 'string' && f.playerName.trim()) current.playerName = f.playerName.slice(0, 40);
     if (f.nameSet) current.nameSet = true;
@@ -156,7 +158,28 @@ export function mergeBackupProfile(current, fromFile, { fresh = false } = {}) {
     const joined = join(current[k], f[k]);
     if (canon(joined) !== canon(current[k])) current[k] = joined;
   }
+  if (isObj(f.reindeer)) {
+    const joined = mergeReindeer(current.reindeer, f.reindeer);
+    if (canon(joined) !== canon(current.reindeer)) current.reindeer = joined;
+  }
   return JSON.stringify(current) !== before;
+}
+
+/**
+ * Join two profile.reindeer records: the bigger of each counter, the later coin day, and that
+ * day's coin bits ORed when both have the same day (so a restore can't earn a day's coins twice).
+ */
+export function mergeReindeer(a, b) {
+  const num = (v) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+  const A = isObj(a) ? a : {};
+  const B = isObj(b) ? b : {};
+  const out = { ...A };
+  for (const k of ['petted', 'rides', 'flights', 'sleighFlights']) out[k] = Math.max(num(A[k]), num(B[k]));
+  const da = num(A.coinDay);
+  const db = num(B.coinDay);
+  out.coinDay = Math.max(da, db);
+  out.coinMask = (da === db ? num(A.coinMask) | num(B.coinMask) : da > db ? num(A.coinMask) : num(B.coinMask)) & 3;
+  return out;
 }
 
 /**

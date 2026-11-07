@@ -327,7 +327,7 @@ class VehicleSystem {
     this._firstTip.add(kind);
     const touch = this.game.input.touchMode;
     const text = v.flies
-      ? (touch ? 'Hold Honk to fly up! Let go to glide down. Land brings you down.' : 'Drive with W A S D! Hold Space to fly up, Shift to come down, E gets out.')
+      ? (touch ? 'Hold Up to fly! Let go to glide down. Down brings you down.' : 'Drive with W A S D! Hold Space to fly up, Shift to come down, E gets out.')
       : touch
       ? (boat ? 'Push the joystick to steer! Tap Honk to toot! The pink button gets out.' : 'Push the joystick to drive! Tap Honk to beep! The pink button gets out.')
       : (boat ? 'Steer with W A S D! Space toots, E gets out.' : 'Drive with W A S D! Space honks, E gets out.');
@@ -738,7 +738,7 @@ class VehicleSystem {
     }
     if (d.hit === 'water') {
       // wave 5: the sleigh flies over water instead
-      if (cur.v.flies) this._toast('water', g.input.touchMode ? 'Hold Honk to fly over the water!' : 'Hold Space to fly over the water!');
+      if (cur.v.flies) this._toast('water', g.input.touchMode ? 'Hold Up to fly over the water!' : 'Hold Space to fly over the water!');
       else this._toast('water', "Cars can't swim! Try a boat!");
     }
     if (d.hit === 'shore') {

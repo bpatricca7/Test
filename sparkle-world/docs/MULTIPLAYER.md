@@ -716,7 +716,7 @@ Every key an op names is **touched even when the op is rejected** (§5.6).
 | `e+` | build; rate; key registered; uid in the seat's range and unused; `data` ≤ 600 B JSON, depth ≤ 3; `canPlace(def, x, y, z, rot, null, {players:false})` → else 1 | `entities.place(…, {uid, history:false, events:true, fx:true})` |
 | `e-` | build; exists; careful mode: author = seat, for the entity **and** every item standing on it → else 2 | `entities.remove(e, {history:false})`. A vehicle whose uid her presence `vh` names in the same state (she drives it): the host takes **custody** `{uid, rec, prevOwner}` (one per friend; a second take puts the first back). |
 | `er` | build; exists; `rot === rotBefore` → else 1; careful: own; `canPlace` for the new rot, ignoring the entity itself, with players off | `_setRot` |
-| `ed` | exists; patch keys ⊆ `ANY_FIELDS = {open, on, ch, art, bloom, conn}`, unless own or builder mode → else 2; ≤ 600 B | `setData` |
+| `ed` | exists; patch keys ⊆ `ANY_FIELDS = {open, on, ch, art, bloom, conn, song, towel}`, unless own or builder mode → else 2; ≤ 600 B | `setData` |
 | `p+` | build; crop known; soil below is farmland; no plant there | `garden.addPlant(crop, x, y, z, 0, wetUntil)` |
 | `ph` | a plant exists with the same crop and stage 3 → else 1 (allowed in careful mode: harvesting helps) | the same state change as `harvest()`, without the reward or fx |
 | `p-` | exists and crop matches; careful: own → else 2 | `garden.removePlant` |

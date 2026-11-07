@@ -548,8 +548,10 @@ export function install(game) {
     flyBtn.hidden = driving;
     // deep water (merfolk): Up and Down in Jump's place, as while flying
     const sea = !!(game.player && game.player.seaSwim && game.player.state !== 'ride');
-    upBtn.hidden = downBtn.hidden = !(flying || sea);
-    jumpBtn.hidden = flying || sea;
+    // a vehicle that flies (the sleigh): Up ('jump') climbs and Down dives, in Honk's place
+    const sky = driving && !!(game.vehicles && typeof game.vehicles.canFly === 'function' && game.vehicles.canFly());
+    upBtn.hidden = downBtn.hidden = !(flying || sea || sky);
+    jumpBtn.hidden = flying || sea || sky;
     if (driving !== honkShown) {
       honkShown = driving;
       jumpFace.innerHTML = icon(driving ? 'honk' : 'jump');

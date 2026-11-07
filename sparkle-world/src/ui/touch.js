@@ -161,6 +161,7 @@ export function install(game) {
     [[key('Shift', 'sw-mid')], 'Run or go down'],
     [[key('F')], 'Fly on / off'],
     [[key('Space', 'sw-wide'), key('C'), key('Shift', 'sw-mid')], 'In deep water: Space up, C down, Shift fast'],
+    [[key('Space', 'sw-wide'), key('Shift', 'sw-mid'), key('E')], 'In the sleigh: Space flies up, Shift comes down, E gets out'],
     [[key('1'), '<span class="sw-or">to</span>', key('9')], 'Pick from your hotbar'],
     [[key('B')], 'Open the Bag'],
     [[key('R')], 'Build'],
@@ -192,6 +193,7 @@ export function install(game) {
     [PICS.tail, 'In deep water: Up and Down to swim and dive'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#FF5FA2">${icon2('bag', { size: 56 })}</span>`, 'Bag: pick what to build'],
     [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#FFB020">${icon2('honk', { size: 56 })}</span>`, 'In a car or boat: the joystick drives, Honk beeps, the pink button gets out'],
+    [`<span class="sw-help-pic" style="display:grid;place-items:center;color:#6CC6FF">${icon2('up', { size: 56 })}</span>`, 'In the sleigh: hold Up to fly, Down to come down, the pink button gets out'],
     [PICS.dolphin, 'Swim to a dolphin and tap it to ride'],
   ];
 

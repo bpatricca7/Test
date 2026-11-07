@@ -168,7 +168,7 @@ export function install(game) {
       actions: ['cruise-float'], build: (c, d) => M.float(c, d), update: (e, dt) => floatTick(e, dt) },
     { key: 'cruise_lounger', name: 'Sun Lounger', size: [1, 1, 2], colors: M.LOUNGER_COLORS, colliders: M.LOUNGER_COLLIDERS,
       actions: ['cruise-lounge'], build: (c) => M.lounger(c) },
-    { key: 'cruise_towel', name: 'Towel Animal', size: [1, 1, 1], colors: M.TOWEL_COLORS, colliders: 'none', defaultData: { a: 0 },
+    { key: 'cruise_towel', name: 'Towel Animal', size: [1, 1, 1], colors: M.TOWEL_COLORS, colliders: 'none', defaultData: { towel: 0 },
       actions: ['cruise-towel'], build: (c, d) => M.towel(c, d), update: (e, dt) => towelTick(e, dt) },
     { key: 'cruise_bell', name: "Ship's Bell", size: [1, 2, 1], colors: M.BELL_COLORS, colliders: M.BELL_COLLIDERS,
       actions: ['cruise-bell'], build: (c) => M.bell(c), update: (e, dt) => bellTick(e, dt) },
@@ -376,8 +376,8 @@ export function install(game) {
 
   E.registerAction('cruise-towel', {
     run: (g, e) => {
-      const a = ((e.data.a | 0) + 1) % M.TOWEL_ANIMALS.length;
-      E.setData(e, { a });
+      const a = (M.towelOf(e.data) + 1) % M.TOWEL_ANIMALS.length;
+      E.setData(e, { towel: a }); // 'towel' is an ANY_FIELDS key: a friend may refold the host's towels
       sfx.pop();
       sparkle(e, 0.5, 0.6, 0.5, 'heart', 5);
       game.toast(`${M.TOWEL_NAMES[M.TOWEL_ANIMALS[a]]}!`, { icon: 'heart', key: 'cruise-towel' });

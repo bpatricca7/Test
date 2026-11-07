@@ -87,7 +87,9 @@ export const REJECT = Object.freeze({ CONFLICT: 1, PROTECTED: 2, PAUSED: 3, LIMI
 export const NO = Object.freeze({ DENY: 'd', KICK: 'k', FULL: 'f', VERSION: 'v' });
 
 /** Entity data fields any admitted friend may toggle, even on the host's things (§8.1). */
-export const ANY_FIELDS = Object.freeze(['open', 'on', 'ch', 'art', 'bloom', 'conn']);
+// (append only: 'song' is a DJ booth's song, 'towel' a towel animal's fold, so a friend can start
+// the party or refold a towel on the host's ship)
+export const ANY_FIELDS = Object.freeze(['open', 'on', 'ch', 'art', 'bloom', 'conn', 'song', 'towel']);
 
 /** Outbox op kinds a guest may send (§5.6). */
 export const OP_KINDS = Object.freeze(['b', 'e+', 'e-', 'er', 'ed', 'p+', 'p-', 'ph', 'pf', 'pu', 'z']);

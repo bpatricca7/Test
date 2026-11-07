@@ -25,7 +25,9 @@ const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
 /** The song a booth plays (0 = none). */
 export function songOf(e) {
-  const p = e && e.data ? e.data.p | 0 : 0;
+  // data.song (an ANY_FIELDS key, so a friend may start the party); data.p in older saves
+  const d = e && e.data;
+  const p = d ? (isNum(d.song) ? d.song : d.p) | 0 : 0;
   return p >= 1 && p <= SONG_COUNT ? p : 0;
 }
 
@@ -82,7 +84,7 @@ export class Party {
     const g = this.game;
     const now = songOf(e);
     const next = now >= SONG_COUNT ? 0 : now + 1;
-    g.entities.setData(e, { p: next });
+    g.entities.setData(e, { song: next });
     if (next === 1) {
       this.sfx.scratch();
       g.toast("Let's dance!", { icon: 'music', key: 'cruise-dj', color: 'pink' });

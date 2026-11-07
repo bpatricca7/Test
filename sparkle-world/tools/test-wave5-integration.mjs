@@ -20,6 +20,10 @@
 //   S1    a save and a load (twice) runs no placer and keeps the same entities, pets and spots
 //   G1    a friend's page (game.net.isGuest) places nothing
 //   X1    the checker itself catches a forced overlap, a piece in a block and an unowned record
+//   N1    a friend may start the host's DJ booth and refold its towel animals: every patch the
+//         two taps make is ANY_FIELDS only (the host would refuse anything else as PROTECTED)
+//   N2    a friend's page shows the host-typed house elf name only after sanitizeName()
+//   N3    a backup restores holidayLooks ("Back to me") and joins the reindeer record
 
 class FakeImageData { constructor(data, w, h) { if (typeof data === 'number') { h = w; w = data; data = new Uint8ClampedArray(w * h * 4); } this.data = data; this.width = w; this.height = h; } }
 globalThis.ImageData = globalThis.ImageData || FakeImageData;
@@ -572,6 +576,82 @@ for (const biome of BIOMES) {
   const { records } = newWorld(game, biome, 'cozy', 1);
   check('G1', records.length > 0 && log.calls.length === 0, `${biome} guest: no placer ran (${log.calls.length})`);
   check('G1', game.entities.map.size === 0 && game.pets.pets.length === 0, `${biome} guest: nothing placed (${game.entities.map.size} entities, ${game.pets.pets.length} pets)`);
+}
+
+// a friend's taps on the host's ship patch only fields the host lets any friend change
+if (BIOMES.includes('cruise')) {
+  warnTag = 'cruise taps';
+  const { ANY_FIELDS } = await import('../src/net/protocol.js');
+  const ANY = new Set(ANY_FIELDS);
+  check('N1', !ANY.has('p') && !ANY.has('a'), 'ANY_FIELDS keeps the slide path (p) protected');
+  const game = makeGame();
+  installAll(game);
+  newWorld(game, 'cruise', 'cozy', 1);
+  const E = game.entities;
+  const patches = [];
+  const realSet = E.setData.bind(E);
+  E.setData = (e, patch) => { patches.push(Object.keys(patch)); return realSet(e, patch); };
+  const dj = E.all().find((e) => e.key === 'cruise_dj');
+  let towel = E.all().find((e) => e.key === 'cruise_towel');
+  if (!towel && dj) towel = E.place('cruise_towel', dj.x, dj.y + 3, dj.z, 0, null, null, { force: true });
+  const { songOf } = await import('../src/things/cruise/party.js');
+  const { towelOf } = await import('../src/things/cruise/models.js');
+  check('N1', !!dj && !!towel, 'a DJ booth and a towel animal to tap');
+  if (dj && towel) {
+    E.actions.get('cruise-dj').run(game, dj);
+    check('N1', songOf(dj) === 1, `the first tap starts song 1 (${songOf(dj)})`);
+    E.actions.get('cruise-dj').run(game, dj);
+    check('N1', songOf(dj) === 2, `the second tap plays song 2 (${songOf(dj)})`);
+    const t0 = towelOf(towel.data);
+    E.actions.get('cruise-towel').run(game, towel);
+    check('N1', towelOf(towel.data) === (t0 + 1) % 4, `a tap folds the next towel animal (${t0} -> ${towelOf(towel.data)})`);
+    const bad = patches.flat().filter((k) => !ANY.has(k));
+    check('N1', patches.length >= 3 && bad.length === 0, `every tap patch is ANY_FIELDS only (${bad.join(', ') || 'ok'})`);
+    // older saves: the song in data.p and the animal in data.a still read
+    check('N1', songOf({ data: { p: 3 } }) === 3 && towelOf({ a: 2 }) === 2, 'older saves (data.p, data.a) still read');
+  }
+}
+
+// a friend's page: the host typed the house elf's name, she sees it only once it is kind
+if (BIOMES.includes('holiday')) {
+  warnTag = 'holiday elf name';
+  const { NAMES } = await import('../src/things/elves/data.js');
+  for (const guest of [false, true]) {
+    const game = makeGame({ guest });
+    installAll(game);
+    const { world } = newWorld(game, 'holiday', 'cozy', 1);
+    const sp = world.spawn || { x: 20, y: 30, z: 20 };
+    const e = game.entities.place(elvesMod.KEY_ELF, Math.floor(sp.x), Math.floor(sp.y) + 6, Math.floor(sp.z), 0, null, { role: 'house', name: 'Stupid', sc: 0, hide: 1 }, { force: true });
+    const sys = game.systems.find((s) => s && s.name === 'elves');
+    if (e && sys) sys.deserialize({ v: 1, house: { uid: e.uid, name: 'Stupid', sc: 0, hide: 1 } });
+    const st = game.elves.state();
+    const shown = st.house && st.house.name;
+    if (guest) check('N2', shown === NAMES[0], `a friend sees the elf's kind name, not the host's typed one (${shown})`);
+    else check('N2', shown === 'Stupid', `the host still sees the name the host typed (${shown})`);
+  }
+}
+
+// a backup brings back her own clothes under a costume and the reindeer record
+{
+  const { backupProfile, mergeBackupProfile } = await import('../src/core/storage.js');
+  const R = await import('../src/player/holiday/rules.js');
+  const prof = {
+    look: { top: { type: 'santa_coat' } },
+    holidayLooks: { v: 1, own: { top: { type: 'tshirt' } }, wearing: 'santa' },
+    reindeer: { coinDay: 20261107, coinMask: 1, petted: 4, rides: 2, flights: 1, sleighFlights: 3 },
+  };
+  const file = backupProfile(prof);
+  const fresh = {};
+  mergeBackupProfile(fresh, file, { fresh: true });
+  check('N3', fresh.look && fresh.look.top.type === 'santa_coat' && fresh.holidayLooks && fresh.holidayLooks.own.top.type === 'tshirt', 'a fresh device gets the costume and her own clothes under it');
+  const back = R.backToMe(fresh.look, fresh.holidayLooks);
+  check('N3', !!back && back.look.top.type === 'tshirt', 'Back to me works after the restore');
+  check('N3', fresh.reindeer && fresh.reindeer.coinDay === 20261107 && fresh.reindeer.coinMask === 1 && fresh.reindeer.sleighFlights === 3, 'the reindeer record comes back on a fresh device');
+  const here = { reindeer: { coinDay: 20261107, coinMask: 2, petted: 9, rides: 0, flights: 0, sleighFlights: 0 } };
+  check('N3', mergeBackupProfile(here, file) && here.reindeer.coinMask === 3 && here.reindeer.petted === 9 && here.reindeer.sleighFlights === 3, `same day: coins joined, counters keep the bigger (${JSON.stringify(here.reindeer)})`);
+  const later = { reindeer: { coinDay: 20261108, coinMask: 0, petted: 0 } };
+  mergeBackupProfile(later, file);
+  check('N3', later.reindeer.coinDay === 20261108 && later.reindeer.coinMask === 0 && later.reindeer.petted === 4, `a later day here keeps its own coins (${JSON.stringify(later.reindeer)})`);
 }
 
 console.log('\nper kind, all seeds and sizes (emitted / placed / forced / moved / skipped):');

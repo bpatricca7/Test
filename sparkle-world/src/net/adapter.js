@@ -304,6 +304,9 @@ export class GameAdapter {
     }
     const fl = s.friends && Array.isArray(s.friends.list) ? s.friends.list : null;
     if (fl) for (const f of fl) if (f && typeof f === 'object') f.name = this.sanitizeName(f.name, 'Friend');
+    // the house elf's name is typed by the host (its entity's data.name is checked where it is shown)
+    const eh = s.elves && typeof s.elves === 'object' ? s.elves.house : null;
+    if (eh && typeof eh === 'object' && typeof eh.name === 'string') eh.name = this.sanitizeName(eh.name, 'Elf');
     if (s.collectibles && Array.isArray(s.collectibles.gems)) {
       const mine = this._hostWorld ? this._foundGems(this._hostWorld) : new Set();
       s.collectibles.gems = s.collectibles.gems.map((gm, i) => (Array.isArray(gm) ? [gm[0], gm[1], gm[2], gm[3], mine.has(i) ? 1 : 0] : gm));
