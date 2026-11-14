@@ -1,0 +1,11 @@
+{
+  "name": "reels",
+  "private": true,
+  "description": "Code-driven Instagram Reels: HTML timelines rendered frame-by-frame with Playwright and encoded with ffmpeg.",
+  "scripts": {
+    "render:codex-remote": "node lib/render.cjs codex-remote"
+  },
+  "dependencies": {
+    "gsap": "^3.12.5"
+  }
+}

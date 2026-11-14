@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Codex Remote — Reel</title>
+<style>
+  :root{
+    --bg:#06070a; --ink:#f5f7fa; --muted:#8b93a1; --mint:#35f2b0; --blue:#6aa8ff;
+    --claude:#d97757; --panel:#12141a; --panel2:#1a1d25; --stroke:rgba(255,255,255,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1920px;overflow:hidden;background:#000}
+  body{font-family:"Inter",system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  #stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--bg)}
+  .display-font{font-family:"Inter Display","Inter",sans-serif}
+
+  /* ---------- background ---------- */
+  #bg{position:absolute;inset:0;overflow:hidden}
+  /* soft colour fields drawn as gradients (a blur filter here costs ~2x render time) */
+  #bg .blob{position:absolute;border-radius:50%;opacity:.62;background:radial-gradient(circle closest-side,var(--c) 0%,transparent 100%)}
+  #bg .grid{position:absolute;inset:0;opacity:.5;
+    background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+    background-size:90px 90px;mask-image:radial-gradient(ellipse 70% 55% at 50% 42%,#000 20%,transparent 85%)}
+  #vignette{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse 85% 70% at 50% 45%,transparent 45%,rgba(0,0,0,.72) 100%)}
+  #tint{position:absolute;inset:0;opacity:0;pointer-events:none}
+  #grain{position:absolute;inset:-120px;opacity:.07;pointer-events:none;mix-blend-mode:overlay}
+  #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+
+  .scene{position:absolute;inset:0;visibility:hidden;opacity:0;transform-origin:50% 42%}
+
+  /* ---------- shared bits ---------- */
+  .kicker{position:absolute;top:256px;left:0;right:0;text-align:center}
+  .kicker span{display:inline-block;padding:14px 30px;border-radius:999px;border:2px solid rgba(53,242,176,.55);
+    color:var(--mint);font:800 30px/1 "Inter Display","Inter";letter-spacing:.22em;background:rgba(53,242,176,.08)}
+  .mint{color:var(--mint)} .muted{color:var(--muted)} .orange{color:var(--claude)}
+
+  .phone{position:absolute;--r:72px;border-radius:var(--r);background:#050608;
+    box-shadow:0 0 0 3px #2c2f38,0 0 0 13px #0c0d11,0 0 0 15px #3a3d47,0 70px 130px rgba(0,0,0,.7),0 0 110px rgba(53,242,176,.10)}
+  .phone .screen{position:absolute;inset:0;border-radius:var(--r);overflow:hidden;background:radial-gradient(130% 55% at 50% 0%,#18222f 0%,#0b0c10 62%)}
+  .phone .island{position:absolute;top:20px;left:50%;width:118px;height:34px;margin-left:-59px;border-radius:20px;background:#000;z-index:9}
+  .statusbar{position:absolute;top:24px;left:38px;right:38px;display:flex;justify-content:space-between;font:700 20px "Inter";color:#fff;z-index:8}
+
+  .monitor{position:absolute;border-radius:26px;background:#090a0d;
+    box-shadow:0 0 0 2px #30333d,0 0 0 14px #0e0f13,0 0 0 16px #343741,0 60px 130px rgba(0,0,0,.65)}
+  .monitor .display{position:absolute;inset:0;border-radius:26px;overflow:hidden;
+    background:radial-gradient(130% 100% at 15% 5%,#7257ff 0%,#2c46d6 42%,#0d8fa0 100%)}
+  .menubar{position:absolute;top:0;left:0;right:0;height:34px;background:rgba(8,8,12,.5);display:flex;align-items:center;
+    padding:0 16px;gap:18px;font:600 15px "Inter";color:#e6e9ef}
+  .menubar .r{margin-left:auto;opacity:.8}
+  .dock{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:12px;padding:10px 14px;border-radius:22px;
+    background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16)}
+  .dock i{display:block;width:50px;height:50px;border-radius:14px}
+  .win{position:absolute;border-radius:16px;background:#14161c;border:1px solid rgba(255,255,255,.11);
+    box-shadow:0 26px 70px rgba(0,0,0,.55);overflow:hidden}
+  .win .bar{height:42px;display:flex;align-items:center;gap:8px;padding:0 15px;background:#1c1f27;font:600 15px "Inter";color:#b3bac7}
+  .win .bar b{width:13px;height:13px;border-radius:50%;display:block}
+  .win .bar b:nth-child(1){background:#ff5f57}.win .bar b:nth-child(2){background:#febc2e}.win .bar b:nth-child(3){background:#28c840}
+  .win .bar em{font-style:normal;margin-left:10px}
+  .cursor{position:absolute;left:0;top:0;width:34px;height:34px;z-index:50;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+  .ripple{position:absolute;left:0;top:0;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:5px solid var(--mint);opacity:0;z-index:49}
+  .tap{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(255,255,255,.35);
+    border:3px solid rgba(255,255,255,.8);opacity:0;z-index:60}
+  .glass{background:linear-gradient(180deg,rgba(52,57,68,.94),rgba(30,33,41,.94));border:1.5px solid rgba(255,255,255,.18);
+    box-shadow:0 30px 70px rgba(0,0,0,.5)}
+  .bars{display:flex;align-items:center;justify-content:center;gap:7px}
+  .bars i{display:block;width:9px;border-radius:9px;background:var(--mint);height:12px}
+
+  /* ---------- captions ---------- */
+  #captions{position:absolute;left:0;right:0;top:1335px;height:170px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .cap{position:absolute;left:40px;right:40px;text-align:center;visibility:hidden;white-space:nowrap;
+    font:900 80px/1.05 "Inter Display","Inter";letter-spacing:-.02em}
+  .cap .w{display:inline-block;margin:0 9px;color:#fff;-webkit-text-stroke:14px #05060a;paint-order:stroke fill;
+    text-shadow:0 8px 28px rgba(0,0,0,.6);transform-origin:50% 70%}
+  .cap .w.cur{color:var(--mint)}
+
+  /* ---------- s1 hook ---------- */
+  .hook{position:absolute;top:238px;left:40px;right:40px;text-align:center}
+  .hook .h1{font:900 122px/1.0 "Inter Display","Inter";letter-spacing:-.035em;white-space:nowrap}
+  .hook .h1 span{display:inline-block}
+  .hook .l2 span{background:linear-gradient(180deg,#fff 30%,#b9ffe6);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hook .underline{height:14px;margin:6px auto 0;width:900px;border-radius:14px;background:var(--mint);transform-origin:0 50%;
+    box-shadow:0 0 40px rgba(53,242,176,.7)}
+  .hook .pill{display:inline-flex;gap:15px;margin-top:30px;padding:20px 38px;border-radius:999px;background:var(--mint);color:#04130d;
+    font:900 56px/1 "Inter Display","Inter";letter-spacing:-.02em;box-shadow:0 20px 60px rgba(53,242,176,.35)}
+  .hook .pill span{display:inline-block}
+  .orb{position:absolute;border-radius:50%;background:radial-gradient(circle at 32% 28%,#d9fff2 0%,#35f2b0 32%,#1c9cff 78%,#3b3bd6 100%);
+    box-shadow:0 0 70px rgba(53,242,176,.6),inset 0 -12px 34px rgba(0,0,60,.4)}
+  .ring{position:absolute;border-radius:50%;border:3px solid var(--mint);opacity:0}
+  .codeline{height:13px;border-radius:7px;margin:11px 0;background:#3b4252;transform-origin:0 50%}
+  .toast{position:absolute;padding:13px 22px;border-radius:14px;background:#0e2a20;border:1.5px solid var(--mint);color:var(--mint);
+    font:800 24px "Inter"}
+
+  /* ---------- s2 title ---------- */
+  .title-wrap{position:absolute;left:0;right:0;top:0;bottom:0}
+  .t-small{position:absolute;top:600px;left:0;right:0;text-align:center;font:800 38px "Inter Display";letter-spacing:.34em;color:var(--muted)}
+  .t-big{position:absolute;left:0;right:0;text-align:center;font:900 232px/1 "Inter Display";letter-spacing:-.045em}
+  .t-pill{position:absolute;top:1185px;left:0;right:0;text-align:center}
+  .t-pill span{display:inline-block;padding:20px 38px;border-radius:999px;font:700 36px "Inter";color:#dfe5ee}
+  .devices{position:absolute;top:380px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:26px}
+
+  /* ---------- s3 setup ---------- */
+  .steps{position:absolute;top:254px;left:50px;right:50px;display:flex;gap:16px}
+  .steps div{flex:1;padding:22px 0;text-align:center;border-radius:22px;font:800 30px "Inter Display";color:#7c8492;
+    background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);white-space:nowrap}
+  .side{position:absolute;left:0;top:42px;bottom:0;width:250px;background:#101218;border-right:1px solid var(--stroke);padding:18px 14px}
+  .side div{padding:13px 16px;border-radius:12px;font:600 23px "Inter";color:#aab1be;margin-bottom:5px}
+  .qr{display:grid;background:#fff;padding:14px;border-radius:16px}
+  .qr i{display:block}
+  .toggle{position:absolute;width:86px;height:50px;border-radius:50px;background:#3a3f4b}
+  .toggle b{position:absolute;top:5px;left:5px;width:40px;height:40px;border-radius:50%;background:#fff;display:block}
+
+  /* ---------- s4 remote ---------- */
+  .thread{margin:0 22px 14px;padding:18px 20px;border-radius:22px;background:#161920;border:1px solid var(--stroke)}
+  .thread h4{font:700 23px "Inter";color:#fff;margin-bottom:8px;white-space:nowrap}
+  .thread p{font:600 19px "Inter";display:flex;align-items:center;gap:9px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:50%}
+  .composer{position:absolute;left:20px;right:20px;bottom:30px;height:74px;border-radius:40px;background:#1a1d25;border:1px solid var(--stroke);
+    display:flex;align-items:center;padding:0 10px 0 28px;font:500 22px "Inter";color:#727a88}
+  .mic{position:absolute;right:9px;top:8px;width:58px;height:58px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center}
+  .card{position:absolute;display:flex;align-items:center;gap:18px;padding:24px 30px;border-radius:30px;white-space:nowrap}
+  .card .e{font-size:62px;line-height:1;font-family:"Noto Color Emoji"}
+  .card b{font:900 42px "Inter Display";letter-spacing:-.02em;display:block}
+  .card small{font:600 22px "Inter";color:#a9b1be;display:block;margin-top:4px}
+  .sheet{position:absolute;left:0;right:0;bottom:0;border-radius:44px 44px 0 0;background:#12151b;border-top:1px solid rgba(255,255,255,.14)}
+
+  /* ---------- s6 computer use ---------- */
+  .tiles{position:absolute;top:348px;left:50px;right:50px;display:flex;gap:22px}
+  .tile{flex:1;height:138px;border-radius:30px;display:flex;align-items:center;justify-content:center;gap:16px;
+    background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);font:900 44px "Inter Display";color:#6f7786}
+  .tile .e{font-size:50px;font-family:"Noto Color Emoji";filter:grayscale(1) opacity(.5)}
+  .det{position:absolute;border:3px dashed var(--mint);border-radius:12px;opacity:0;box-shadow:0 0 24px rgba(53,242,176,.35)}
+  .det u{position:absolute;top:-34px;left:-3px;text-decoration:none;background:var(--mint);color:#04130d;font:800 22px "Inter";padding:4px 11px;border-radius:8px;white-space:nowrap}
+  .row{display:flex;align-items:center;height:60px;border-bottom:1px solid rgba(255,255,255,.06);font:600 24px "Inter";color:#c8ceda;padding:0 22px}
+  .row span{flex:1}.row span:last-child{text-align:right;flex:.5}
+
+  /* ---------- claude-styled window ---------- */
+  .cl{background:#262624;border-color:rgba(255,255,255,.12)}
+  .cl .bar{background:#1f1e1d;color:#c9c5bc}
+  .cl-side{position:absolute;left:0;top:42px;bottom:0;width:220px;background:#1f1e1d;border-right:1px solid rgba(255,255,255,.07);padding:16px 12px}
+  .cl-side div{padding:11px 14px;border-radius:10px;font:600 19px "Inter";color:#a8a49b;margin-bottom:4px;white-space:nowrap;overflow:hidden}
+  .cl-tabs{display:flex;gap:6px;padding:5px;border-radius:14px;background:#1a1918;width:max-content}
+  .cl-tabs span{padding:9px 22px;border-radius:10px;font:700 20px "Inter";color:#9c988f}
+  .cl-tabs .on{background:#3a3835;color:#f3efe6}
+  .cl-input{position:absolute;border-radius:20px;background:#30302e;border:2px solid rgba(255,255,255,.1);font:500 22px "Inter";color:#f3efe6;
+    display:flex;align-items:center;padding:0 22px;white-space:nowrap;overflow:hidden}
+  .cl-line{font:500 21px "JetBrains Mono";color:#d8d3c8;margin-bottom:12px;white-space:nowrap;opacity:0}
+  .serif{font-family:"Bitstream Charter","Liberation Serif",serif}
+
+  /* ---------- s9 ---------- */
+  .bubble{margin:0 18px 12px;padding:15px 18px;border-radius:20px;background:#191c23;border:1px solid var(--stroke);font:600 20px "Inter";color:#dfe4ec;
+    display:flex;align-items:center;gap:10px;white-space:nowrap}
+  .stepline{position:absolute;left:64px;font:900 60px "Inter Display";letter-spacing:-.02em;display:flex;align-items:center;gap:20px;white-space:nowrap}
+  .stepline i{display:flex;align-items:center;justify-content:center;width:62px;height:62px;border-radius:50%;background:var(--mint);color:#04130d;font:900 38px "Inter";font-style:normal}
+
+  /* ---------- s10 ---------- */
+  .btn{flex:1;height:76px;border-radius:24px;display:flex;align-items:center;justify-content:center;font:800 28px "Inter Display"}
+  .sticker{position:absolute;width:250px;text-align:center}
+  .sticker .c{width:230px;height:230px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:128px;font-family:"Noto Color Emoji"}
+  .sticker b{display:block;margin-top:16px;font:900 46px "Inter Display";letter-spacing:-.02em;white-space:nowrap}
+
+  /* ---------- s11 / s12 ---------- */
+  .mega{position:absolute;left:0;right:0;text-align:center;font:900 216px/1 "Inter Display";letter-spacing:-.045em;white-space:nowrap}
+  .check{width:150px;height:150px;border-radius:38px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;font:900 84px "Inter";color:#04130d}
+  .follow-btn{position:absolute;left:50%;top:850px;width:560px;height:150px;margin-left:-280px;border-radius:999px;background:#fff;color:#06070a;
+    display:flex;align-items:center;justify-content:center;font:900 76px "Inter Display";letter-spacing:-.02em;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg">
+    <div class="blob" id="b1" style="width:1500px;height:1500px;--c:#2b2fd0;left:-600px;top:-500px"></div>
+    <div class="blob" id="b2" style="width:1400px;height:1400px;--c:#0f8f77;left:200px;top:400px"></div>
+    <div class="blob" id="b3" style="width:1200px;height:1200px;--c:#5b1fa8;left:-450px;top:1050px;opacity:.45"></div>
+    <div class="grid"></div>
+  </div>
+  <div id="tint"></div>
+  <div id="vignette"></div>
+  <!-- scenes are injected here by reel.js -->
+  <div id="captions"></div>
+  <div id="grain"></div>
+  <div id="flash"></div>
+</div>
+<script src="../node_modules/gsap/dist/gsap.min.js"></script>
+<script src="reel.js"></script>
+</body>
+</html>
