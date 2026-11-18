@@ -119,6 +119,8 @@ like write access to your agents.
   non-local `Host` header (DNS rebinding), so a web page you visit cannot add tasks to your board.
 - To reach the board from other machines, use `--host 0.0.0.0 --token SECRET` (the UI asks for the
   token once), ideally behind TLS or a VPN. The server warns if you listen beyond localhost without one.
+- Behind a tunnel or reverse proxy, keep the default host and allow the public name instead:
+  `--allow-host .trycloudflare.com --token SECRET` (then `cloudflared tunnel --url http://localhost:6400`).
 
 ## Development
 

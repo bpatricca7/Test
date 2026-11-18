@@ -91,6 +91,20 @@ def test_dns_rebinding_host_check(make_server):
     assert status == 200
 
 
+def test_allow_host_for_tunnels(make_server):
+    _, url = make_server(allow_hosts=[".trycloudflare.com", "board.example.com"])
+    for host, expected in [("abc-def.trycloudflare.com", 200), ("board.example.com", 200),
+                           ("evil.example.com", 403), ("trycloudflare.com.evil.example", 403)]:
+        status, _, _ = raw(url, "GET", "/api/board", headers={"Host": host})
+        assert status == expected, host
+    headers = {"Host": "abc-def.trycloudflare.com", "X-Forwarded-Proto": "https"}
+    _, _, body = raw(url, "GET", "/api/config", headers=headers)
+    assert json.loads(body)["url"] == "https://abc-def.trycloudflare.com"
+    write = {**headers, "Content-Type": "application/json", "Origin": "https://abc-def.trycloudflare.com"}
+    status, _, _ = raw(url, "POST", "/api/tasks", body='{"title": "via tunnel"}', headers=write)
+    assert status == 201
+
+
 def test_token_auth(make_server):
     _, url = make_server(token="s3cret")
     with pytest.raises(ApiError) as exc:

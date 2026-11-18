@@ -106,6 +106,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--port", type=int, default=int(os.environ.get("AGENTDOS_PORT", DEFAULT_PORT)))
     s.add_argument("--db", default=os.environ.get("AGENTDOS_DB") or os.path.join(os.path.expanduser("~"), ".agentdos", "board.db"))
     s.add_argument("--token", default=os.environ.get("AGENTDOS_TOKEN"), help="require this access token")
+    s.add_argument("--allow-host", action="append", dest="allow_hosts",
+                   default=[h for h in os.environ.get("AGENTDOS_ALLOW_HOSTS", "").split(",") if h.strip()],
+                   help="also answer to this Host name, e.g. a tunnel; '.example.com' allows subdomains (repeatable)")
     s.add_argument("--verbose", action="store_true", help="log every request")
 
     m = sub.add_parser("mcp", help="run the MCP server (stdio) for an AI agent")
@@ -174,7 +177,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "serve":
         from .server import App, serve
         from .store import Store
-        serve(App(Store(args.db), host=args.host, port=args.port, token=args.token), verbose=args.verbose)
+        app = App(Store(args.db), host=args.host, port=args.port, token=args.token, allow_hosts=args.allow_hosts)
+        serve(app, verbose=args.verbose)
         return 0
     if args.cmd == "mcp":
         from .mcp_server import run

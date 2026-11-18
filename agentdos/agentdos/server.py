@@ -75,14 +75,25 @@ def _host_only(host_header: str) -> str:
     return host.rsplit(":", 1)[0] if host.count(":") == 1 else host
 
 
+def _host_allowed(host: str, patterns: list[str]) -> bool:
+    """Exact match, or suffix match for patterns that start with a dot (".example.com")."""
+    for pattern in patterns:
+        if host == pattern or (pattern.startswith(".") and host.endswith(pattern)):
+            return True
+    return False
+
+
 class App:
-    def __init__(self, store: Store, host: str = "127.0.0.1", port: int = 6400, token: str | None = None):
+    def __init__(self, store: Store, host: str = "127.0.0.1", port: int = 6400, token: str | None = None,
+                 allow_hosts: list[str] | None = None):
         self.store = store
         self.host = host
         self.port = port
         self.token = token or None
         self.stopping = threading.Event()
         self.loopback_only = _is_loopback(host)
+        # Extra Host names a loopback-bound server answers to, e.g. a tunnel or reverse proxy.
+        self.allow_hosts = [h.strip().lower() for h in (allow_hosts or []) if h.strip()]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -144,11 +155,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def _guard(self, path: str) -> None:
         app = self.app
-        # DNS-rebinding protection: a loopback-bound server only answers to loopback names.
+        # DNS-rebinding protection: a loopback-bound server only answers to loopback
+        # names, plus any names explicitly allowed with --allow-host.
         if app.loopback_only:
             host = _host_only(self.headers.get("Host", ""))
-            if host and not _is_loopback(host):
-                raise HttpError(403, "unexpected Host header")
+            if host and not _is_loopback(host) and not _host_allowed(host, app.allow_hosts):
+                raise HttpError(403, "unexpected Host header (allow it with --allow-host)")
         if self.command in ("POST", "PATCH", "DELETE"):
             # Cross-site request forgery protection. Browsers always send Origin on
             # cross-origin writes; requiring a JSON content type also forces a CORS
@@ -282,9 +294,11 @@ class Handler(BaseHTTPRequestHandler):
         dos = os.path.join(PROJECT_DIR, "dos.py")
         # How an agent should launch AGENTDOS on this machine (shown in "Connect an agent").
         launcher = [sys.executable or "python3", dos] if os.path.isfile(dos) else ["agentdos"]
+        # Behind a TLS-terminating proxy or tunnel the board is reached over https.
+        scheme = "https" if (self.headers.get("X-Forwarded-Proto") or "").lower() == "https" else "http"
         self._json(200, {
             "version": __version__,
-            "url": f"http://{host}",
+            "url": f"{scheme}://{host}",
             "launcher": launcher,
             "auth": bool(self.app.token),
         })
@@ -448,7 +462,9 @@ def serve(app: App, verbose: bool = False) -> None:
     print(f"  Database ...... {app.store.path}")
     print(f"  Agent docs .... {url}/AGENTS.md")
     print(f"  Access token .. {'required' if app.token else 'off (local only)'}")
-    if not app.loopback_only and not app.token:
+    if app.allow_hosts:
+        print(f"  Also answers .. {', '.join(app.allow_hosts)}")
+    if (not app.loopback_only or app.allow_hosts) and not app.token:
         print("\n  WARNING: listening beyond localhost with no --token. Anyone who can reach this")
         print("  port can add tasks that your agents will act on. Set --token or AGENTDOS_TOKEN.")
     print("\n  Ctrl+C to stop.\n")
