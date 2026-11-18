@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentdos"
+version = "1.0.0"
+description = "An agentic to-do board with a retro-modern MS-DOS interface"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+agentdos = "agentdos.cli:main"
+
+[tool.setuptools]
+packages = ["agentdos"]
+
+[tool.setuptools.package-data]
+agentdos = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -12,6 +12,7 @@ Robinhood's prediction markets are powered by [Kalshi](https://kalshi.com/), a C
 - `UNDERVALUED_PREDICTIONS_ANALYSIS.md` - Detailed analysis report with current opportunities
 - `undervalued_predictions.json` - Structured data of identified opportunities
 - `requirements.txt` - Python dependencies
+- `agentdos/` - **AGENTDOS**, an agentic to-do board with a retro-modern MS-DOS UI (separate project; see [agentdos/README.md](agentdos/README.md))
 
 ## Quick Start
 

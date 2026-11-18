@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-theme="norton">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>AGENTDOS</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=VT323&display=swap">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div id="boot" class="boot" hidden aria-hidden="true"><pre id="boot-text"></pre></div>
+
+  <div class="app" id="app">
+    <header class="menubar" id="menubar">
+      <nav class="menus" id="menus" aria-label="Main menu"></nav>
+      <div class="menubar-right">
+        <span class="live" id="live" title="Live connection to the board">○ OFFLINE</span>
+        <span class="clock" id="clock">--:--:--</span>
+      </div>
+    </header>
+
+    <div class="statusline" id="statusline">
+      <span class="path">C:\AGENTDOS\BOARD&gt;</span>
+      <span class="stats" id="stats"></span>
+      <span class="filter" id="filter" hidden></span>
+    </div>
+
+    <nav class="coltabs" id="coltabs" aria-label="Columns"></nav>
+
+    <main class="board" id="board" aria-label="Task board"></main>
+
+    <section class="dock" id="dock" aria-label="Agents and activity">
+      <div class="win" id="agents-win">
+        <h2 class="win-title">AGENTS</h2>
+        <div class="win-body" id="agents"></div>
+        <button class="btn btn-small connect-btn" type="button" data-act="connect">+ Connect an agent</button>
+      </div>
+      <div class="win" id="log-win">
+        <h2 class="win-title">ACTIVITY.LOG</h2>
+        <div class="win-body log" id="log" tabindex="0" aria-live="off"></div>
+      </div>
+    </section>
+
+    <form class="cmdline" id="cmdline" autocomplete="off">
+      <label for="cmd" class="prompt">C:\AGENTDOS&gt;</label>
+      <input id="cmd" name="cmd" spellcheck="false" autocapitalize="off"
+             placeholder="type a to-do and press Enter  ·  HELP for commands" aria-describedby="cmdout">
+      <output id="cmdout" class="cmdout"></output>
+    </form>
+
+    <footer class="fkeys" id="fkeys" aria-label="Function keys">
+      <button type="button" data-act="help"><b>1</b><span>Help</span></button>
+      <button type="button" data-act="new"><b>2</b><span>New</span></button>
+      <button type="button" data-act="view"><b>3</b><span>View</span></button>
+      <button type="button" data-act="edit"><b>4</b><span>Edit</span></button>
+      <button type="button" data-act="refresh"><b>5</b><span>Refresh</span></button>
+      <button type="button" data-act="move"><b>6</b><span>Move</span></button>
+      <button type="button" data-act="find"><b>7</b><span>Find</span></button>
+      <button type="button" data-act="delete"><b>8</b><span>Delete</span></button>
+      <button type="button" data-act="menu"><b>9</b><span>Menu</span></button>
+      <button type="button" data-act="theme"><b>10</b><span>Theme</span></button>
+    </footer>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div class="crt" aria-hidden="true"></div>
+</body>
+</html>
